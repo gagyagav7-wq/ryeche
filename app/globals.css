@@ -4,16 +4,29 @@
 
 :root {
   --foreground-rgb: 23, 23, 23;
-  --background-start-rgb: 253, 251, 247;
-  --background-end-rgb: 253, 251, 247;
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
+  color: #171717;
   background: #FDFBF7;
+  /* Mencegah overscroll bounce aneh di iOS */
+  overscroll-behavior-y: none; 
 }
 
-/* Biar scrollbar nya juga brutal */
+/* FIX: Mencegah zoom otomatis di iPhone pas klik input */
+input, textarea, select {
+  font-size: 16px !important; 
+}
+
+/* Utility class buat container utama */
+.layout-container {
+  /* Pake dvh biar pas sama address bar browser mobile */
+  min-height: 100dvh; 
+  /* Tambah padding safe area buat iPhone X ke atas */
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 12px;
 }
@@ -23,4 +36,5 @@ body {
 }
 ::-webkit-scrollbar-thumb {
   background: #171717;
+  border: 1px solid #FDFBF7;
 }
