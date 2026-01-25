@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 23, 23, 23;
+  --background-start-rgb: 253, 251, 247;
+  --background-end-rgb: 253, 251, 247;
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: #FDFBF7;
+}
+
+/* Biar scrollbar nya juga brutal */
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: #FDFBF7;
+  border-left: 3px solid #171717;
+}
+::-webkit-scrollbar-thumb {
+  background: #171717;
+}
