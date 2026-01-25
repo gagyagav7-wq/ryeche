@@ -4,9 +4,7 @@ import Link from 'next/link';
 interface BaseProps {
   variant?: 'primary' | 'secondary' | 'danger';
   fullWidth?: boolean;
-  children: React.ReactNode;
-  className?: string;
-  disabled?: boolean;
+  // Sisanya kita ikut bawaan HTML aja biar ga bentrok
 }
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, BaseProps {
