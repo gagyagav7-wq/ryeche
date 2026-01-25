@@ -3,30 +3,28 @@
 @tailwind utilities;
 
 @layer base {
-  /* FIX 3: Reset input size ke 16px buat iPhone (mencegah auto-zoom) tanpa !important kasar */
+  /* Fix Input Zoom iPhone */
   input, textarea, select {
     @apply text-base; 
   }
 
   body {
     @apply bg-bg text-main antialiased;
-    /* FIX 4: Contain overscroll biar pull-to-refresh tetep jalan tapi ga bounce aneh */
     overscroll-behavior-y: contain; 
-    /* FIX 5: Hilangkan highlight biru transparan pas tap di Android/iOS */
     -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* FIX 6: Hover logic yang cuma jalan di device yang punya mouse/cursor (PC) */
-/* Di HP, efek ini ga bakal jalan, jadi ga ada isu tombol 'nyangkut' pas di-tap */
+/* Hover Effect: Cuma jalan di PC (Mouse) */
 @media (hover: hover) and (pointer: fine) {
   .brut-hover-effect:hover {
     transform: translateY(-4px);
-    box-shadow: 8px 8px 0px 0px #171717; /* brut-lg shadow */
+    /* Kita timpa shadow base dengan shadow lg */
+    box-shadow: 8px 8px 0px 0px #171717; 
   }
 }
 
-/* Custom Scrollbar tetep gas */
+/* Scrollbar */
 ::-webkit-scrollbar {
   width: 12px;
 }
@@ -39,9 +37,9 @@
   border: 1px solid #FDFBF7;
 }
 
-/* Utility Layout */
+/* Layout Container */
 .layout-container {
   min-height: 100dvh;
-  /* Pake spacing yang udah di-define di config tadi */
-  padding-bottom: calc(2rem + theme('spacing.safe-bottom'));
+  /* FIX: Langsung pake env(), ga usah lewat theme() biar ga error parsing */
+  padding-bottom: calc(2rem + env(safe-area-inset-bottom));
 }
