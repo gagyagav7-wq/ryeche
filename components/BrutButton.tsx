@@ -1,7 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
 
-// Kita pisahin props biar lebih strict
 interface BaseProps {
   variant?: 'primary' | 'secondary' | 'danger';
   fullWidth?: boolean;
@@ -10,17 +9,14 @@ interface BaseProps {
   disabled?: boolean;
 }
 
-// Props buat Button beneran
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, BaseProps {
-  href?: never; // Memastikan ga bisa pasang href di button biasa
+  href?: never; 
 }
 
-// Props buat Link (mirip <a>)
 interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>, BaseProps {
-  href: string; // Wajib ada href
+  href: string; 
 }
 
-// Union Type
 type BrutButtonProps = ButtonProps | LinkProps;
 
 const BrutButton = (props: BrutButtonProps) => {
@@ -33,32 +29,20 @@ const BrutButton = (props: BrutButtonProps) => {
     ...rest 
   } = props;
 
-  // Style dasar
-  const baseStyles = `
-    inline-flex items-center justify-center
-    border-brut border-main font-bold py-3 px-6 
-    transition-transform duration-75
-    
-    /* State: Active (Click) - Tetap jalan di Mobile & PC */
-    active:translate-x-[2px] active:translate-y-[2px] active:shadow-none 
-    
-    /* State: Focus Keyboard */
-    focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-main/30
-    
-    /* State: Disabled */
-    disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0
-    aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:shadow-none
-    
-    /* Typography */
-    text-base md:text-lg tracking-tight
-    
-    /* Mobile Optimization */
-    touch-manipulation 
-    
-    ${fullWidth ? 'w-full' : ''}
-  `;
+  // FIX: Array join biar bersih, ga ada komentar nyasar di dalem string class
+  const baseStyles = [
+    "inline-flex items-center justify-center",
+    "border-brut border-main font-bold py-3 px-6",
+    "transition-transform duration-75",
+    "active:translate-x-[2px] active:translate-y-[2px] active:shadow-none",
+    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-main/30",
+    "disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0",
+    "aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:shadow-none",
+    "text-base md:text-lg tracking-tight",
+    "touch-manipulation",
+    fullWidth ? "w-full" : "",
+  ].join(" ");
 
-  // Apply class hover khusus PC (dari globals.css) cuma kalau TIDAK disabled
   const hoverClass = disabled ? '' : 'brut-hover-effect';
 
   const variants = {
@@ -69,16 +53,18 @@ const BrutButton = (props: BrutButtonProps) => {
 
   const finalClass = `${baseStyles} ${variants[variant]} ${hoverClass} ${className}`;
 
-  // 1. Render sebagai Link (Next.js)
+  // 1. Render sebagai Link
   if ('href' in props && props.href) {
     const { href, ...linkRest } = rest as LinkProps;
     
-    // Kalau disabled, kita render <span> atau <a> tanpa href biar ga bisa diklik
+    // FIX: UX Link Disabled yang lebih aksesibel
     if (disabled) {
       return (
         <span 
           className={finalClass} 
           aria-disabled="true"
+          role="link"      // Biar screen reader tau ini tadinya link
+          tabIndex={-1}    // Biar ga bisa di-tab
         >
           {children}
         </span>
@@ -92,12 +78,12 @@ const BrutButton = (props: BrutButtonProps) => {
     );
   }
 
-  // 2. Render sebagai Button HTML biasa
+  // 2. Render sebagai Button
   return (
     <button 
       className={finalClass} 
       disabled={disabled}
-      type="button" // Default prevent form submit accidental
+      type="button" 
       {...(rest as ButtonProps)}
     >
       {children}
