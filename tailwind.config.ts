@@ -1,20 +1,22 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  // FIX 1: Scan SEMUA kemungkinan folder (root ataupun src) biar class ga ilang pas build
   content: [
-    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
-    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./pages/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
-        bg: "#FDFBF7",      // Cream background (tulang)
-        surface: "#FFF8F0", // Milk/Warm White (buat card biar ga putih polos)
-        main: "#171717",    // Hitam pekat (bukan #000, biar ga sakit mata)
-        accent: "#FFD23F",  // Kuning pop
-        "accent-2": "#A0E7E5", // Cyan pastel (ganti pink biar variatif)
-        danger: "#FF4D4D",  // Merah beneran buat danger
+        bg: "#FDFBF7",      // Creamy Background
+        surface: "#FFF8F0", // Milk/Warm White
+        main: "#171717",    // Brutal Black
+        accent: "#FFD23F",  // Pop Yellow
+        "accent-2": "#A0E7E5", // Cyan Pastel
+        danger: "#FF4D4D",  // Real Danger Red
       },
       boxShadow: {
         brut: "4px 4px 0px 0px #171717",
@@ -22,15 +24,15 @@ const config: Config = {
         "brut-lg": "8px 8px 0px 0px #171717",
       },
       borderRadius: {
-        brut: "0px", // Tetap tajam
+        brut: "0px",
       },
       borderWidth: {
-        brut: "3px", // Konsisten 3px
+        brut: "3px",
       },
-      // Tambahan untuk mobile safe area (kalau butuh spacing custom)
-      padding: {
+      // FIX 2: Pake 'spacing' bukan 'padding' buat dynamic value
+      spacing: {
         'safe-bottom': 'env(safe-area-inset-bottom)',
-      }
+      },
     },
   },
   plugins: [],
