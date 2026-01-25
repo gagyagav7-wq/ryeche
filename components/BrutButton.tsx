@@ -1,33 +1,35 @@
 import React from 'react';
 import Link from 'next/link';
 
+// FIX: Kita balikin 'disabled' karena Link aslinya ga punya,
+// tapi kita butuh itu buat logic styling.
+// 'children' dan 'className' gausah ditulis lagi biar ngikut bawaan HTML.
 interface BaseProps {
   variant?: 'primary' | 'secondary' | 'danger';
   fullWidth?: boolean;
-  // Sisanya kita ikut bawaan HTML aja biar ga bentrok
+  disabled?: boolean;
 }
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>, BaseProps {
-  href?: never; 
+  href?: never;
 }
 
 interface LinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement>, BaseProps {
-  href: string; 
+  href: string;
 }
 
 type BrutButtonProps = ButtonProps | LinkProps;
 
 const BrutButton = (props: BrutButtonProps) => {
-  const { 
-    children, 
-    variant = 'primary', 
-    className = "", 
+  const {
+    children,
+    variant = 'primary',
+    className = "",
     fullWidth = false,
     disabled = false,
-    ...rest 
+    ...rest
   } = props;
 
-  // FIX: Array join biar bersih, ga ada komentar nyasar di dalem string class
   const baseStyles = [
     "inline-flex items-center justify-center",
     "border-brut border-main font-bold py-3 px-6",
@@ -51,18 +53,16 @@ const BrutButton = (props: BrutButtonProps) => {
 
   const finalClass = `${baseStyles} ${variants[variant]} ${hoverClass} ${className}`;
 
-  // 1. Render sebagai Link
   if ('href' in props && props.href) {
     const { href, ...linkRest } = rest as LinkProps;
-    
-    // FIX: UX Link Disabled yang lebih aksesibel
+
     if (disabled) {
       return (
-        <span 
-          className={finalClass} 
+        <span
+          className={finalClass}
           aria-disabled="true"
-          role="link"      // Biar screen reader tau ini tadinya link
-          tabIndex={-1}    // Biar ga bisa di-tab
+          role="link"
+          tabIndex={-1}
         >
           {children}
         </span>
@@ -76,12 +76,11 @@ const BrutButton = (props: BrutButtonProps) => {
     );
   }
 
-  // 2. Render sebagai Button
   return (
-    <button 
-      className={finalClass} 
+    <button
+      className={finalClass}
       disabled={disabled}
-      type="button" 
+      type="button"
       {...(rest as ButtonProps)}
     >
       {children}
