@@ -5,16 +5,14 @@ const HEADERS = {
   "Accept": "application/json"
 };
 
-// --- FUNGSI PENERJEMAH (UPDATED) ---
-// Sekarang bisa baca 'description' dan 'chapterCount' dari JSON baru lu
+// --- FUNGSI PENERJEMAH DATA ---
 const normalizeData = (item: any) => {
   return {
     id: item.playlet_id || item.id,
     title: item.title,
-    cover_url: item.cover || item.cover_square,
-    // Tambah item.description biar sinopsis muncul
+    // Prioritas cover: cover -> cover_square -> cover_vertical
+    cover_url: item.cover || item.cover_square || item.cover_vertical, 
     synopsis: item.introduce || item.description || item.desc || "No synopsis.",
-    // Tambah item.chapterCount biar total episode bener
     total_ep: item.upload_num || item.chapterCount || 0
   };
 };
@@ -24,7 +22,7 @@ async function fetchAPI(endpoint: string) {
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: HEADERS,
-      next: { revalidate: 0 } 
+      next: { revalidate: 0 } // No cache biar data selalu fresh
     });
     if (!res.ok) return null;
     return await res.json();
@@ -34,18 +32,40 @@ async function fetchAPI(endpoint: string) {
   }
 }
 
-// 1. Get Latest
+// 1. Get Latest (INI YANG DIPERBAIKI SESUAI JSON LU)
 export async function getLatest() {
   const json = await fetchAPI("/latest");
-  const items = json?.data?.list || json?.data || json?.result || json || [];
+  
+  // LOGIC BARU: Cek Data -> Ambil Item ke-0 -> Ambil 'list'
+  if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+     const firstCategory = json.data[0]; // Ini object kategori "Baru"
+     if (firstCategory.list && Array.isArray(firstCategory.list)) {
+        return firstCategory.list.map(normalizeData);
+     }
+  }
+
+  // Fallback (Jaga-jaga kalau struktur beda dikit)
+  const items = json?.data?.list || json?.result || [];
   if (Array.isArray(items)) return items.map(normalizeData);
+  
   return [];
 }
 
-// 2. Get For You
+// 2. Get For You (Kita samain logikanya biar aman)
 export async function getForYou() {
   const json = await fetchAPI("/foryou");
-  const items = json?.data?.list || json?.data || json?.result || json || [];
+  
+  // Cek struktur bertingkat juga
+  if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
+     const firstCategory = json.data[0];
+     // Kadang namanya 'list', kadang 'data'.
+     const list = firstCategory.list || firstCategory.data;
+     if (list && Array.isArray(list)) {
+        return list.map(normalizeData);
+     }
+  }
+  
+  const items = json?.data?.list || json?.data || json?.result || [];
   if (Array.isArray(items)) return items.map(normalizeData);
   return [];
 }
@@ -54,6 +74,8 @@ export async function getForYou() {
 export async function getHotRank() {
   const json = await fetchAPI("/hotrank");
   const categories = json?.data || json || [];
+  
+  // Hotrank biasanya array kategori, kita ambil kategori pertama
   if (Array.isArray(categories) && categories.length > 0) {
     const firstCategory = categories[0]; 
     if (firstCategory && Array.isArray(firstCategory.data)) {
@@ -63,13 +85,13 @@ export async function getHotRank() {
   return [];
 }
 
-// 4. Get Detail Drama (INI YANG DIPERBAIKI)
+// 4. Get Detail Drama
 export async function getDramaDetail(id: string) {
   const json = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
   
   let rawData = json?.data || json?.result || json;
   
-  // FIX 1: Kalau datanya pake nama 'drama', kita pindahin ke 'info' biar UI gak bingung
+  // Kalau datanya dibungkus 'drama', pindahin ke 'info'
   if (rawData.drama) {
     rawData.info = rawData.drama;
   }
@@ -78,16 +100,13 @@ export async function getDramaDetail(id: string) {
     throw new Error("Drama not found");
   }
 
-  // Normalize Info
   rawData.info = normalizeData(rawData.info);
 
-  // FIX 2: Mapping Episodes biar 'video_url' ketemu
-  // JSON lu nyimpen video di dalam: episode.raw.videoUrl
+  // Mapping Episodes (Video URL ngumpet di raw.videoUrl)
   if (Array.isArray(rawData.episodes)) {
     rawData.episodes = rawData.episodes.map((ep: any) => ({
       id: ep.id,
       name: ep.name,
-      // Kita ambil videoUrl dari dalem 'raw', terus taruh di luar biar Player baca
       video_url: ep.raw?.videoUrl || ep.videoUrl || ep.video_url || "", 
       ...ep
     }));
@@ -100,14 +119,16 @@ export async function getDramaDetail(id: string) {
 export async function searchDrama(query: string) {
   if (!query) return [];
   const json = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
-  const items = json?.data || json?.result || json || [];
+  
+  // Logic search biasanya langsung data list
+  const items = json?.data || json?.result || [];
   if (Array.isArray(items)) return items.map(normalizeData);
   return [];
 }
 
-// 6. Video Type
+// 6. Video Type Helper
 export function getVideoType(url: string) {
-  if (!url) return "hls"; // Default aman
+  if (!url) return "hls";
   if (url.includes(".m3u8")) return "hls";
   if (url.includes(".mp4")) return "mp4";
   return "hls";
