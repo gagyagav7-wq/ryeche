@@ -18,7 +18,7 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH (Safe & Smart) ---
+// --- HELPER FETCH (Bulletproof) ---
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
 
@@ -41,13 +41,16 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
       throw new Error(`API Error ${res.status} di ${endpoint}: ${res.statusText}`);
     }
     
-    // FIX: Handle Content-Type null & Partial Check
+    // FIX: Content-Type Check + JSON Parse Guard
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
-      return await res.json();
+      try {
+        return await res.json();
+      } catch (err) {
+        throw new Error(`JSON Rusak/Invalid di ${endpoint}`);
+      }
     }
 
-    // Kalau bukan JSON, baca text buat error context
     const text = await res.text();
     throw new Error(`Invalid Format (${contentType || "unknown"}) di ${endpoint}: ${text.slice(0, 80)}...`);
 
