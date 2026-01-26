@@ -6,24 +6,40 @@ const HEADERS = {
   "Accept": "application/json"
 };
 
-// Helper Fetcher Generik
+// Helper Fetcher Generik (Versi Auto-Unwrap)
 async function fetchAPI(endpoint: string) {
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: HEADERS,
-      next: { revalidate: 60 } // Cache data 60 detik biar web ngebut
+      next: { revalidate: 0 } // JANGAN CACHE DULU biar gampang debug
     });
 
     if (!res.ok) {
       console.error(`❌ API Error [${res.status}]: ${endpoint}`);
-      return null;
+      return []; // Balikin array kosong kalau error HTTP
     }
     
-    const data = await res.json();
-    return data;
+    const json = await res.json();
+    
+    // --- LOGIC DETEKTIF DATA ---
+    // 1. Kalau langsung Array, ambil.
+    if (Array.isArray(json)) return json;
+    
+    // 2. Kalau dibungkus 'data', ambil isinya.
+    if (json.data && Array.isArray(json.data)) return json.data;
+    
+    // 3. Kalau dibungkus 'result', ambil isinya.
+    if (json.result && Array.isArray(json.result)) return json.result;
+
+    // 4. Kalau dibungkus 'results', ambil isinya.
+    if (json.results && Array.isArray(json.results)) return json.results;
+
+    console.warn(`⚠️ Format Data Aneh di ${endpoint}:`, json);
+    return []; // Nyerah, balikin kosong
+    
   } catch (error) {
     console.error(`❌ Fetch Failed: ${endpoint}`, error);
-    return null;
+    return [];
   }
 }
 
