@@ -1,97 +1,41 @@
-import Image from "next/image";
 import Link from "next/link";
-import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
-import { getLatest, getForYou, getHotRank } from "@/lib/api";
+import BrutCard from "@/components/BrutCard";
 
-// 1. INI PENTING: Biar dia refresh data terus (gak stuck di cache)
-export const dynamic = 'force-dynamic';
-
-// Komponen Grid dipisah biar rapi & ada pengaman
-const DramaGrid = ({ title, items }: { title: string, items: any[] }) => {
-  // --- SAFETY CHECK (AIRBAG) ---
-  // Kalau items null/error/bukan array, paksa jadi array kosong biar gak crash
-  const safeItems = Array.isArray(items) ? items : [];
-
-  // Kalau kosong, render tulisan (No Data) biar tau statusnya
-  if (safeItems.length === 0) {
-    return (
-      <section className="space-y-4 opacity-50">
-        <h2 className="text-2xl font-black uppercase">{title} (No Data)</h2>
-      </section>
-    );
-  }
-
+export default function LandingPage() {
   return (
-    <section className="space-y-4">
-      <div className="flex items-center gap-3">
-        <div className="h-8 w-4 bg-accent border-brut border-main"></div>
-        <h2 className="text-2xl md:text-3xl font-black uppercase">{title}</h2>
-      </div>
-      
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {safeItems.slice(0, 10).map((d) => (
-          <Link 
-            key={d.id} 
-            href={`/drama/${d.id}`} 
-            className="block h-full outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none group"
-            aria-label={`Nonton ${d.title}`}
-          >
-            <BrutCard className="h-full p-0 overflow-hidden relative brut-hover-effect" noPadding>
-              <div className="aspect-[2/3] bg-gray-200 relative">
-                <Image 
-                  src={d.cover_url || "/placeholder.jpg"} 
-                  alt={d.title}
-                  fill
-                  sizes="(max-width: 768px) 50vw, 20vw"
-                  className="object-cover"
-                  unoptimized={true} 
-                />
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 bg-surface/90 border-t-brut border-main p-2">
-                <h3 className="font-bold text-xs md:text-sm truncate">{d.title}</h3>
-              </div>
-            </BrutCard>
-          </Link>
-        ))}
-      </div>
-    </section>
-  );
-};
-
-export default async function HomePage() {
-  // Fetch paralel biar ngebut
-  // Tambah catch biar kalau satu API error, halaman tetep bisa dibuka
-  const [latest, forYou, hotRank] = await Promise.all([
-    getLatest().catch(() => []), 
-    getForYou().catch(() => []), 
-    getHotRank().catch(() => [])
-  ]);
-
-  return (
-    <main className="layout-container p-4 md:p-8 space-y-12">
-      {/* Hero / Header */}
-      <header className="mb-8">
-        <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter">
+    <main className="min-h-dvh flex flex-col items-center justify-center p-6 bg-bg text-text space-y-8 text-center">
+      <div className="space-y-2 animate-in slide-in-from-bottom duration-700">
+        <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-none">
           Flick<span className="text-accent">Reels</span>
         </h1>
-        <p className="font-bold text-lg opacity-70">Nonton Drama Gaya Brutal.</p>
-        
-        {/* Search Bar Simple */}
-        <form action="/search" className="mt-6 flex gap-2 max-w-md">
-          <input 
-            name="q"
-            placeholder="Cari drama..." 
-            className="flex-1 bg-surface border-brut border-main p-3 font-bold outline-none focus:shadow-brut focus:-translate-y-1 transition-transform"
-          />
-          <BrutButton type="submit">CARI</BrutButton>
-        </form>
-      </header>
+        <p className="text-xl md:text-2xl font-bold bg-white border-2 border-black p-2 inline-block shadow-brut -rotate-1">
+          Hub Hiburan Brutal.
+        </p>
+      </div>
 
-      {/* Grid Content */}
-      <DramaGrid title="Hot Ranking 🔥" items={hotRank} />
-      <DramaGrid title="For You ❤️" items={forYou} />
-      <DramaGrid title="Latest Uploads 🆕" items={latest} />
+      <BrutCard className="max-w-md w-full bg-surface space-y-6 p-8">
+        <p className="font-bold text-lg opacity-80">
+          Akses ribuan Drama China, Download Sosmed, dan Tools eksklusif dalam satu dashboard.
+        </p>
+        
+        <div className="flex flex-col gap-4">
+          <Link href="/login" className="w-full">
+            <BrutButton fullWidth variant="primary" className="text-lg py-4">
+              LOGIN SEKARANG
+            </BrutButton>
+          </Link>
+          <Link href="/register" className="w-full">
+            <BrutButton fullWidth variant="secondary" className="text-lg py-4">
+              DAFTAR AKUN BARU
+            </BrutButton>
+          </Link>
+        </div>
+      </BrutCard>
+
+      <footer className="fixed bottom-4 text-sm font-bold opacity-50">
+        © 2026 FLICKREELS CORP.
+      </footer>
     </main>
   );
 }
