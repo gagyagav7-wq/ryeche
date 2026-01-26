@@ -16,25 +16,21 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
   
   const networkRetryCount = useRef(0);
   const mediaRetryCount = useRef(0);
-  
-  // FIX: Tipe timer yang aman lintas env (Node/Browser)
   const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const lastSavedTime = useRef(0);
   const [error, setError] = useState<string | null>(null);
-  
-  // FIX: Buffering State buat UX
   const [isBuffering, setIsBuffering] = useState(true); 
 
-  // --- LOGIC: Resume & Save Progress ---
+  // --- LOGIC: Handler (useCallback biar dependency aman) ---
   const saveProgress = useCallback(() => {
     if (videoRef.current) {
       localStorage.setItem(storageKey, String(videoRef.current.currentTime));
     }
   }, [storageKey]);
 
-  const handleTimeUpdate = () => {
-    // Kalau video jalan, berarti gak buffering
+  const handleTimeUpdate = useCallback(() => {
+    // Kalau time update jalan, berarti video main -> matikan buffering
     setIsBuffering(false);
 
     const now = Date.now();
@@ -42,16 +38,22 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       saveProgress();
       lastSavedTime.current = now;
     }
-  };
+  }, [saveProgress]);
 
-  const handlePauseOrEnd = () => saveProgress();
+  const handlePauseOrEnd = useCallback(() => saveProgress(), [saveProgress]);
   
-  // FIX: Handle Playing event biar status buffering ilang instan
-  const handlePlaying = () => setIsBuffering(false);
+  const handlePlaying = useCallback(() => setIsBuffering(false), []);
+  
+  // FIX: Handle waiting/stalled buat nyalain spinner
+  const handleBuffering = useCallback(() => setIsBuffering(true), []);
 
-  const handleMetadataLoaded = () => {
+  const handleMetadataLoaded = useCallback(() => {
     const video = videoRef.current;
     if (!video) return;
+
+    // FIX: Metadata udah ke-load, matikan spinner (walau belum play)
+    setIsBuffering(false);
+
     const savedTime = localStorage.getItem(storageKey);
     if (savedTime) {
       const time = parseFloat(savedTime);
@@ -59,7 +61,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         video.currentTime = time;
       }
     }
-  };
+  }, [storageKey]);
 
   const getNativeErrorMessage = (code: number) => {
     switch (code) {
@@ -77,12 +79,9 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     if (!video) return;
 
     setError(null);
-    setIsBuffering(true); // Awal load pasti buffering
+    setIsBuffering(true);
     networkRetryCount.current = 0;
     mediaRetryCount.current = 0;
-
-    // FIX: Listener Stalled & Waiting buat Buffering UI
-    const handleBuffering = () => setIsBuffering(true);
 
     const handleNativeError = () => {
       if (video.error) {
@@ -95,13 +94,14 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       if (document.visibilityState === 'hidden') saveProgress();
     };
 
-    // FIX: Pagehide khusus iOS/Mobile Safari
     const handlePageHide = () => saveProgress();
 
+    // Event Listeners
     video.addEventListener("error", handleNativeError);
     video.addEventListener("stalled", handleBuffering);
     video.addEventListener("waiting", handleBuffering);
     video.addEventListener("playing", handlePlaying);
+    video.addEventListener("canplay", handlePlaying); // Tambahan biar makin responsif
     
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("pagehide", handlePageHide);
@@ -120,17 +120,21 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
+              // FIX: Nyalain buffering pas lagi retry network
+              setIsBuffering(true);
+              
               if (networkRetryCount.current < 3) {
                 networkRetryCount.current++;
                 const delay = networkRetryCount.current * 1000;
                 console.log(`Network error, retry ${networkRetryCount.current}/3 in ${delay}ms...`);
                 
-                // FIX: Clear timer lama & Safe Check
                 if (retryTimer.current) clearTimeout(retryTimer.current);
                 
                 retryTimer.current = setTimeout(() => {
-                  if (!hlsRef.current) return; // Cek instance masih ada gak
+                  if (!hlsRef.current) return;
                   hlsRef.current.startLoad();
+                  // FIX: Nullify timer ref setelah jalan
+                  retryTimer.current = null;
                 }, delay);
                 
               } else {
@@ -171,11 +175,15 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       video.removeEventListener("stalled", handleBuffering);
       video.removeEventListener("waiting", handleBuffering);
       video.removeEventListener("playing", handlePlaying);
+      video.removeEventListener("canplay", handlePlaying);
       
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", handlePageHide);
       
-      if (retryTimer.current) clearTimeout(retryTimer.current);
+      if (retryTimer.current) {
+        clearTimeout(retryTimer.current);
+        retryTimer.current = null;
+      }
 
       if (hlsRef.current) {
         hlsRef.current.destroy();
@@ -186,7 +194,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       video.src = "";
       video.load();
     };
-  }, [url, type, saveProgress]);
+  }, [url, type, saveProgress, handlePlaying, handleBuffering]);
 
   return (
     <div className="relative aspect-video bg-black w-full overflow-hidden border-brut border-main group">
@@ -198,7 +206,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         </div>
       )}
 
-      {/* FIX: BUFFERING UI */}
+      {/* BUFFERING UI */}
       {!error && isBuffering && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 pointer-events-none">
           <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
