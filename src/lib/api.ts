@@ -1,7 +1,5 @@
-// Ambil env server-side
 const BASE_URL = process.env.API_BASE_URL;
 
-// --- TIPE DATA ---
 export interface DramaItem {
   id: string | number;
   title: string;
@@ -20,45 +18,51 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH ---
-// Kita tambah parameter revalidateTime biar fleksibel
-async function fetchAPI<T>(endpoint: string, revalidateTime = 3600): Promise<T> {
-  // Guard: Cek ENV
-  if (!BASE_URL) throw new Error("API_BASE_URL belum diset di .env.local");
+// --- HELPER FETCH DENGAN TIMEOUT ---
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
 
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
-    headers: {
-      "Accept": "*/*",
-      "User-Agent": "Mozilla/5.0 (Next.js App; Linux; EduProject)"
-    },
-    next: { revalidate: revalidateTime }
-  });
+  // 1. Setup Timeout 10 Detik
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-  if (!res.ok) {
-    // Bisa lempar error spesifik biar ditangkep error.tsx
-    throw new Error(`API Error ${res.status}: ${res.statusText}`);
+  try {
+    const res = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      signal: controller.signal, // Sambungin sinyal abort
+      headers: {
+        "Accept": "*/*",
+        ...options.headers,
+      },
+    });
+
+    if (!res.ok) throw new Error(`API Error ${res.status}: ${res.statusText}`);
+    return await res.json();
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error("Request Timeout (Kelamaan nunggu server)");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId); // Bersihin timer kalau sukses
   }
-  return res.json();
 }
 
-// --- HELPER UTILITY ---
+// --- HELPER UTILITY (REGEX LEBIH KUAT) ---
 export function getVideoType(url: string): 'hls' | 'mp4' {
-  return url.includes('.m3u8') ? 'hls' : 'mp4';
+  // Cek .m3u8 walaupun ada query string di belakangnya
+  return /\.m3u8(\?|$)/i.test(url) ? 'hls' : 'mp4';
 }
 
 // --- ENDPOINTS ---
-// Latest: Update tiap 5 menit (300 detik)
-export const getLatest = () => fetchAPI<DramaItem[]>('/latest', 300);
+// Cache standar
+export const getLatest = () => fetchAPI<DramaItem[]>('/latest', { next: { revalidate: 300 } });
+export const getForYou = () => fetchAPI<DramaItem[]>('/foryou', { next: { revalidate: 3600 } });
+export const getHotRank = () => fetchAPI<DramaItem[]>('/hotrank', { next: { revalidate: 900 } });
 
-// For You: Update tiap 1 jam
-export const getForYou = () => fetchAPI<DramaItem[]>('/foryou', 3600);
-
-// Hot Rank: Update tiap 15 menit (900 detik)
-export const getHotRank = () => fetchAPI<DramaItem[]>('/hotrank', 900);
-
-// Search: NO CACHE (revalidate 0) + Encode URI Component
+// Search: WAJIB NO-STORE (Jangan di-cache sama sekali) + Encode
 export const searchDrama = (query: string) => 
-  fetchAPI<DramaItem[]>(`/search?query=${encodeURIComponent(query)}`, 0);
+  fetchAPI<DramaItem[]>(`/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
 
 export const getDramaDetail = (id: string) => 
-  fetchAPI<DramaDetail>(`/detailAndAllEpisode?id=${id}`, 3600);
+  fetchAPI<DramaDetail>(`/detailAndAllEpisode?id=${id}`, { next: { revalidate: 3600 } });
