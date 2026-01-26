@@ -7,7 +7,7 @@ export default function LandingPage() {
     <main className="min-h-dvh relative overflow-hidden bg-bg text-main selection:bg-accent selection:text-white flex flex-col">
       
       {/* --- DECORATIVE LAYERS (Performance Optimized) --- */}
-      {/* Noise: Hidden di mobile biar scroll licin, Absolute di desktop */}
+      {/* Noise Texture: Hidden di mobile biar scroll licin, Absolute di desktop */}
       <div className="hidden md:block absolute inset-0 opacity-[0.03] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
@@ -109,8 +109,8 @@ export default function LandingPage() {
       </div>
 
       {/* === MOBILE STICKY CTA === */}
-      {/* Sticky bottom + Backdrop blur + Safe area bottom */}
-      <div className="lg:hidden sticky bottom-0 left-0 right-0 p-4 pb-6 bg-bg/90 backdrop-blur-md border-t-brut border-main z-50 flex gap-3 safe-area-bottom">
+      {/* Sticky bottom + Backdrop blur + Safe area padding */}
+      <div className="lg:hidden sticky bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-bg/95 backdrop-blur-md border-t-brut border-main z-50 flex gap-3 shadow-[0_-4px_0_0_rgba(0,0,0,1)]">
         <Link href="/login" className="flex-1 outline-none focus-visible:ring-4 focus-visible:ring-main">
           <BrutButton fullWidth variant="primary" className="py-3 text-lg">
             LOGIN
@@ -123,7 +123,7 @@ export default function LandingPage() {
         </Link>
       </div>
 
-      {/* Footer: Menggunakan mt-auto agar selalu di bawah konten, bukan absolute */}
+      {/* Footer: Menggunakan mt-auto agar selalu di bawah konten */}
       <footer className="hidden lg:block w-full py-6 text-center mt-auto text-xs font-bold opacity-40 uppercase tracking-widest pointer-events-none">
         ButterHub Project © 2026
       </footer>
