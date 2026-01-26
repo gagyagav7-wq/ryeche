@@ -1,26 +1,41 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifySession } from '@/lib/auth';
+import { jwtVerify } from 'jose';
+
+const SECRET_KEY = new TextEncoder().encode(process.env.JWT_SECRET);
 
 export async function middleware(req: NextRequest) {
+  const session = req.cookies.get('session')?.value;
   const path = req.nextUrl.pathname;
-  const isDashboard = path.startsWith('/dashboard');
-  const isAuthPage = path === '/';
 
-  const cookie = req.cookies.get('session')?.value;
-  const session = cookie ? await verifySession(cookie) : null;
-
-  if (isDashboard && !session) {
-    return NextResponse.redirect(new URL('/', req.nextUrl));
+  // 1. Verifikasi Token
+  let isAuthenticated = false;
+  if (session) {
+    try {
+      await jwtVerify(session, SECRET_KEY);
+      isAuthenticated = true;
+    } catch (err) {
+      isAuthenticated = false;
+    }
   }
 
-  if (isAuthPage && session) {
-    return NextResponse.redirect(new URL('/dashboard', req.nextUrl));
+  // 2. Logic Redirect
+  // Kalau user sudah login tapi mau ke halaman auth/landing, lempar ke dashboard
+  if (isAuthenticated && (path === '/login' || path === '/register' || path === '/')) {
+    return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+
+  // Kalau user BELUM login tapi mau ke halaman protected, lempar ke login
+  const protectedRoutes = ['/dashboard', '/dracin', '/downloader'];
+  const isProtected = protectedRoutes.some((route) => path.startsWith(route));
+
+  if (!isAuthenticated && isProtected) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*'],
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 };
