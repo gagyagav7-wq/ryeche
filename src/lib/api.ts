@@ -18,8 +18,13 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH (Bulletproof) ---
-async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+// FIX: Definisikan tipe fetch bawaan Next.js biar gak merah di TS
+type NextFetchRequestConfig = RequestInit & {
+  next?: { revalidate?: number; tags?: string[] };
+};
+
+// --- HELPER FETCH (Bulletproof & Typed) ---
+async function fetchAPI<T>(endpoint: string, options: NextFetchRequestConfig = {}): Promise<T> {
   if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
 
   const controller = new AbortController();
@@ -41,7 +46,6 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
       throw new Error(`API Error ${res.status} di ${endpoint}: ${res.statusText}`);
     }
     
-    // FIX: Content-Type Check + JSON Parse Guard
     const contentType = res.headers.get("content-type") || "";
     if (contentType.includes("application/json")) {
       try {
