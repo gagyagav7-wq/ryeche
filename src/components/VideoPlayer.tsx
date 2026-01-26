@@ -14,9 +14,9 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   
-  // FIX: Split Counter biar adil
   const networkRetryCount = useRef(0);
   const mediaRetryCount = useRef(0);
+  const retryTimer = useRef<NodeJS.Timeout | null>(null); // Buat timer backoff
   
   const lastSavedTime = useRef(0);
   const [error, setError] = useState<string | null>(null);
@@ -30,6 +30,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
 
   const handleTimeUpdate = () => {
     const now = Date.now();
+    // Throttle 2 detik
     if (now - lastSavedTime.current > 2000) {
       saveProgress();
       lastSavedTime.current = now;
@@ -44,7 +45,6 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     const savedTime = localStorage.getItem(storageKey);
     if (savedTime) {
       const time = parseFloat(savedTime);
-      // FIX: Tambah guard Number.isFinite biar gak error NaN
       if (!isNaN(time) && Number.isFinite(video.duration) && time > 0 && time < video.duration - 2) {
         video.currentTime = time;
       }
@@ -67,9 +67,14 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     if (!video) return;
 
     setError(null);
-    // Reset kedua counter tiap ganti video
     networkRetryCount.current = 0;
     mediaRetryCount.current = 0;
+
+    // FIX: Listener Stalled buat iOS yang suka diem-diem bae
+    const handleStalled = () => {
+      // Cuma warning aja, jangan stop video biar user tau lagi buffering berat
+      console.warn("Koneksi tidak stabil (Stalled)..."); 
+    };
 
     const handleNativeError = () => {
       if (video.error) {
@@ -77,7 +82,16 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       }
     };
 
+    // FIX: Save pas pindah tab (Visibility Change)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        saveProgress();
+      }
+    };
+
     video.addEventListener("error", handleNativeError);
+    video.addEventListener("stalled", handleStalled);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     if (type === 'hls' && Hls.isSupported()) {
       const hls = new Hls({
@@ -93,18 +107,22 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              // FIX: Pakai counter khusus Network (Max 3)
               if (networkRetryCount.current < 3) {
                 networkRetryCount.current++;
-                console.log(`Network error, retry ${networkRetryCount.current}/3...`);
-                hls.startLoad();
+                // FIX: Backoff Delay (Tunggu 1s, 2s, 3s) biar gak spam
+                const delay = networkRetryCount.current * 1000;
+                console.log(`Network error, retry ${networkRetryCount.current}/3 in ${delay}ms...`);
+                
+                retryTimer.current = setTimeout(() => {
+                  hls.startLoad();
+                }, delay);
+                
               } else {
                 hls.destroy();
                 setError("Jaringan bermasalah, gagal memuat video.");
               }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              // FIX: Pakai counter khusus Media (Max 3)
               if (mediaRetryCount.current < 3) {
                 mediaRetryCount.current++;
                 console.log(`Media error, recovering ${mediaRetryCount.current}/3...`);
@@ -129,17 +147,24 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       video.src = url;
     }
 
+    // --- CLEANUP ---
     return () => {
       video.removeEventListener("error", handleNativeError);
+      video.removeEventListener("stalled", handleStalled);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      
+      if (retryTimer.current) clearTimeout(retryTimer.current);
+
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
+
       video.pause();
       video.src = "";
       video.load();
     };
-  }, [url, type]);
+  }, [url, type, saveProgress]); // dependency saveProgress udah aman karena pake useCallback
 
   return (
     <div className="relative aspect-video bg-black w-full overflow-hidden border-brut border-main group">
@@ -152,6 +177,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
 
       <video
         ref={videoRef}
+        key={url} // FIX: Paksa React reset elemen video kalau URL ganti (biar state bersih)
         className="w-full h-full object-contain focus:outline-none"
         controls
         playsInline
