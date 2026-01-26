@@ -1,80 +1,72 @@
-const BASE_URL = process.env.API_BASE_URL;
+const BASE_URL = "https://api.sansekai.my.id/api/flickreels";
 
-export interface DramaItem {
-  id: string | number;
-  title: string;
-  cover_url?: string;
-  category?: string;
-}
-
-export interface Episode {
-  id: string | number;
-  name: string;
-  video_url: string;
-}
-
-export interface DramaDetail {
-  info: DramaItem & { synopsis?: string; tags?: string[] };
-  episodes: Episode[];
-}
-
-// FIX: Definisikan tipe fetch bawaan Next.js biar gak merah di TS
-type NextFetchRequestConfig = RequestInit & {
-  next?: { revalidate?: number; tags?: string[] };
+// Headers biar dikira browser asli (Anti-Blokir Ringan)
+const HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "Accept": "application/json"
 };
 
-// --- HELPER FETCH (Bulletproof & Typed) ---
-async function fetchAPI<T>(endpoint: string, options: NextFetchRequestConfig = {}): Promise<T> {
-  if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
-
+// Helper Fetcher Generik
+async function fetchAPI(endpoint: string) {
   try {
-    const headers = new Headers(options.headers);
-    if (!headers.has("Accept")) {
-      headers.set("Accept", "application/json");
-    }
-
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options,
-      signal: controller.signal,
-      headers,
+      headers: HEADERS,
+      next: { revalidate: 60 } // Cache data 60 detik biar web ngebut
     });
 
     if (!res.ok) {
-      throw new Error(`API Error ${res.status} di ${endpoint}: ${res.statusText}`);
+      console.error(`❌ API Error [${res.status}]: ${endpoint}`);
+      return null;
     }
     
-    const contentType = res.headers.get("content-type") || "";
-    if (contentType.includes("application/json")) {
-      try {
-        return await res.json();
-      } catch (err) {
-        throw new Error(`JSON Rusak/Invalid di ${endpoint}`);
-      }
-    }
-
-    const text = await res.text();
-    throw new Error(`Invalid Format (${contentType || "unknown"}) di ${endpoint}: ${text.slice(0, 80)}...`);
-
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      throw new Error(`Request Timeout di: ${endpoint}`);
-    }
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error(`❌ Fetch Failed: ${endpoint}`, error);
+    return null;
   }
 }
 
-// --- UTILS & ENDPOINTS ---
-export function getVideoType(url: string): 'hls' | 'mp4' {
-  return /\.m3u8(\?|$)/i.test(url) ? 'hls' : 'mp4';
+// 1. Get Latest (Drama Baru)
+export async function getLatest() {
+  const data = await fetchAPI("/latest");
+  // Pastikan yang dikembalikan Array, kalau null/error balikin []
+  return Array.isArray(data) ? data : [];
 }
 
-export const getLatest = () => fetchAPI<DramaItem[]>('/latest', { next: { revalidate: 300 } });
-export const getForYou = () => fetchAPI<DramaItem[]>('/foryou', { next: { revalidate: 3600 } });
-export const getHotRank = () => fetchAPI<DramaItem[]>('/hotrank', { next: { revalidate: 900 } });
-export const searchDrama = (query: string) => fetchAPI<DramaItem[]>(`/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
-export const getDramaDetail = (id: string) => fetchAPI<DramaDetail>(`/detailAndAllEpisode?id=${id}`, { next: { revalidate: 3600 } });
+// 2. Get For You (Rekomendasi)
+export async function getForYou() {
+  const data = await fetchAPI("/foryou");
+  return Array.isArray(data) ? data : [];
+}
+
+// 3. Get Hot Rank (List Kategori Rank)
+export async function getHotRank() {
+  const data = await fetchAPI("/hotrank");
+  return Array.isArray(data) ? data : [];
+}
+
+// 4. Get Detail Drama + Episodes
+export async function getDramaDetail(id: string) {
+  const data = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
+  
+  // Validasi data minimal harus punya info & episodes
+  if (!data || !data.info) {
+    throw new Error("Drama not found");
+  }
+  return data;
+}
+
+// 5. Search Drama
+export async function searchDrama(query: string) {
+  if (!query) return [];
+  const data = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
+  return Array.isArray(data) ? data : [];
+}
+
+// 6. Get Video Type Helper (Buat Player)
+export function getVideoType(url: string) {
+  if (url.includes(".m3u8")) return "hls";
+  if (url.includes(".mp4")) return "mp4";
+  return "hls"; // Default HLS
+}
