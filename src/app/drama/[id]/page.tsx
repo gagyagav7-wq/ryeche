@@ -12,19 +12,26 @@ export default async function DramaDetailPage({
   params: { id: string }, 
   searchParams: { epId?: string } 
 }) {
-  const data = await getDramaDetail(params.id);
+  // FIX 1: Kita paksa tipe-nya jadi 'any' biar TypeScript gak rewel
+  const data: any = await getDramaDetail(params.id);
   
-  // LOGIC ROBUST:
-  // 1. Ambil activeKey sebagai String (biar aman bandinginnya)
+  // Safety check kalau data null/error
+  if (!data || !data.episodes) {
+     return (
+        <div className="p-10 text-center font-bold text-xl uppercase">
+           Drama Not Found or API Error
+        </div>
+     );
+  }
+   
   const activeKey = searchParams.epId ? String(searchParams.epId) : null;
-  
+   
   let activeEpisode = null;
 
   if (activeKey && data.episodes.length > 0) {
-    // Coba match ID (String vs String)
-    activeEpisode = data.episodes.find(e => String(e.id) === activeKey);
+    // FIX 2: Kasih tipe ': any' explisit di callback 'e'
+    activeEpisode = data.episodes.find((e: any) => String(e.id) === activeKey);
     
-    // Fallback: Kalau gak ketemu by ID, coba anggap itu Index Array
     if (!activeEpisode) {
       const idx = parseInt(activeKey);
       if (!isNaN(idx)) activeEpisode = data.episodes[idx];
@@ -33,7 +40,7 @@ export default async function DramaDetailPage({
 
   return (
     <main className="layout-container p-4 md:p-8 max-w-6xl mx-auto space-y-8">
-      
+       
       {activeEpisode ? (
         <section className="animate-in slide-in-from-top duration-500">
           <BrutCard title={`Playing: ${activeEpisode.name}`} className="bg-black text-white border-main">
@@ -50,8 +57,8 @@ export default async function DramaDetailPage({
            <div className="w-full md:w-1/3">
             <BrutCard noPadding className="aspect-[2/3] relative">
                <Image 
-                src={data.info.cover_url || "/placeholder.jpg"} 
-                alt={data.info.title}
+                src={data.info?.cover_url || "/placeholder.jpg"} 
+                alt={data.info?.title || "Drama"}
                 fill
                 className="object-cover"
                 unoptimized={true} 
@@ -59,9 +66,9 @@ export default async function DramaDetailPage({
             </BrutCard>
            </div>
            <div className="w-full md:w-2/3 space-y-4">
-             <h1 className="text-4xl md:text-6xl font-black uppercase leading-none">{data.info.title}</h1>
+             <h1 className="text-4xl md:text-6xl font-black uppercase leading-none">{data.info?.title}</h1>
              <BrutCard className="bg-accent-2">
-               <p className="font-bold text-lg">{data.info.synopsis || "No synopsis available."}</p>
+               <p className="font-bold text-lg">{data.info?.synopsis || "No synopsis available."}</p>
              </BrutCard>
            </div>
          </section>
@@ -75,17 +82,14 @@ export default async function DramaDetailPage({
         </div>
         
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-          {data.episodes.map((ep, idx) => {
-            // FIX: Nullish Coalescing (??) biar kalau ID=0 tetep kepake ID-nya, bukan idx
+          {/* FIX 3: Kasih tipe ': any' juga di sini biar gak error lagi */}
+          {data.episodes.map((ep: any, idx: number) => {
             const uniqueId = ep.id ?? idx;
-            
-            // FIX: Bandingkan String vs String
             const isActive = String(uniqueId) === activeKey;
             
             return (
               <Link 
                 key={uniqueId} 
-                // FIX: Encode URI biar URL valid
                 href={`/drama/${params.id}?epId=${encodeURIComponent(String(uniqueId))}`} 
                 scroll={true}
               >
