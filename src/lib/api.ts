@@ -1,17 +1,18 @@
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE;
+// Ambil URL langsung dari Env
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE; 
 
-// --- TIPE DATA (Sesuaikan dengan respons asli JSON lu nanti) ---
+// --- TIPE DATA ---
 export interface DramaItem {
   id: string | number;
   title: string;
-  cover_url?: string; // Sesuaikan: mungkin 'poster', 'thumb', 'image'
+  cover_url?: string;
   category?: string;
 }
 
 export interface Episode {
   id: string | number;
-  name: string;      // misal: "Episode 1"
-  video_url: string; // Link video (m3u8/mp4)
+  name: string;
+  video_url: string;
 }
 
 export interface DramaDetail {
@@ -19,30 +20,27 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH ---
+// --- HELPER FETCH (DIRECT MODE) ---
 async function fetchAPI<T>(endpoint: string): Promise<T> {
+  // Langsung tembak ke Sansekai
   const res = await fetch(`${BASE_URL}${endpoint}`, {
-    headers: { "Accept": "*/*" },
-    next: { revalidate: 3600 } // Cache 1 jam biar cepet
+    headers: { 
+      "Accept": "*/*",
+      // User Agent pura-pura jadi browser biar gak diblok
+      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" 
+    },
+    next: { revalidate: 3600 } // Cache 1 jam
   });
-  if (!res.ok) throw new Error(`API Error: ${res.status}`);
+
+  if (!res.ok) {
+    throw new Error(`API Error: ${res.status}`);
+  }
   return res.json();
 }
 
 // --- ENDPOINTS ---
-
-// 1. Latest Drama
 export const getLatest = () => fetchAPI<DramaItem[]>('/latest');
-
-// 2. For You (Rekomendasi)
 export const getForYou = () => fetchAPI<DramaItem[]>('/foryou');
-
-// 3. Hot Rank
 export const getHotRank = () => fetchAPI<DramaItem[]>('/hotrank');
-
-// 4. Search
 export const searchDrama = (query: string) => fetchAPI<DramaItem[]>(`/search?query=${query}`);
-
-// 5. Detail & Episodes (PENTING)
-// Karena endpoint lu pake query param ?id=4885
 export const getDramaDetail = (id: string) => fetchAPI<DramaDetail>(`/detailAndAllEpisode?id=${id}`);
