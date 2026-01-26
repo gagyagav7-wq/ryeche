@@ -13,11 +13,15 @@ interface VideoPlayerProps {
 export default function VideoPlayer({ url, type, subtitles = [], storageKey }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const retryCount = useRef(0); // Counter buat retry limit
-  const lastSavedTime = useRef(0); // Buat throttling
+  
+  // FIX: Split Counter biar adil
+  const networkRetryCount = useRef(0);
+  const mediaRetryCount = useRef(0);
+  
+  const lastSavedTime = useRef(0);
   const [error, setError] = useState<string | null>(null);
 
-  // --- LOGIC: Resume & Save Progress (Throttled) ---
+  // --- LOGIC: Resume & Save Progress ---
   const saveProgress = useCallback(() => {
     if (videoRef.current) {
       localStorage.setItem(storageKey, String(videoRef.current.currentTime));
@@ -26,14 +30,12 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
 
   const handleTimeUpdate = () => {
     const now = Date.now();
-    // FIX: Throttle! Cuma save tiap 2 detik (2000ms) biar gak berat
     if (now - lastSavedTime.current > 2000) {
       saveProgress();
       lastSavedTime.current = now;
     }
   };
 
-  // Simpan juga pas dipause atau selesai (biar akurat)
   const handlePauseOrEnd = () => saveProgress();
 
   const handleMetadataLoaded = () => {
@@ -42,13 +44,13 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     const savedTime = localStorage.getItem(storageKey);
     if (savedTime) {
       const time = parseFloat(savedTime);
-      if (!isNaN(time) && time > 0 && time < video.duration - 2) {
+      // FIX: Tambah guard Number.isFinite biar gak error NaN
+      if (!isNaN(time) && Number.isFinite(video.duration) && time > 0 && time < video.duration - 2) {
         video.currentTime = time;
       }
     }
   };
 
-  // --- LOGIC: Error Message Mapping ---
   const getNativeErrorMessage = (code: number) => {
     switch (code) {
       case 1: return "Video dibatalkan (Aborted).";
@@ -65,7 +67,9 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     if (!video) return;
 
     setError(null);
-    retryCount.current = 0; // Reset retry tiap ganti video
+    // Reset kedua counter tiap ganti video
+    networkRetryCount.current = 0;
+    mediaRetryCount.current = 0;
 
     const handleNativeError = () => {
       if (video.error) {
@@ -75,7 +79,6 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
 
     video.addEventListener("error", handleNativeError);
 
-    // --- SETUP HLS ---
     if (type === 'hls' && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -90,20 +93,21 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              // FIX: Retry Limit (Maksimal 3x)
-              if (retryCount.current < 3) {
-                retryCount.current++;
-                console.log(`Network error, retry ${retryCount.current}/3...`);
+              // FIX: Pakai counter khusus Network (Max 3)
+              if (networkRetryCount.current < 3) {
+                networkRetryCount.current++;
+                console.log(`Network error, retry ${networkRetryCount.current}/3...`);
                 hls.startLoad();
               } else {
                 hls.destroy();
-                setError("Jaringan bermasalah, gagal memuat video setelah 3x percobaan.");
+                setError("Jaringan bermasalah, gagal memuat video.");
               }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              if (retryCount.current < 3) {
-                retryCount.current++;
-                console.log(`Media error, recovering ${retryCount.current}/3...`);
+              // FIX: Pakai counter khusus Media (Max 3)
+              if (mediaRetryCount.current < 3) {
+                mediaRetryCount.current++;
+                console.log(`Media error, recovering ${mediaRetryCount.current}/3...`);
                 hls.recoverMediaError();
               } else {
                 hls.destroy();
@@ -112,31 +116,25 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
               break;
             default:
               hls.destroy();
-              setError("Fatal Stream Error: Tidak bisa diputar.");
+              setError("Fatal Stream Error.");
               break;
           }
         }
       });
     } 
-    // --- SETUP NATIVE (iPhone/Safari) ---
     else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
     } 
-    // --- SETUP MP4 ---
     else {
       video.src = url;
     }
 
-    // --- CLEANUP ---
     return () => {
       video.removeEventListener("error", handleNativeError);
-      
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
-
-      // FIX: Cleanup yang lebih aman buat Safari
       video.pause();
       video.src = "";
       video.load();
@@ -145,7 +143,6 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
 
   return (
     <div className="relative aspect-video bg-black w-full overflow-hidden border-brut border-main group">
-      {/* ERROR UI */}
       {error && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90 text-white p-4 text-center">
           <p className="text-danger font-black text-xl mb-2">⚠️ ERROR</p>
@@ -160,8 +157,8 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         playsInline
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
-        onPause={handlePauseOrEnd} // Save pas pause
-        onEnded={handlePauseOrEnd} // Save pas selesai
+        onPause={handlePauseOrEnd}
+        onEnded={handlePauseOrEnd}
         onLoadedMetadata={handleMetadataLoaded}
       >
         {subtitles.map((sub, idx) => (
