@@ -5,15 +5,17 @@ const HEADERS = {
   "Accept": "application/json"
 };
 
-// --- FUNGSI PENERJEMAH (PENTING!) ---
-// Ini ngerubah data mentah dari API jadi format yang kita mau
+// --- FUNGSI PENERJEMAH (UPDATED) ---
+// Sekarang bisa baca 'description' dan 'chapterCount' dari JSON baru lu
 const normalizeData = (item: any) => {
   return {
-    id: item.playlet_id || item.id, // Ambil ID yang bener
+    id: item.playlet_id || item.id,
     title: item.title,
-    cover_url: item.cover || item.cover_square, // Translate 'cover' jadi 'cover_url'
-    synopsis: item.introduce || item.desc || "No synopsis.",
-    total_ep: item.upload_num || 0
+    cover_url: item.cover || item.cover_square,
+    // Tambah item.description biar sinopsis muncul
+    synopsis: item.introduce || item.description || item.desc || "No synopsis.",
+    // Tambah item.chapterCount biar total episode bener
+    total_ep: item.upload_num || item.chapterCount || 0
   };
 };
 
@@ -32,39 +34,27 @@ async function fetchAPI(endpoint: string) {
   }
 }
 
-// 1. Get Latest (Drama Baru)
+// 1. Get Latest
 export async function getLatest() {
   const json = await fetchAPI("/latest");
-  // Cek kalau formatnya { data: [...] }
-  const items = json?.data || json?.result || json || [];
-  
-  if (Array.isArray(items)) {
-    return items.map(normalizeData);
-  }
+  const items = json?.data?.list || json?.data || json?.result || json || [];
+  if (Array.isArray(items)) return items.map(normalizeData);
   return [];
 }
 
-// 2. Get For You (Rekomendasi)
+// 2. Get For You
 export async function getForYou() {
   const json = await fetchAPI("/foryou");
-  const items = json?.data || json?.result || json || [];
-  
-  if (Array.isArray(items)) {
-    return items.map(normalizeData);
-  }
+  const items = json?.data?.list || json?.data || json?.result || json || [];
+  if (Array.isArray(items)) return items.map(normalizeData);
   return [];
 }
 
-// 3. Get Hot Rank (INI YANG TADI RUSAK)
+// 3. Get Hot Rank
 export async function getHotRank() {
   const json = await fetchAPI("/hotrank");
-  // JSON Hotrank itu isinya Kategori dulu -> baru Data Drama
-  // Struktur: [ { name: "Serial Hot", data: [...] }, { name: "Trending", data: [...] } ]
-  
   const categories = json?.data || json || [];
-  
   if (Array.isArray(categories) && categories.length > 0) {
-    // Kita ambil kategori pertama (biasanya "Serial Hot") buat ditampilin di home
     const firstCategory = categories[0]; 
     if (firstCategory && Array.isArray(firstCategory.data)) {
       return firstCategory.data.map(normalizeData);
@@ -73,19 +63,35 @@ export async function getHotRank() {
   return [];
 }
 
-// 4. Get Detail Drama
+// 4. Get Detail Drama (INI YANG DIPERBAIKI)
 export async function getDramaDetail(id: string) {
   const json = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
   
-  // Detektif data detail
   let rawData = json?.data || json?.result || json;
   
+  // FIX 1: Kalau datanya pake nama 'drama', kita pindahin ke 'info' biar UI gak bingung
+  if (rawData.drama) {
+    rawData.info = rawData.drama;
+  }
+
   if (!rawData || !rawData.info) {
     throw new Error("Drama not found");
   }
 
-  // Kita normalize juga info-nya biar gambarnya muncul
+  // Normalize Info
   rawData.info = normalizeData(rawData.info);
+
+  // FIX 2: Mapping Episodes biar 'video_url' ketemu
+  // JSON lu nyimpen video di dalam: episode.raw.videoUrl
+  if (Array.isArray(rawData.episodes)) {
+    rawData.episodes = rawData.episodes.map((ep: any) => ({
+      id: ep.id,
+      name: ep.name,
+      // Kita ambil videoUrl dari dalem 'raw', terus taruh di luar biar Player baca
+      video_url: ep.raw?.videoUrl || ep.videoUrl || ep.video_url || "", 
+      ...ep
+    }));
+  }
   
   return rawData;
 }
@@ -94,17 +100,14 @@ export async function getDramaDetail(id: string) {
 export async function searchDrama(query: string) {
   if (!query) return [];
   const json = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
-  
   const items = json?.data || json?.result || json || [];
-  if (Array.isArray(items)) {
-    return items.map(normalizeData);
-  }
+  if (Array.isArray(items)) return items.map(normalizeData);
   return [];
 }
 
 // 6. Video Type
 export function getVideoType(url: string) {
-  if (!url) return "hls";
+  if (!url) return "hls"; // Default aman
   if (url.includes(".m3u8")) return "hls";
   if (url.includes(".mp4")) return "mp4";
   return "hls";
