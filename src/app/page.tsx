@@ -4,6 +4,7 @@ import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
+// Komponen Grid dipisah biar rapi
 const DramaGrid = ({ title, items }: { title: string, items: any[] }) => (
   <section className="space-y-4">
     <div className="flex items-center gap-3">
@@ -16,19 +17,21 @@ const DramaGrid = ({ title, items }: { title: string, items: any[] }) => (
         <Link 
           key={d.id} 
           href={`/drama/${d.id}`} 
-          className="block h-full"
+          // FIX: Tambah focus ring dan outline none biar rapi pas ditab (Aksesibilitas)
+          className="block h-full outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none group"
           aria-label={`Nonton ${d.title}`}
         >
           {/* FIX: Ganti group-hover jadi brut-hover-effect biar mobile aman */}
           <BrutCard className="h-full p-0 overflow-hidden relative brut-hover-effect" noPadding>
             <div className="aspect-[2/3] bg-gray-200 relative">
+              {/* FIX: Pake Next Image dengan unoptimized={true} buat domain random */}
               <Image 
                 src={d.cover_url || "/placeholder.jpg"} 
                 alt={d.title}
                 fill
                 sizes="(max-width: 768px) 50vw, 20vw"
                 className="object-cover"
-                unoptimized={true} // Bypass remotePatterns
+                unoptimized={true} 
               />
             </div>
             <div className="absolute bottom-0 left-0 right-0 bg-surface/90 border-t-brut border-main p-2">
@@ -41,14 +44,13 @@ const DramaGrid = ({ title, items }: { title: string, items: any[] }) => (
   </section>
 );
 
-// ... (sisanya sama, cuma pastikan import Image dan Link ada)
-
 export default async function HomePage() {
+  // Fetch paralel biar ngebut
   const [latest, forYou, hotRank] = await Promise.all([
-    getLatest(), getForYou(), getHotRank()
+    getLatest(), 
+    getForYou(), 
+    getHotRank()
   ]);
-  // ... (Sisa return JSX sama kayak sebelumnya)
-}
 
   return (
     <main className="layout-container p-4 md:p-8 space-y-12">
@@ -64,12 +66,13 @@ export default async function HomePage() {
           <input 
             name="q"
             placeholder="Cari drama..." 
-            className="flex-1 bg-surface border-brut border-main p-3 font-bold outline-none focus:shadow-brut"
+            className="flex-1 bg-surface border-brut border-main p-3 font-bold outline-none focus:shadow-brut focus:-translate-y-1 transition-transform"
           />
           <BrutButton type="submit">CARI</BrutButton>
         </form>
       </header>
 
+      {/* Grid Content */}
       <DramaGrid title="Hot Ranking 🔥" items={hotRank} />
       <DramaGrid title="For You ❤️" items={forYou} />
       <DramaGrid title="Latest Uploads 🆕" items={latest} />
