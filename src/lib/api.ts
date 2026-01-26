@@ -5,24 +5,50 @@ const HEADERS = {
   "Accept": "application/json"
 };
 
-// --- FUNGSI PENERJEMAH DATA ---
+// --- FUNGSI PEMBERSIH DATA (FILTER) ---
 const normalizeData = (item: any) => {
+  // Cek minimal punya ID dan Title, kalau gak ada anggap sampah
+  if (!item || (!item.playlet_id && !item.id)) return null;
+
   return {
     id: item.playlet_id || item.id,
-    title: item.title,
-    // Prioritas cover: cover -> cover_square -> cover_vertical
-    cover_url: item.cover || item.cover_square || item.cover_vertical, 
-    synopsis: item.introduce || item.description || item.desc || "No synopsis.",
+    title: item.title || "No Title",
+    // Kalau gak ada cover, pake placeholder bawaan
+    cover_url: item.cover || item.cover_square || item.cover_vertical || "https://placehold.co/400x600/000000/FFF?text=No+Image", 
+    synopsis: item.introduce || item.description || item.desc || "No synopsis available.",
     total_ep: item.upload_num || item.chapterCount || 0
   };
 };
 
-// Helper Fetcher
+// --- FUNGSI PENCARI HARTA KARUN (RECURSIVE) ---
+// Ini bakal nyari Array di dalem object JSON secara otomatis
+function findList(data: any): any[] {
+  if (!data) return [];
+  
+  // 1. Kalau langsung ketemu Array, balikin
+  if (Array.isArray(data)) {
+    // Tapi cek dulu, isinya drama atau kategori? 
+    // Kalau isinya punya properti 'list', berarti ini Kategori! Gali lagi.
+    if (data.length > 0 && data[0].list) {
+      return findList(data[0].list);
+    }
+    return data;
+  }
+
+  // 2. Cek properti umum
+  if (data.data) return findList(data.data);
+  if (data.result) return findList(data.result);
+  if (data.list) return findList(data.list);
+
+  // 3. Nyerah
+  return [];
+}
+
 async function fetchAPI(endpoint: string) {
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: HEADERS,
-      next: { revalidate: 0 } // No cache biar data selalu fresh
+      next: { revalidate: 0 } 
     });
     if (!res.ok) return null;
     return await res.json();
@@ -32,55 +58,28 @@ async function fetchAPI(endpoint: string) {
   }
 }
 
-// 1. Get Latest (INI YANG DIPERBAIKI SESUAI JSON LU)
+// 1. Get Latest
 export async function getLatest() {
   const json = await fetchAPI("/latest");
-  
-  // LOGIC BARU: Cek Data -> Ambil Item ke-0 -> Ambil 'list'
-  if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-     const firstCategory = json.data[0]; // Ini object kategori "Baru"
-     if (firstCategory.list && Array.isArray(firstCategory.list)) {
-        return firstCategory.list.map(normalizeData);
-     }
-  }
-
-  // Fallback (Jaga-jaga kalau struktur beda dikit)
-  const items = json?.data?.list || json?.result || [];
-  if (Array.isArray(items)) return items.map(normalizeData);
-  
-  return [];
+  const rawList = findList(json);
+  // Filter(Boolean) buat buang yang null (data ompong)
+  return rawList.map(normalizeData).filter(Boolean);
 }
 
-// 2. Get For You (Kita samain logikanya biar aman)
+// 2. Get For You
 export async function getForYou() {
   const json = await fetchAPI("/foryou");
-  
-  // Cek struktur bertingkat juga
-  if (json?.data && Array.isArray(json.data) && json.data.length > 0) {
-     const firstCategory = json.data[0];
-     // Kadang namanya 'list', kadang 'data'.
-     const list = firstCategory.list || firstCategory.data;
-     if (list && Array.isArray(list)) {
-        return list.map(normalizeData);
-     }
-  }
-  
-  const items = json?.data?.list || json?.data || json?.result || [];
-  if (Array.isArray(items)) return items.map(normalizeData);
-  return [];
+  const rawList = findList(json);
+  return rawList.map(normalizeData).filter(Boolean);
 }
 
 // 3. Get Hot Rank
 export async function getHotRank() {
   const json = await fetchAPI("/hotrank");
-  const categories = json?.data || json || [];
-  
-  // Hotrank biasanya array kategori, kita ambil kategori pertama
-  if (Array.isArray(categories) && categories.length > 0) {
-    const firstCategory = categories[0]; 
-    if (firstCategory && Array.isArray(firstCategory.data)) {
-      return firstCategory.data.map(normalizeData);
-    }
+  // Hotrank biasanya array kategori, kita ambil list dari item pertama
+  const rawData = json?.data || json || [];
+  if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].data) {
+     return rawData[0].data.map(normalizeData).filter(Boolean);
   }
   return [];
 }
@@ -91,7 +90,6 @@ export async function getDramaDetail(id: string) {
   
   let rawData = json?.data || json?.result || json;
   
-  // Kalau datanya dibungkus 'drama', pindahin ke 'info'
   if (rawData.drama) {
     rawData.info = rawData.drama;
   }
@@ -102,7 +100,6 @@ export async function getDramaDetail(id: string) {
 
   rawData.info = normalizeData(rawData.info);
 
-  // Mapping Episodes (Video URL ngumpet di raw.videoUrl)
   if (Array.isArray(rawData.episodes)) {
     rawData.episodes = rawData.episodes.map((ep: any) => ({
       id: ep.id,
@@ -119,14 +116,11 @@ export async function getDramaDetail(id: string) {
 export async function searchDrama(query: string) {
   if (!query) return [];
   const json = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
-  
-  // Logic search biasanya langsung data list
-  const items = json?.data || json?.result || [];
-  if (Array.isArray(items)) return items.map(normalizeData);
-  return [];
+  const rawList = findList(json);
+  return rawList.map(normalizeData).filter(Boolean);
 }
 
-// 6. Video Type Helper
+// 6. Video Type
 export function getVideoType(url: string) {
   if (!url) return "hls";
   if (url.includes(".m3u8")) return "hls";
