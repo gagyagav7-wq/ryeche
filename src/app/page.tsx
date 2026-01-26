@@ -4,13 +4,16 @@ import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
-// Komponen Grid dipisah biar rapi
+// 1. INI PENTING: Biar dia refresh data terus (gak stuck di cache)
+export const dynamic = 'force-dynamic';
+
+// Komponen Grid dipisah biar rapi & ada pengaman
 const DramaGrid = ({ title, items }: { title: string, items: any[] }) => {
   // --- SAFETY CHECK (AIRBAG) ---
   // Kalau items null/error/bukan array, paksa jadi array kosong biar gak crash
   const safeItems = Array.isArray(items) ? items : [];
 
-  // Opsional: Kalau kosong, gak usah render section ini (biar rapi)
+  // Kalau kosong, render tulisan (No Data) biar tau statusnya
   if (safeItems.length === 0) {
     return (
       <section className="space-y-4 opacity-50">
@@ -27,7 +30,6 @@ const DramaGrid = ({ title, items }: { title: string, items: any[] }) => {
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        {/* PAKE safeItems, BUKAN items */}
         {safeItems.slice(0, 10).map((d) => (
           <Link 
             key={d.id} 
@@ -59,7 +61,7 @@ const DramaGrid = ({ title, items }: { title: string, items: any[] }) => {
 
 export default async function HomePage() {
   // Fetch paralel biar ngebut
-  // KITA TAMBAH CATCH BIAR KALAU SATU ERROR, YANG LAIN TETEP JALAN
+  // Tambah catch biar kalau satu API error, halaman tetep bisa dibuka
   const [latest, forYou, hotRank] = await Promise.all([
     getLatest().catch(() => []), 
     getForYou().catch(() => []), 
