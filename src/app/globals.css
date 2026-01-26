@@ -1,0 +1,49 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Fix Input Zoom iPhone */
+  input, textarea, select {
+    @apply text-base;
+  }
+}
+
+body {
+  @apply bg-bg text-main antialiased;
+  overscroll-behavior-y: contain;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* --- BAGIAN HOVER BARU (Tailwind Way) --- */
+@layer utilities {
+  /* Class ini cuma jalan di PC/Laptop (yang punya kursor mouse) */
+  @media (hover: hover) and (pointer: fine) {
+    .brut-hover-effect {
+      @apply transition-transform duration-200 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-brut-lg;
+    }
+    
+    .brut-active-effect:active {
+      @apply translate-y-[2px] translate-x-[2px] shadow-none;
+    }
+  }
+}
+
+/* --- SCROLLBAR --- */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FDFBF7; /* bg-surface */
+  border-left: 3px solid #171717; /* border-main */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #171717; /* bg-main */
+  border: 2px solid #FDFBF7; /* border surface biar ada jarak */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #FF6B6B; /* accent color pas dihover */
+}
