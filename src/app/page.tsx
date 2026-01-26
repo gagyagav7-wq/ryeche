@@ -6,18 +6,19 @@ export default function LandingPage() {
   return (
     <main className="min-h-dvh relative overflow-hidden bg-bg text-main selection:bg-accent selection:text-white flex flex-col">
       
-      {/* --- DECORATIVE LAYERS (Optimized) --- */}
-      {/* Noise Texture: Absolute (bukan fixed) biar ikut scroll & ringan */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none -z-20" 
+      {/* --- DECORATIVE LAYERS (Performance Optimized) --- */}
+      {/* Noise: Hidden di mobile biar scroll licin, Absolute di desktop */}
+      <div className="hidden md:block absolute inset-0 opacity-[0.03] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
-      {/* Shapes: Tanpa Blur/Pulse biar tajam (Neo-Brutalism sejati) */}
+      {/* Shapes: Tajam tanpa blur (Neo-Brutalism style) */}
       <div className="absolute top-[-5%] right-[-10%] md:right-[5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-brut border-main opacity-100 -z-10" />
       <div className="absolute bottom-[10%] left-[-15%] md:left-[-5%] w-72 h-72 bg-[#FDFFB6] border-brut border-main rotate-12 -z-10" />
 
-      {/* --- MAIN CONTENT --- */}
-      <div className="flex-grow flex items-center">
+      {/* --- MAIN CONTENT WRAPPER --- */}
+      {/* Flex-grow ensures content takes space, pushing footer down appropriately */}
+      <div className="flex-grow flex items-center w-full">
         <div className="max-w-6xl mx-auto w-full p-6 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           
           {/* === KOLOM KIRI: HERO TEXT & CTA === */}
@@ -28,8 +29,8 @@ export default function LandingPage() {
               <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9]">
                 BUTTER<br/><span className="text-accent">HUB</span>
               </h1>
-              {/* Badge: Pakai border-brut biar konsisten */}
-              <span className="absolute -top-6 -right-6 md:-right-10 rotate-6 bg-main text-white text-xs md:text-sm font-bold px-3 py-1 border-brut border-white shadow-brut-sm">
+              {/* Badge: Pakai border-brut biar konsisten dengan theme */}
+              <span className="absolute -top-6 -right-6 md:-right-10 rotate-6 bg-main text-white text-xs md:text-sm font-bold px-3 py-1 border-brut border-white shadow-brut">
                 BETA v1.0
               </span>
             </div>
@@ -40,10 +41,10 @@ export default function LandingPage() {
               Platform <span className="bg-[#A8E6CF] px-1 border-brut border-main">Dracin</span>, <span className="bg-[#FDFFB6] px-1 border-brut border-main">Downloader</span>, dan <span className="bg-accent px-1 text-white border-brut border-main">Tools</span> paling brutal.
             </p>
 
-            {/* Feature Chips */}
+            {/* Feature Chips (Static - No Hover to avoid sticky touch on mobile) */}
             <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
               {['📺 Streaming HD', '⬇️ No-WM Download', '🛠️ Utility'].map((chip, idx) => (
-                <div key={idx} className="bg-surface border-brut border-main px-4 py-2 rounded-full text-xs md:text-sm font-black shadow-brut-sm hover:-translate-y-1 transition-transform cursor-default">
+                <div key={idx} className="bg-surface border-brut border-main px-4 py-2 rounded-full text-xs md:text-sm font-black shadow-brut cursor-default">
                   {chip}
                 </div>
               ))}
@@ -51,12 +52,12 @@ export default function LandingPage() {
 
             {/* Desktop CTA (Hidden on Mobile) */}
             <div className="hidden lg:flex gap-4 pt-4">
-              <Link href="/login" className="w-48 outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none">
+              <Link href="/login" className="w-48 outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none group">
                 <BrutButton fullWidth variant="primary" className="h-14 text-lg">
                   MASUK HUB
                 </BrutButton>
               </Link>
-              <Link href="/register" className="w-48 outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none">
+              <Link href="/register" className="w-48 outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none group">
                 <BrutButton fullWidth variant="secondary" className="h-14 text-lg">
                   DAFTAR
                 </BrutButton>
@@ -65,6 +66,7 @@ export default function LandingPage() {
           </div>
 
           {/* === KOLOM KANAN: CARD STACK (Desktop Only) === */}
+          {/* Hidden on mobile, so hover effects are safe here */}
           <div className="hidden lg:block relative h-[500px] w-full">
             {/* Card 3 (Belakang - Tools) */}
             <div className="absolute top-12 right-12 w-80 rotate-6 hover:rotate-12 transition-transform duration-300 z-10">
@@ -106,9 +108,9 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* === MOBILE STICKY CTA (Optimized) === */}
-      {/* Sticky bottom beneran, ada backdrop blur biar teks belakang gak ganggu */}
-      <div className="lg:hidden sticky bottom-0 left-0 right-0 p-4 pb-6 bg-bg/90 backdrop-blur-md border-t-brut border-main z-50 flex gap-3">
+      {/* === MOBILE STICKY CTA === */}
+      {/* Sticky bottom + Backdrop blur + Safe area bottom */}
+      <div className="lg:hidden sticky bottom-0 left-0 right-0 p-4 pb-6 bg-bg/90 backdrop-blur-md border-t-brut border-main z-50 flex gap-3 safe-area-bottom">
         <Link href="/login" className="flex-1 outline-none focus-visible:ring-4 focus-visible:ring-main">
           <BrutButton fullWidth variant="primary" className="py-3 text-lg">
             LOGIN
@@ -121,7 +123,8 @@ export default function LandingPage() {
         </Link>
       </div>
 
-      <footer className="hidden lg:block absolute bottom-4 left-0 right-0 text-center text-xs font-bold opacity-40 uppercase tracking-widest pointer-events-none">
+      {/* Footer: Menggunakan mt-auto agar selalu di bawah konten, bukan absolute */}
+      <footer className="hidden lg:block w-full py-6 text-center mt-auto text-xs font-bold opacity-40 uppercase tracking-widest pointer-events-none">
         ButterHub Project © 2026
       </footer>
     </main>
