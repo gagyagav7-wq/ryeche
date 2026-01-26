@@ -18,7 +18,7 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH (Smart Content-Type Check) ---
+// --- HELPER FETCH (Safe & Smart) ---
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
 
@@ -41,15 +41,15 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
       throw new Error(`API Error ${res.status} di ${endpoint}: ${res.statusText}`);
     }
     
-    // FIX: Cek Content-Type dulu biar efisien & akurat
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
+    // FIX: Handle Content-Type null & Partial Check
+    const contentType = res.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
       return await res.json();
     }
 
-    // Kalau bukan JSON (misal HTML error page 200 OK), baca text buat error msg
+    // Kalau bukan JSON, baca text buat error context
     const text = await res.text();
-    throw new Error(`Invalid Format (${contentType}) di ${endpoint}: ${text.slice(0, 50)}...`);
+    throw new Error(`Invalid Format (${contentType || "unknown"}) di ${endpoint}: ${text.slice(0, 80)}...`);
 
   } catch (error: any) {
     if (error.name === 'AbortError') {
@@ -61,7 +61,7 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
   }
 }
 
-// --- UTILS & ENDPOINTS (SAMA KAYAK SEBELUMNYA) ---
+// --- UTILS & ENDPOINTS ---
 export function getVideoType(url: string): 'hls' | 'mp4' {
   return /\.m3u8(\?|$)/i.test(url) ? 'hls' : 'mp4';
 }
