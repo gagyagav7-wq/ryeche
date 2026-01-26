@@ -18,65 +18,99 @@ export default function LoginPage() {
     const formData = new FormData(e.currentTarget);
     const data = Object.fromEntries(formData);
 
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
 
-    if (res.ok) {
-      router.push("/dashboard");
-      router.refresh();
-    } else {
-      const json = await res.json();
-      setError(json.error || "Login gagal");
+      if (res.ok) {
+        router.push("/dashboard");
+        router.refresh();
+      } else {
+        const json = await res.json();
+        setError(json.error || "Login gagal, coba lagi.");
+      }
+    } catch (err) {
+      setError("Terjadi kesalahan jaringan.");
+    } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="min-h-dvh flex items-center justify-center p-4 bg-bg">
-      <BrutCard title="MASUK HUB" className="w-full max-w-sm bg-white">
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
-          {error && (
-            <div className="bg-red-500 text-white font-bold p-2 border-2 border-black text-sm">
-              {error}
+    <main className="min-h-dvh flex flex-col items-center justify-center p-4 bg-bg text-main relative overflow-hidden">
+      
+      {/* Background Decor (Simpler than Landing) */}
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none -z-20" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
+      </div>
+      <div className="absolute top-[-10%] left-[-10%] w-64 h-64 bg-[#A8E6CF] rounded-full border-brut border-main -z-10" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 bg-[#FDFFB6] border-brut border-main rotate-45 -z-10" />
+
+      {/* Login Card */}
+      <div className="w-full max-w-sm relative">
+        {/* Brand Header */}
+        <div className="text-center mb-8">
+          <Link href="/" className="inline-block hover:scale-105 transition-transform">
+            <h1 className="text-4xl font-black uppercase tracking-tighter">
+              BUTTER<span className="text-accent">HUB</span>
+            </h1>
+          </Link>
+          <p className="text-sm font-bold opacity-60 mt-1">Portal Masuk Commander</p>
+        </div>
+
+        <BrutCard className="bg-surface border-brut shadow-brut" title="LOGIN">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            
+            {/* Error Alert */}
+            {error && (
+              <div className="bg-[#FFB5C2] border-brut border-main p-3 text-sm font-bold flex items-center gap-2 animate-in slide-in-from-top-2">
+                <span>🚫</span> {error}
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <label className="font-black uppercase text-xs tracking-wider opacity-80">Username</label>
+              <input
+                name="username"
+                type="text"
+                required
+                className="w-full bg-bg border-brut border-main p-3 font-bold outline-none focus:ring-4 focus:ring-accent/30 transition-all placeholder:opacity-30"
+                placeholder="Ex: jagoan_neon"
+              />
             </div>
-          )}
-          
-          <div className="space-y-1">
-            <label className="font-black uppercase text-sm">Username</label>
-            <input
-              name="username"
-              type="text"
-              required
-              className="w-full bg-surface border-2 border-black p-3 font-bold outline-none focus:ring-4 focus:ring-accent/50 transition-all text-base"
-              placeholder="jagoan_neon"
-            />
-          </div>
 
-          <div className="space-y-1">
-            <label className="font-black uppercase text-sm">Password</label>
-            <input
-              name="password"
-              type="password"
-              required
-              className="w-full bg-surface border-2 border-black p-3 font-bold outline-none focus:ring-4 focus:ring-accent/50 transition-all text-base"
-              placeholder="••••••••"
-            />
-          </div>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="font-black uppercase text-xs tracking-wider opacity-80">Password</label>
+              </div>
+              <input
+                name="password"
+                type="password"
+                required
+                className="w-full bg-bg border-brut border-main p-3 font-bold outline-none focus:ring-4 focus:ring-accent/30 transition-all placeholder:opacity-30"
+                placeholder="••••••••"
+              />
+            </div>
 
-          <BrutButton type="submit" fullWidth disabled={loading}>
-            {loading ? "MEMUAT..." : "GAS MASUK 🚀"}
-          </BrutButton>
+            <div className="pt-2">
+              <BrutButton type="submit" fullWidth disabled={loading} variant="primary" className="py-3 text-lg">
+                {loading ? "MEMUAT..." : "MASUK HUB 🚀"}
+              </BrutButton>
+            </div>
 
-          <p className="text-center text-sm font-bold mt-4">
-            Belum punya akun?{" "}
-            <Link href="/register" className="text-accent underline hover:bg-black hover:text-white transition-colors">
-              Daftar dulu
-            </Link>
-          </p>
-        </form>
-      </BrutCard>
+            <div className="text-center border-t-2 border-main/10 pt-4 mt-2">
+              <p className="text-sm font-bold">
+                Belum punya akses?{" "}
+                <Link href="/register" className="text-accent underline decoration-2 underline-offset-2 hover:bg-black hover:text-white transition-colors">
+                  Daftar dulu sini
+                </Link>
+              </p>
+            </div>
+          </form>
+        </BrutCard>
+      </div>
     </main>
   );
 }
