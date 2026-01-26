@@ -13,22 +13,18 @@ const DramaGrid = ({ title, items }: { title: string, items: any[] }) => (
     
     <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
       {items?.slice(0, 10).map((d) => (
-        <Link 
-          key={d.id} 
-          href={`/drama/${d.id}`} 
-          className="block h-full"
-          aria-label={`Nonton ${d.title}`} // A11y: Screen reader friendly
-        >
-          {/* BrutCard pake class hover khusus mobile-safe */}
-          <BrutCard className="h-full p-0 overflow-hidden relative brut-hover-effect" noPadding>
+        // FIX: Link ngebungkus Card, BUKAN self-closing di dalem
+        <Link key={d.id} href={`/drama/${d.id}`} className="group block h-full">
+          <BrutCard className="h-full p-0 overflow-hidden relative transition-transform group-hover:-translate-y-1" noPadding>
             <div className="aspect-[2/3] bg-gray-200 relative">
+              {/* FIX: Pake Next Image */}
               <Image 
                 src={d.cover_url || "/placeholder.jpg"} 
                 alt={d.title}
                 fill
                 sizes="(max-width: 768px) 50vw, 20vw"
                 className="object-cover"
-                unoptimized={true} // AMAN: Bypass remotePatterns buat sementara
+                unoptimized={true} // Aktifin ini kalau domain gambar API lu sering ganti/random
               />
             </div>
             <div className="absolute bottom-0 left-0 right-0 bg-surface/90 border-t-brut border-main p-2">
@@ -40,8 +36,6 @@ const DramaGrid = ({ title, items }: { title: string, items: any[] }) => (
     </div>
   </section>
 );
-
-// ... (sisanya sama)
 
 export default async function HomePage() {
   const [latest, forYou, hotRank] = await Promise.all([
