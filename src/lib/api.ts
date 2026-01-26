@@ -18,37 +18,41 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH (Lebih Fleksibel) ---
+// --- HELPER FETCH (Header Safe & Error Context) ---
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
 
-  // Setup Timeout 10 Detik biar gak nge-hang selamanya
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik
 
   try {
+    // FIX: Normalize Headers biar gak ketimpa/rusak
+    const headers = new Headers(options.headers);
+    if (!headers.has("Accept")) {
+      headers.set("Accept", "application/json");
+    }
+
     const res = await fetch(`${BASE_URL}${endpoint}`, {
-      ...options, // Masukin opsi cache/next disini
+      ...options,
       signal: controller.signal,
-      headers: {
-        "Accept": "application/json",
-        ...options.headers,
-      },
+      headers, // Pake object Headers yang udah dirapihin
     });
 
     if (!res.ok) throw new Error(`API Error ${res.status}: ${res.statusText}`);
     return await res.json();
   } catch (error: any) {
-    if (error.name === 'AbortError') throw new Error("Request Timeout");
+    if (error.name === 'AbortError') {
+      // FIX: Kasih tau endpoint mana yang timeout
+      throw new Error(`Request Timeout di: ${endpoint}`);
+    }
     throw error;
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
-// --- HELPER UTILITY (REGEX KUAT) ---
+// --- HELPER UTILITY ---
 export function getVideoType(url: string): 'hls' | 'mp4' {
-  // Regex: Cek .m3u8 walaupun ada query string (?token=...) atau huruf besar
   return /\.m3u8(\?|$)/i.test(url) ? 'hls' : 'mp4';
 }
 
@@ -57,7 +61,7 @@ export const getLatest = () => fetchAPI<DramaItem[]>('/latest', { next: { revali
 export const getForYou = () => fetchAPI<DramaItem[]>('/foryou', { next: { revalidate: 3600 } });
 export const getHotRank = () => fetchAPI<DramaItem[]>('/hotrank', { next: { revalidate: 900 } });
 
-// Search: WAJIB NO-STORE (Jangan di-cache sama sekali) + Encode
+// Search tetap no-store
 export const searchDrama = (query: string) => 
   fetchAPI<DramaItem[]>(`/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
 
