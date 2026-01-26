@@ -16,10 +16,15 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
   
   const networkRetryCount = useRef(0);
   const mediaRetryCount = useRef(0);
-  const retryTimer = useRef<NodeJS.Timeout | null>(null); // Buat timer backoff
+  
+  // FIX: Tipe timer yang aman lintas env (Node/Browser)
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const lastSavedTime = useRef(0);
   const [error, setError] = useState<string | null>(null);
+  
+  // FIX: Buffering State buat UX
+  const [isBuffering, setIsBuffering] = useState(true); 
 
   // --- LOGIC: Resume & Save Progress ---
   const saveProgress = useCallback(() => {
@@ -29,8 +34,10 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
   }, [storageKey]);
 
   const handleTimeUpdate = () => {
+    // Kalau video jalan, berarti gak buffering
+    setIsBuffering(false);
+
     const now = Date.now();
-    // Throttle 2 detik
     if (now - lastSavedTime.current > 2000) {
       saveProgress();
       lastSavedTime.current = now;
@@ -38,6 +45,9 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
   };
 
   const handlePauseOrEnd = () => saveProgress();
+  
+  // FIX: Handle Playing event biar status buffering ilang instan
+  const handlePlaying = () => setIsBuffering(false);
 
   const handleMetadataLoaded = () => {
     const video = videoRef.current;
@@ -67,31 +77,34 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     if (!video) return;
 
     setError(null);
+    setIsBuffering(true); // Awal load pasti buffering
     networkRetryCount.current = 0;
     mediaRetryCount.current = 0;
 
-    // FIX: Listener Stalled buat iOS yang suka diem-diem bae
-    const handleStalled = () => {
-      // Cuma warning aja, jangan stop video biar user tau lagi buffering berat
-      console.warn("Koneksi tidak stabil (Stalled)..."); 
-    };
+    // FIX: Listener Stalled & Waiting buat Buffering UI
+    const handleBuffering = () => setIsBuffering(true);
 
     const handleNativeError = () => {
       if (video.error) {
+         setIsBuffering(false);
          setError(getNativeErrorMessage(video.error.code));
       }
     };
 
-    // FIX: Save pas pindah tab (Visibility Change)
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        saveProgress();
-      }
+      if (document.visibilityState === 'hidden') saveProgress();
     };
 
+    // FIX: Pagehide khusus iOS/Mobile Safari
+    const handlePageHide = () => saveProgress();
+
     video.addEventListener("error", handleNativeError);
-    video.addEventListener("stalled", handleStalled);
+    video.addEventListener("stalled", handleBuffering);
+    video.addEventListener("waiting", handleBuffering);
+    video.addEventListener("playing", handlePlaying);
+    
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", handlePageHide);
 
     if (type === 'hls' && Hls.isSupported()) {
       const hls = new Hls({
@@ -109,32 +122,37 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
             case Hls.ErrorTypes.NETWORK_ERROR:
               if (networkRetryCount.current < 3) {
                 networkRetryCount.current++;
-                // FIX: Backoff Delay (Tunggu 1s, 2s, 3s) biar gak spam
                 const delay = networkRetryCount.current * 1000;
                 console.log(`Network error, retry ${networkRetryCount.current}/3 in ${delay}ms...`);
                 
+                // FIX: Clear timer lama & Safe Check
+                if (retryTimer.current) clearTimeout(retryTimer.current);
+                
                 retryTimer.current = setTimeout(() => {
-                  hls.startLoad();
+                  if (!hlsRef.current) return; // Cek instance masih ada gak
+                  hlsRef.current.startLoad();
                 }, delay);
                 
               } else {
                 hls.destroy();
                 setError("Jaringan bermasalah, gagal memuat video.");
+                setIsBuffering(false);
               }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
               if (mediaRetryCount.current < 3) {
                 mediaRetryCount.current++;
-                console.log(`Media error, recovering ${mediaRetryCount.current}/3...`);
                 hls.recoverMediaError();
               } else {
                 hls.destroy();
                 setError("Video rusak, tidak dapat dipulihkan.");
+                setIsBuffering(false);
               }
               break;
             default:
               hls.destroy();
               setError("Fatal Stream Error.");
+              setIsBuffering(false);
               break;
           }
         }
@@ -150,8 +168,12 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     // --- CLEANUP ---
     return () => {
       video.removeEventListener("error", handleNativeError);
-      video.removeEventListener("stalled", handleStalled);
+      video.removeEventListener("stalled", handleBuffering);
+      video.removeEventListener("waiting", handleBuffering);
+      video.removeEventListener("playing", handlePlaying);
+      
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", handlePageHide);
       
       if (retryTimer.current) clearTimeout(retryTimer.current);
 
@@ -164,10 +186,11 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
       video.src = "";
       video.load();
     };
-  }, [url, type, saveProgress]); // dependency saveProgress udah aman karena pake useCallback
+  }, [url, type, saveProgress]);
 
   return (
     <div className="relative aspect-video bg-black w-full overflow-hidden border-brut border-main group">
+      {/* ERROR UI */}
       {error && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/90 text-white p-4 text-center">
           <p className="text-danger font-black text-xl mb-2">⚠️ ERROR</p>
@@ -175,9 +198,16 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         </div>
       )}
 
+      {/* FIX: BUFFERING UI */}
+      {!error && isBuffering && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 pointer-events-none">
+          <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+        </div>
+      )}
+
       <video
         ref={videoRef}
-        key={url} // FIX: Paksa React reset elemen video kalau URL ganti (biar state bersih)
+        key={url}
         className="w-full h-full object-contain focus:outline-none"
         controls
         playsInline
