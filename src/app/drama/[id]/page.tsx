@@ -10,19 +10,23 @@ export default async function DramaDetailPage({
   searchParams 
 }: { 
   params: { id: string }, 
-  searchParams: { epId?: string } // Kita pake epId string biar lebih robust
+  searchParams: { epId?: string } 
 }) {
   const data = await getDramaDetail(params.id);
   
-  // LOGIC: Cari episode berdasarkan ID
+  // LOGIC ROBUST: Cari episode
+  // Ambil query ?epId=... atau kosong
+  const activeKey = searchParams.epId ? String(searchParams.epId) : null;
+  
   let activeEpisode = null;
-  if (searchParams.epId && data.episodes.length > 0) {
-    // Coba cari by ID (kalau API nyediain ID unik per episode)
-    activeEpisode = data.episodes.find(e => String(e.id) === searchParams.epId);
+
+  if (activeKey && data.episodes.length > 0) {
+    // 1. Coba match ID (String vs String)
+    activeEpisode = data.episodes.find(e => String(e.id) === activeKey);
     
-    // Fallback: Kalau gak ketemu by ID, coba anggap itu index (buat jaga-jaga)
+    // 2. Fallback: Kalau gak ketemu, coba anggap itu Index Array
     if (!activeEpisode) {
-      const idx = parseInt(searchParams.epId);
+      const idx = parseInt(activeKey);
       if (!isNaN(idx)) activeEpisode = data.episodes[idx];
     }
   }
@@ -33,7 +37,6 @@ export default async function DramaDetailPage({
       {activeEpisode ? (
         <section className="animate-in slide-in-from-top duration-500">
           <BrutCard title={`Playing: ${activeEpisode.name}`} className="bg-black text-white border-main">
-            {/* FIX: Auto detect HLS/MP4 di sini */}
             <VideoPlayer 
               url={activeEpisode.video_url} 
               type={getVideoType(activeEpisode.video_url)} 
@@ -43,9 +46,9 @@ export default async function DramaDetailPage({
           </BrutCard>
         </section>
       ) : (
-        // Info Section (Sama kayak sebelumnya, cuma ganti img jadi Image)
          <section className="flex flex-col md:flex-row gap-6">
-           {/* ... UI Info Drama ... */}
+           {/* ... Info UI (Sama kayak sebelumnya) ... */}
+           {/* TIPS: Pake unoptimized={true} di <Image> juga disini */}
          </section>
       )}
 
@@ -58,12 +61,18 @@ export default async function DramaDetailPage({
         
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
           {data.episodes.map((ep, idx) => {
-            // Kita pake ID episode kalau ada, kalau gak ada terpaksa pake index
-            const uniqueId = ep.id || idx;
-            const isActive = activeEpisode && (activeEpisode.id === ep.id);
+            // FIX: Nullish Coalescing (Prioritas ID, kalau null pake index)
+            const uniqueId = ep.id ?? idx;
+            // FIX: Bandingkan String biar aman ( "1" === "1" )
+            const isActive = String(uniqueId) === activeKey;
             
             return (
-              <Link key={uniqueId} href={`/drama/${params.id}?epId=${uniqueId}`} scroll={true}>
+              <Link 
+                key={uniqueId} 
+                // FIX: Encode URI biar karakter aneh gak ngerusak URL
+                href={`/drama/${params.id}?epId=${encodeURIComponent(String(uniqueId))}`} 
+                scroll={true}
+              >
                 <BrutButton 
                   fullWidth 
                   variant={isActive ? "primary" : "secondary"}
