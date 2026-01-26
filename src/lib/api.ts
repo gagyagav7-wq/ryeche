@@ -43,46 +43,44 @@ async function fetchAPI(endpoint: string) {
   }
 }
 
-// 1. Get Latest (Drama Baru)
+// 1. Get Latest
 export async function getLatest() {
-  const data = await fetchAPI("/latest");
-  // Pastikan yang dikembalikan Array, kalau null/error balikin []
-  return Array.isArray(data) ? data : [];
+  return await fetchAPI("/latest");
 }
 
-// 2. Get For You (Rekomendasi)
+// 2. Get For You
 export async function getForYou() {
-  const data = await fetchAPI("/foryou");
-  return Array.isArray(data) ? data : [];
+  return await fetchAPI("/foryou");
 }
 
-// 3. Get Hot Rank (List Kategori Rank)
+// 3. Get Hot Rank
 export async function getHotRank() {
-  const data = await fetchAPI("/hotrank");
-  return Array.isArray(data) ? data : [];
+  return await fetchAPI("/hotrank");
 }
 
-// 4. Get Detail Drama + Episodes
+// 4. Get Detail (Ini beda karena return Object, bukan Array)
 export async function getDramaDetail(id: string) {
-  const data = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
+  const res = await fetch(`${BASE_URL}/detailAndAllEpisode?id=${id}`, { headers: HEADERS });
+  const json = await res.json();
   
-  // Validasi data minimal harus punya info & episodes
+  // Detektif juga buat detail
+  const data = json.data || json.result || json;
+  
   if (!data || !data.info) {
     throw new Error("Drama not found");
   }
   return data;
 }
 
-// 5. Search Drama
+// 5. Search
 export async function searchDrama(query: string) {
   if (!query) return [];
-  const data = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
-  return Array.isArray(data) ? data : [];
+  return await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
 }
 
-// 6. Get Video Type Helper (Buat Player)
+// ... Sisanya sama (getVideoType dll)
 export function getVideoType(url: string) {
   if (url.includes(".m3u8")) return "hls";
   if (url.includes(".mp4")) return "mp4";
-  return "hls"; // Default HLS
+  return "hls";
 }
