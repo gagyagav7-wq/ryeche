@@ -18,7 +18,7 @@ export interface DramaDetail {
   episodes: Episode[];
 }
 
-// --- HELPER FETCH (Header Safe & Error Context) ---
+// --- HELPER FETCH (Lebih Informatif) ---
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   if (!BASE_URL) throw new Error("API_BASE_URL belum diset");
 
@@ -26,7 +26,6 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 detik
 
   try {
-    // FIX: Normalize Headers biar gak ketimpa/rusak
     const headers = new Headers(options.headers);
     if (!headers.has("Accept")) {
       headers.set("Accept", "application/json");
@@ -35,14 +34,18 @@ async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       ...options,
       signal: controller.signal,
-      headers, // Pake object Headers yang udah dirapihin
+      headers,
     });
 
-    if (!res.ok) throw new Error(`API Error ${res.status}: ${res.statusText}`);
+    // FIX: Kasih tau endpoint mana yang error statusnya (misal 404/500)
+    if (!res.ok) {
+      throw new Error(`API Error ${res.status} di ${endpoint}: ${res.statusText}`);
+    }
+    
     return await res.json();
   } catch (error: any) {
+    // FIX: Kasih tau endpoint mana yang timeout
     if (error.name === 'AbortError') {
-      // FIX: Kasih tau endpoint mana yang timeout
       throw new Error(`Request Timeout di: ${endpoint}`);
     }
     throw error;
@@ -61,7 +64,6 @@ export const getLatest = () => fetchAPI<DramaItem[]>('/latest', { next: { revali
 export const getForYou = () => fetchAPI<DramaItem[]>('/foryou', { next: { revalidate: 3600 } });
 export const getHotRank = () => fetchAPI<DramaItem[]>('/hotrank', { next: { revalidate: 900 } });
 
-// Search tetap no-store
 export const searchDrama = (query: string) => 
   fetchAPI<DramaItem[]>(`/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
 
