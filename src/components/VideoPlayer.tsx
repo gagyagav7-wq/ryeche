@@ -1,40 +1,61 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
 
 interface VideoPlayerProps {
   url: string;
   type: 'hls' | 'mp4';
   subtitles?: { url: string; lang: string }[];
-  storageKey: string; // Kunci buat nyimpen progress nonton
+  storageKey: string;
 }
 
 export default function VideoPlayer({ url, type, subtitles = [], storageKey }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const retryCount = useRef(0); // Counter buat retry limit
+  const lastSavedTime = useRef(0); // Buat throttling
   const [error, setError] = useState<string | null>(null);
 
-  // --- LOGIC: Resume & Save Progress ---
-  const handleTimeUpdate = () => {
+  // --- LOGIC: Resume & Save Progress (Throttled) ---
+  const saveProgress = useCallback(() => {
     if (videoRef.current) {
-      // Simpan posisi detik ke localStorage
       localStorage.setItem(storageKey, String(videoRef.current.currentTime));
     }
+  }, [storageKey]);
+
+  const handleTimeUpdate = () => {
+    const now = Date.now();
+    // FIX: Throttle! Cuma save tiap 2 detik (2000ms) biar gak berat
+    if (now - lastSavedTime.current > 2000) {
+      saveProgress();
+      lastSavedTime.current = now;
+    }
   };
+
+  // Simpan juga pas dipause atau selesai (biar akurat)
+  const handlePauseOrEnd = () => saveProgress();
 
   const handleMetadataLoaded = () => {
     const video = videoRef.current;
     if (!video) return;
-
-    // Ambil posisi terakhir
     const savedTime = localStorage.getItem(storageKey);
     if (savedTime) {
       const time = parseFloat(savedTime);
-      // Cek biar gak error kalau durasi video beda atau udah abis
       if (!isNaN(time) && time > 0 && time < video.duration - 2) {
         video.currentTime = time;
       }
+    }
+  };
+
+  // --- LOGIC: Error Message Mapping ---
+  const getNativeErrorMessage = (code: number) => {
+    switch (code) {
+      case 1: return "Video dibatalkan (Aborted).";
+      case 2: return "Masalah jaringan (Network Error).";
+      case 3: return "Video rusak/corrupt (Decode Error).";
+      case 4: return "Format video tidak didukung / File tidak ditemukan.";
+      default: return "Terjadi kesalahan memutar video.";
     }
   };
 
@@ -44,11 +65,11 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     if (!video) return;
 
     setError(null);
+    retryCount.current = 0; // Reset retry tiap ganti video
 
-    // Fungsi handle error Native (Safari/iPhone)
     const handleNativeError = () => {
       if (video.error) {
-         setError(`Playback Error: ${video.error.message || "Gagal memuat video."}`);
+         setError(getNativeErrorMessage(video.error.code));
       }
     };
 
@@ -58,12 +79,10 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     if (type === 'hls' && Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
-        // FIX: Matikan lowLatency biar VOD lebih stabil
-        lowLatencyMode: false, 
+        lowLatencyMode: false,
       });
       
       hlsRef.current = hls;
-
       hls.loadSource(url);
       hls.attachMedia(video);
 
@@ -71,15 +90,27 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              console.log("Network error, mencoba recover...");
-              hls.startLoad(); // Coba load ulang
+              // FIX: Retry Limit (Maksimal 3x)
+              if (retryCount.current < 3) {
+                retryCount.current++;
+                console.log(`Network error, retry ${retryCount.current}/3...`);
+                hls.startLoad();
+              } else {
+                hls.destroy();
+                setError("Jaringan bermasalah, gagal memuat video setelah 3x percobaan.");
+              }
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-              console.log("Media error, mencoba recover...");
-              hls.recoverMediaError(); // Coba benerin codec
+              if (retryCount.current < 3) {
+                retryCount.current++;
+                console.log(`Media error, recovering ${retryCount.current}/3...`);
+                hls.recoverMediaError();
+              } else {
+                hls.destroy();
+                setError("Video rusak, tidak dapat dipulihkan.");
+              }
               break;
             default:
-              // Kalau fatal banget, baru nyerah
               hls.destroy();
               setError("Fatal Stream Error: Tidak bisa diputar.");
               break;
@@ -91,26 +122,24 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
     else if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = url;
     } 
-    // --- SETUP MP4 BIASA ---
+    // --- SETUP MP4 ---
     else {
       video.src = url;
     }
 
-    // --- CLEANUP (Penting biar gak Memory Leak) ---
+    // --- CLEANUP ---
     return () => {
-      // 1. Bersihkan Event Listener
       video.removeEventListener("error", handleNativeError);
       
-      // 2. Hancurkan HLS Instance
       if (hlsRef.current) {
         hlsRef.current.destroy();
         hlsRef.current = null;
       }
 
-      // 3. Reset Video Element (Urutan ini penting!)
+      // FIX: Cleanup yang lebih aman buat Safari
       video.pause();
-      video.removeAttribute('src'); // Hapus source
-      video.load(); // Reset player state
+      video.src = "";
+      video.load();
     };
   }, [url, type]);
 
@@ -128,10 +157,12 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
         ref={videoRef}
         className="w-full h-full object-contain focus:outline-none"
         controls
-        playsInline // WAJIB: Biar iPhone gak fullscreen otomatis
+        playsInline
         preload="metadata"
-        onTimeUpdate={handleTimeUpdate} // Simpan progress tiap detik
-        onLoadedMetadata={handleMetadataLoaded} // Load progress pas mulai
+        onTimeUpdate={handleTimeUpdate}
+        onPause={handlePauseOrEnd} // Save pas pause
+        onEnded={handlePauseOrEnd} // Save pas selesai
+        onLoadedMetadata={handleMetadataLoaded}
       >
         {subtitles.map((sub, idx) => (
           <track
@@ -140,7 +171,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey }: V
             src={sub.url}
             srcLang={sub.lang}
             label={sub.lang}
-            default={idx === 0} // FIX: Subtitle pertama otomatis aktif
+            default={idx === 0}
           />
         ))}
         Browser Anda tidak mendukung tag video.
