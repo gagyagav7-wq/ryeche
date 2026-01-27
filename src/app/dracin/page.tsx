@@ -4,12 +4,11 @@ import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
-// STRATEGI CACHING: Style A (Page-Level ISR)
+// Revalidate tiap 60 detik
 export const revalidate = 60;
 
 // --- COMPONENTS ---
 
-// 1. Ranking Badge
 const RankingBadge = ({ rank }: { rank: number }) => {
   let bgClass = "bg-surface"; 
   if (rank === 1) bgClass = "bg-[#FDFFB6]"; 
@@ -23,7 +22,6 @@ const RankingBadge = ({ rank }: { rank: number }) => {
   );
 };
 
-// 2. Drama Grid Component
 const DramaGrid = ({ 
   title, 
   subtitle, 
@@ -58,8 +56,11 @@ const DramaGrid = ({
             <p className="text-sm font-bold opacity-60 uppercase tracking-widest mt-1">{subtitle}</p>
           </div>
         </div>
+        {/* FIX: VIEW ALL SEKARANG JADI LINK KE SEARCH */}
         <div className="hidden md:block">
-          <span className="text-xs font-bold bg-black text-white px-2 py-1 cursor-default">VIEW ALL &rarr;</span>
+          <Link href="/dracin/search">
+            <span className="text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer hover:bg-accent transition-colors">VIEW ALL &rarr;</span>
+          </Link>
         </div>
       </div>
       
@@ -77,9 +78,7 @@ const DramaGrid = ({
               aria-label={`Nonton ${d.title}`}
             >
               <div className="h-full relative overflow-hidden bg-white border-brut border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#171717]">
-                
                 {isRanking && rank <= 3 && <RankingBadge rank={rank} />}
-
                 <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-main">
                   <Image 
                     src={d.cover_url || "/placeholder.jpg"} 
@@ -91,7 +90,6 @@ const DramaGrid = ({
                   />
                   <div className="hidden md:block absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                 </div>
-
                 <div className="bg-surface p-3 h-full flex flex-col justify-between">
                   <h3 className="font-bold text-xs md:text-sm truncate uppercase tracking-tight text-main" title={d.title}>
                     {d.title}
@@ -103,7 +101,7 @@ const DramaGrid = ({
                 </div>
               </div>
             </Link>
-          );
+          )
         })}
       </div>
     </section>
@@ -118,6 +116,15 @@ export default async function DracinHomePage() {
     getForYou().catch(() => []), 
     getHotRank().catch(() => [])
   ]);
+
+  // Data chip manual buat navigasi cepat
+  const chips = [
+    { label: '🔥 Hot Ranking', query: 'hot' },
+    { label: '❤️ For You', query: 'love' }, // Contoh query
+    { label: '🆕 Latest Drop', query: 'new' },
+    { label: '🎬 Ongoing', query: 'ongoing' },
+    { label: '✅ Completed', query: 'completed' },
+  ];
 
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
@@ -162,12 +169,14 @@ export default async function DracinHomePage() {
             </form>
           </div>
 
-          {/* Filter Chips */}
+          {/* FIX: CHIPS SEKARANG JADI LINK */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {['🔥 Hot Ranking', '❤️ For You', '🆕 Latest Drop', '🎬 Ongoing', '✅ Completed'].map((chip, i) => (
-              <button key={i} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
-                {chip}
-              </button>
+            {chips.map((chip, i) => (
+              <Link key={i} href={`/dracin/search?q=${chip.query}`}>
+                <button className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
+                  {chip.label}
+                </button>
+              </Link>
             ))}
           </div>
         </header>
