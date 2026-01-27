@@ -25,7 +25,8 @@ export default async function SearchPage({
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row gap-4 items-center justify-between relative z-10">
         <div className="flex items-center gap-4">
           <Link href="/dracin">
-            <span className="inline-block px-3 py-1 text-xs font-black border-[3px] border-main bg-white hover:bg-main hover:text-white transition-colors cursor-pointer">
+            {/* FIX: md:hover biar gak nyangkut di iOS */}
+            <span className="inline-block px-3 py-1 text-xs font-black border-[3px] border-main bg-white md:hover:bg-main md:hover:text-white transition-colors cursor-pointer">
               &larr; BACK
             </span>
           </Link>
