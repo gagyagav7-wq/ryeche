@@ -1,19 +1,12 @@
-Wah, ini diagnosa tingkat dewa dari "GPT Thinking". Bener banget, kadang BrutCard atau komponen kustom bawaan sering punya div bungkus tambahan di dalamnya yang bikin flex-1 atau overflow jadi macet karena rantai flex-nya putus.
-
-Pake tag aside polos itu solusi paling aman dan "brutal" (langsung ke intinya) buat mastiin scrollnya jalan di semua device, terutama iOS yang manja soal scroll (WebkitOverflowScrolling).
-
-Langsung timpa lagi file-nya dengan kode FINAL FIX ini Bre. Ini udah mencakup regex HLS yang lebih pinter, guard ep.name, dan tentunya container playlist yang udah "dibebaskan" dari BrutCard.
-
-CODE FINAL (Scroll Fix + iOS Ready) 🛠️
-TypeScript
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
 import VideoPlayer from "@/components/VideoPlayer"; 
 import { getDramaDetail } from "@/lib/api";
 
-// Helper deteksi tipe video (Regex lebih robust untuk query params kayak ?token=xyz)
+// Helper deteksi tipe video (Regex robust)
 const determineVideoType = (url: string) => {
+  if (!url) return "mp4";
   return /\.m3u8(\?|$)/i.test(url) ? "hls" : "mp4";
 };
 
@@ -35,10 +28,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     console.error("Error fetching drama:", error);
   }
 
-  // --- LOGIC PENYELAMAT (FALLBACK & SCHEMA CONSISTENCY) ---
+  // --- LOGIC PENYELAMAT (FALLBACK) ---
   if (data && !data.info && data.episodes && data.episodes.length > 0) {
      const firstEp = data.episodes[0];
-     // Guard name biar gak error replace di string kosong
      const firstEpName = firstEp.name || "";
      const cleanTitle = firstEpName ? firstEpName.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
      
@@ -58,8 +50,11 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
+  
+  // Safe Title untuk Replace nanti
+  const dramaTitle = data.info.title || "";
 
-  // Logic Direct Video & Type Detection
+  // Logic Direct Video
   const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
   const videoType = determineVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
@@ -67,8 +62,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
       
-      {/* Noise Texture Opacity 0.02 (Lebih Ringan) */}
-      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none z-0" 
+      {/* UPDATE 1: Noise Layer di -z-10 biar aman banget */}
+      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-10" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       
@@ -133,8 +128,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
                 
-                {/* GANTI BRUTCARD DENGAN ASIDE PLAIN BIAR SCROLL AMAN */}
-                <aside className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[500px] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
+                {/* UPDATE 2: Height Mobile pake 65vh biar aman, Desktop pake calc */}
+                <aside className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65vh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
                   
                   {/* Playlist Header */}
                   <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] flex justify-between items-center shrink-0">
@@ -146,17 +141,20 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     </span>
                   </div>
 
-                  {/* Scrollable Area (FIXED INERTIAL SCROLL & OVERSCROLL) */}
+                  {/* Scrollable Area */}
+                  {/* UPDATE 3: custom-scrollbar DIHAPUS dulu, ditambah touch-pan-y */}
                   <div 
-                    className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 custom-scrollbar bg-white overscroll-contain"
-                    style={{ WebkitOverflowScrolling: "touch" }} // Kunci sukses scroll iOS
+                    className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-white overscroll-contain touch-pan-y"
+                    style={{ WebkitOverflowScrolling: "touch" }}
                   >
                     {episodes.map((ep: any, idx: number) => {
                       const isActive = String(ep.id) === String(activeEpisode?.id);
                       
-                      // Guard biar replace gak error kalau name null
+                      // UPDATE 4: Safe Replace Title
                       const epName = ep.name || "";
-                      const displayName = epName.replace(data.info.title, "").replace(/-EP\.\d+/, "").trim() || "Watch Now";
+                      const displayName = dramaTitle 
+                        ? epName.replace(dramaTitle, "").replace(/-EP\.\d+/, "").trim() 
+                        : epName;
 
                       return (
                         <Link 
@@ -186,7 +184,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                                   Episode {idx + 1}
                                 </span>
                                 <span className={`text-xs truncate opacity-70 ${isActive ? "text-gray-300" : "text-gray-500"}`}>
-                                  {displayName}
+                                  {displayName || "Watch Now"}
                                 </span>
                               </div>
                               
