@@ -22,7 +22,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   try {
     data = await getDramaDetail(id);
   } catch (error) {
-    // 3. Error Handling (Manusiawi & Brutal)
+    // Error Handling (Manusiawi & Brutal)
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center bg-bg gap-6 p-4">
         <div className="text-6xl">⚠️</div>
@@ -41,12 +41,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
 
   if (!data || !data.info) return notFound();
 
-  // 4. Episode Logic (Safe Params)
-  const episodes = data.episodes || [];
+  // 3. Strict Array Check (Anti Crash jika API ngasih object/null)
+  const episodes = Array.isArray(data.episodes) ? data.episodes : [];
+  
+  // 4. Safe Params Logic
   const rawEpId = searchParams.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   
-  // Cari episode aktif, fallback ke index 0
+  // Cari episode aktif
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
   
   const hasEpisodes = episodes.length > 0;
@@ -100,7 +102,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                   type={videoType} 
                   storageKey={storageKey}
                   subtitles={[]} 
-                  // FIX: Safe key access + fallback biar gak crash
                   key={activeEpisode?.id ?? "no-ep"} 
                 />
               ) : (
@@ -115,13 +116,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Poster Kecil */}
                 <div className="hidden md:block w-32 shrink-0 aspect-[3/4] relative border-[3px] border-main bg-gray-200">
-                  {/* FIX: Fallback src image biar gak error next/image */}
+                  {/* FIX: unoptimized + fallback src */}
                   <Image 
                     src={data.info.cover_url || "/placeholder.jpg"} 
                     alt={data.info.title} 
                     fill 
                     className="object-cover"
                     sizes="128px"
+                    unoptimized={true}
                   />
                 </div>
                 
@@ -135,7 +137,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                       <span className="bg-accent text-white px-2 py-1 border-2 border-main shadow-sm">
                         {episodes.length} EPISODES
                       </span>
-                      {/* FIX: Truncate badge playing biar gak ngerusak layout */}
                       <span className="bg-[#FDFFB6] text-main px-2 py-1 border-2 border-main shadow-sm truncate max-w-[200px]">
                         {activeEpisode ? `PLAYING: EP ${activeEpisode.name}` : "NO DATA"}
                       </span>
@@ -144,7 +145,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                   
                   <div className="h-[2px] w-full bg-main/10" />
                   
-                  <div className="prose prose-sm max-w-none">
+                  {/* FIX: Hapus class 'prose' biar gak butuh plugin */}
+                  <div>
                     <p className="font-medium opacity-80 leading-relaxed text-sm md:text-base">
                       {data.info.synopsis || "Sinopsis belum tersedia untuk drama ini."}
                     </p>
@@ -175,7 +177,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     return (
                       <Link
                         key={ep.id}
-                        href={`/dracin/${id}?epId=${ep.id}`}
+                        // FIX: Encode URI Component untuk keamanan URL
+                        href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`}
                         replace
                         className={`
                           block w-full text-left p-3 border-[3px] border-main font-bold text-sm transition-all group outline-none focus-visible:ring-4 focus-visible:ring-accent
