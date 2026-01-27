@@ -1,135 +1,62 @@
 // src/lib/api.ts
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://sansekai.bospedia.com/api";
 
-// Ambil dari Environment Variable
-const BASE_URL = process.env.API_BASE_URL;
-
-// Validasi Safety
-if (!BASE_URL) {
-  console.error("FATAL: API_BASE_URL is not defined.");
-  throw new Error("API_BASE_URL missing");
-}
-
-const HEADERS = {
-  "User-Agent": "Mozilla/5.0 ...",
-  "Accept": "application/json"
-};
-
-// ... sisa fungsi fetchAPI dan wrapper lainnya tetap sama ...
-
-// --- FUNGSI PEMBERSIH DATA (FILTER) ---
-const normalizeData = (item: any) => {
-  if (!item || (!item.playlet_id && !item.id)) return null;
-
-  return {
-    id: item.playlet_id || item.id,
-    title: item.title || "No Title",
-    cover_url: item.cover || item.cover_square || item.cover_vertical || "https://placehold.co/400x600/000000/FFF?text=No+Image", 
-    synopsis: item.introduce || item.description || item.desc || "No synopsis available.",
-    total_ep: item.upload_num || item.chapterCount || 0
-  };
-};
-
-// --- FUNGSI PENCARI LIST (RECURSIVE) ---
-function findList(data: any): any[] {
-  if (!data) return [];
-  
-  if (Array.isArray(data)) {
-    if (data.length > 0 && data[0].list) {
-      return findList(data[0].list);
-    }
-    return data;
-  }
-
-  if (data.data) return findList(data.data);
-  if (data.result) return findList(data.result);
-  if (data.list) return findList(data.list);
-
-  return [];
-}
-
-// --- HELPER FETCHER BERSIH ---
-// Kita tambahkan parameter 'options' biar fleksibel
-// TAPI defaultnya kosong, biar ikut aturan Page (Style A)
-async function fetchAPI(endpoint: string, options: RequestInit = {}) {
-  try {
-    const res = await fetch(`${BASE_URL}${endpoint}`, {
-      headers: HEADERS,
-      ...options // Spread options biar bisa override kalau perlu
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch (error) {
-    console.error(`Fetch Error: ${endpoint}`, error);
-    return null;
-  }
-}
-
-// 1. Get Latest (Ikut Cache Halaman)
-export async function getLatest() {
-  const json = await fetchAPI("/latest");
-  const rawList = findList(json);
-  return rawList.map(normalizeData).filter(Boolean);
-}
-
-// 2. Get For You (Ikut Cache Halaman)
-export async function getForYou() {
-  const json = await fetchAPI("/foryou");
-  const rawList = findList(json);
-  return rawList.map(normalizeData).filter(Boolean);
-}
-
-// 3. Get Hot Rank (Ikut Cache Halaman)
-export async function getHotRank() {
-  const json = await fetchAPI("/hotrank");
-  const rawData = json?.data || json || [];
-  if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].data) {
-     return rawData[0].data.map(normalizeData).filter(Boolean);
-  }
-  return [];
-}
-
-// 4. Get Detail Drama (Ikut Cache Halaman)
 export async function getDramaDetail(id: string) {
-  const json = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
-  
-  let rawData = json?.data || json?.result || json;
-  
-  if (rawData.drama) {
-    rawData.info = rawData.drama;
+  if (!API_BASE_URL) {
+    throw new Error("API_BASE_URL is not defined in environment variables");
   }
 
-  if (!rawData || !rawData.info) {
-    throw new Error("Drama not found");
+  const endpoint = `${API_BASE_URL}/detail?id=${id}`;
+  console.log(`[SERVER FETCH] Hit: ${endpoint}`);
+
+  try {
+    const res = await fetch(endpoint, {
+      cache: "no-store", // Selalu fresh data
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      },
+    });
+
+    console.log(`[SERVER FETCH] Status: ${res.status}`);
+
+    if (!res.ok) {
+      const errorBody = await res.text();
+      throw new Error(`API Error ${res.status}: ${errorBody.slice(0, 100)}...`);
+    }
+
+    const json = await res.json();
+    
+    // Validasi struktur dasar
+    if (!json || (!json.data && !json.status)) {
+       throw new Error("Invalid API Response Structure");
+    }
+
+    // Normalisasi Data (PENTING: Buang field 'raw' biar ringan)
+    // Asumsi response bisa { status: true, data: { ... } } atau langsung { ... }
+    const rawData = json.data || json; 
+
+    // Mapping episodes biar kecil payload-nya
+    const episodes = Array.isArray(rawData.episodes) 
+      ? rawData.episodes.map((ep: any) => ({
+          id: String(ep.id),
+          name: ep.title || ep.name || `Episode ${ep.id}`,
+          video_url: ep.video_url || ep.videoUrl || "",
+          // Kita buang 'raw', 'is_lock', dll.
+        }))
+      : [];
+
+    return {
+      info: {
+        id: String(id),
+        title: rawData.title || rawData.info?.title || "Unknown Title",
+        synopsis: rawData.synopsis || rawData.info?.synopsis || "",
+        cover_url: rawData.thumbnail || rawData.info?.cover || "",
+      },
+      episodes: episodes,
+    };
+
+  } catch (error: any) {
+    console.error(`[SERVER FETCH FAIL] ${error.message}`);
+    throw error; // Lempar lagi biar ditangkap page.tsx
   }
-
-  rawData.info = normalizeData(rawData.info);
-
-  if (Array.isArray(rawData.episodes)) {
-    rawData.episodes = rawData.episodes.map((ep: any) => ({
-      id: ep.id,
-      name: ep.name,
-      video_url: ep.raw?.videoUrl || ep.videoUrl || ep.video_url || "", 
-      ...ep
-    }));
-  }
-  
-  return rawData;
-}
-
-// 5. Search (PENGECUALIAN: Wajib No-Store)
-// Search gak boleh dicache karena input user beda-beda
-export async function searchDrama(query: string) {
-  if (!query) return [];
-  // Di sini kita paksa cache: 'no-store' khusus buat search
-  const json = await fetchAPI(`/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
-  const rawList = findList(json);
-  return rawList.map(normalizeData).filter(Boolean);
-}
-
-// 6. Video Type Helper
-export function getVideoType(url: string) {
-  if (!url) return "hls";
-  if (url.includes(".m3u8")) return "hls";
-  if (url.includes(".mp4")) return "mp4";
-  return "hls";
 }
