@@ -1,8 +1,19 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
-import EpisodeAutoNext from "@/components/EpisodeAutoNext"; // Pastikan file ini udah dibuat di Step 2 sebelumnya
 import { getDramaDetail } from "@/lib/api";
+// 1. IMPORT DYNAMIC DARI NEXT.JS
+import dynamic from "next/dynamic";
+
+// 2. GANTI IMPORT BIASA JADI DYNAMIC IMPORT (MATIKAN SSR)
+const EpisodeAutoNext = dynamic(() => import("@/components/EpisodeAutoNext"), {
+  ssr: false, // <--- INI KUNCINYA! Jangan render di server.
+  loading: () => (
+    <div className="aspect-video w-full bg-black flex items-center justify-center text-white font-bold tracking-widest animate-pulse">
+      LOADING PLAYER...
+    </div>
+  ),
+});
 
 // Helper deteksi tipe video (Robust Regex)
 const determineVideoType = (url: string) => {
@@ -42,7 +53,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
      };
   }
 
-  // Validasi Akhir: Kalau tetep kosong, 404.
+  // Validasi Akhir
   if (!data || !data.info) return notFound();
 
   // --- 3. PREPARE EPISODE & PLAYER ---
@@ -61,14 +72,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
       
-      {/* BACKGROUND NOISE: -z-10 (PENTING: Biar gak nutupin klik) */}
+      {/* BACKGROUND NOISE */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-10" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       
       <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 relative z-10">
         
-        {/* HEADER: Navigasi */}
+        {/* HEADER */}
         <header className="flex items-center gap-4 mb-6">
            <Link href="/dracin" className="group">
               <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none md:group-hover:bg-[#FDFFB6]">
@@ -79,17 +90,17 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
            <span className="font-bold text-xs uppercase tracking-widest opacity-50 hidden md:block">ButterHub Premium Player</span>
         </header>
 
-        {/* LAYOUT UTAMA: Grid */}
+        {/* LAYOUT UTAMA */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
-          {/* KIRI: Player & Info (Lebar 8) */}
+          {/* KIRI: Player & Info */}
           <div className="lg:col-span-8 flex flex-col gap-6">
              
              {/* PLAYER WRAPPER */}
              <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
                <div className="aspect-video w-full">
                  {videoUrl ? (
-                   // Menggunakan Wrapper Client untuk Auto-Next Logic
+                   // KOMPONEN INI SEKARANG DI-LOAD CUMA DI BROWSER
                    <EpisodeAutoNext
                      dramaId={id}
                      episodes={episodes}
@@ -127,18 +138,12 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
              </BrutCard>
           </div>
 
-          {/* KANAN: Playlist (Lebar 4) */}
+          {/* KANAN: Playlist */}
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
                 
-                {/* CONTAINER PLAYLIST:
-                    - Pake <aside> plain (bukan BrutCard) biar scroll aman.
-                    - relative z-10 biar di atas noise.
-                    - h-[65svh] buat mobile, calc() buat desktop.
-                */}
                 <aside className="relative z-10 bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65svh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
                   
-                  {/* Playlist Header */}
                   <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] flex justify-between items-center shrink-0">
                     <span className="font-black text-lg uppercase tracking-tight flex items-center gap-2">
                       <span>📺</span> Playlist
@@ -148,10 +153,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     </span>
                   </div>
 
-                  {/* SCROLL AREA:
-                      - touch-pan-y & WebkitOverflowScrolling buat iOS licin.
-                      - overscroll-contain biar gak scroll body.
-                  */}
                   <div 
                     className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-white overscroll-contain touch-pan-y"
                     style={{ WebkitOverflowScrolling: "touch" }}
@@ -159,7 +160,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     {episodes.map((ep: any, idx: number) => {
                       const isActive = String(ep.id) === String(activeEpisode?.id);
                       
-                      // Logic Nama Episode Bersih
                       const epName = ep.name || "";
                       let displayName = epName;
                       if (dramaTitle && displayName.startsWith(dramaTitle)) {
@@ -173,10 +173,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                           href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
                           className="block group outline-none"
                         >
-                          {/* VISUAL HIERARCHY:
-                              - Active: Border tebal solid, item hitam.
-                              - Inactive: Border tipis transparan (opacity 30%), hover baru solid.
-                          */}
                           <div className={`
                             relative p-3 transition-all duration-200 ease-out
                             ${isActive 
