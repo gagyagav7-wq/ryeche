@@ -4,8 +4,7 @@ import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
-// OPTIMASI: Revalidate tiap 60 detik (ISR). 
-// Gak bikin server berat kayak 'force-dynamic', tapi data tetep fresh.
+// OPTIMASI: Revalidate tiap 60 detik (ISR)
 export const revalidate = 60;
 
 // --- COMPONENTS ---
@@ -18,7 +17,6 @@ const RankingBadge = ({ rank }: { rank: number }) => {
   else if (rank === 3) bgClass = "bg-[#FFCCB6]"; // Bronze
 
   return (
-    // Border manual 3px biar konsisten sama 'border-brut'
     <div className={`absolute top-0 left-0 ${bgClass} border-b-[3px] border-r-[3px] border-main px-3 py-1 z-20 shadow-sm`}>
       <span className="font-black text-sm text-main">#{rank}</span>
     </div>
@@ -70,16 +68,20 @@ const DramaGrid = ({
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
         {safeItems.slice(0, 10).map((d, index) => {
           const rank = index + 1;
-          const episodeText = d.total_ep ? `${d.total_ep} EPS` : "ONGOING";
+          
+          // Logic Episode yang Lebih Pintar
+          const epNum = Number(d.total_ep);
+          const episodeText = Number.isFinite(epNum) && epNum > 0 ? `${epNum} EPS` : "ONGOING";
 
           return (
             <Link 
               key={d.id} 
-              href={`/dracin/${d.id}`} // Route ke folder baru
+              href={`/dracin/${d.id}`} 
               className="group block h-full outline-none focus-visible:ring-4 focus-visible:ring-accent rounded-none relative"
               aria-label={`Nonton ${d.title}`}
             >
-              {/* Card Container: Pake border-brut (atau border-[3px]) biar TEBAL */}
+              {/* Card Container */}
+              {/* FIX: md:group-hover shadow biar gak nyangkut di mobile */}
               <div className="h-full relative overflow-hidden bg-white border-brut border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#000]">
                 
                 {isRanking && rank <= 3 && <RankingBadge rank={rank} />}
@@ -144,7 +146,8 @@ export default async function DracinHomePage() {
             <div>
               <div className="flex items-center gap-3">
                 <Link href="/dashboard">
-                  <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto border-[3px]">
+                  {/* FIX: Hapus border manual di BrutButton biar gak double border */}
+                  <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto">
                     &larr; HUB
                   </BrutButton>
                 </Link>
@@ -163,7 +166,8 @@ export default async function DracinHomePage() {
                 placeholder="Cari judul..." 
                 className="flex-1 md:w-64 bg-bg border-[3px] border-main p-3 font-bold text-sm outline-none focus:ring-4 focus:ring-accent/20 transition-all placeholder:opacity-40"
               />
-              <button type="submit" className="bg-accent text-white border-[3px] border-main px-4 font-black hover:bg-black transition-colors shadow-sm active:translate-y-1">
+              {/* FIX: md:hover biar gak ghost hover di mobile */}
+              <button type="submit" className="bg-accent text-white border-[3px] border-main px-4 font-black md:hover:bg-black transition-colors shadow-sm active:translate-y-1">
                 🔍
               </button>
             </form>
