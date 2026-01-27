@@ -4,7 +4,9 @@ import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
-// OPTIMASI: Revalidate tiap 60 detik (ISR)
+// STRATEGI CACHING: Style A (Page-Level ISR)
+// Halaman ini akan di-generate ulang di server paling cepat setiap 60 detik.
+// User dapet speed statis, server gak engap.
 export const revalidate = 60;
 
 // --- COMPONENTS ---
@@ -69,7 +71,7 @@ const DramaGrid = ({
         {safeItems.slice(0, 10).map((d, index) => {
           const rank = index + 1;
           
-          // Logic Episode yang Lebih Pintar
+          // Logic Episode Pintar
           const epNum = Number(d.total_ep);
           const episodeText = Number.isFinite(epNum) && epNum > 0 ? `${epNum} EPS` : "ONGOING";
 
@@ -81,8 +83,8 @@ const DramaGrid = ({
               aria-label={`Nonton ${d.title}`}
             >
               {/* Card Container */}
-              {/* FIX: md:group-hover shadow biar gak nyangkut di mobile */}
-              <div className="h-full relative overflow-hidden bg-white border-brut border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#000]">
+              {/* FIX: Shadow Hover pake #171717 (Main Color) biar konsisten & mewah */}
+              <div className="h-full relative overflow-hidden bg-white border-brut border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#171717]">
                 
                 {isRanking && rank <= 3 && <RankingBadge rank={rank} />}
 
@@ -106,7 +108,8 @@ const DramaGrid = ({
                   </h3>
                   <div className="flex justify-between items-center mt-2 border-t-[2px] border-main/10 pt-2">
                     <span className="text-[10px] font-bold opacity-60">{episodeText}</span>
-                    <span className="text-[10px] font-black text-accent group-hover:underline">WATCH</span>
+                    {/* FIX: Underline cuma di desktop hover */}
+                    <span className="text-[10px] font-black text-accent md:group-hover:underline">WATCH</span>
                   </div>
                 </div>
               </div>
@@ -146,7 +149,6 @@ export default async function DracinHomePage() {
             <div>
               <div className="flex items-center gap-3">
                 <Link href="/dashboard">
-                  {/* FIX: Hapus border manual di BrutButton biar gak double border */}
                   <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto">
                     &larr; HUB
                   </BrutButton>
@@ -166,7 +168,7 @@ export default async function DracinHomePage() {
                 placeholder="Cari judul..." 
                 className="flex-1 md:w-64 bg-bg border-[3px] border-main p-3 font-bold text-sm outline-none focus:ring-4 focus:ring-accent/20 transition-all placeholder:opacity-40"
               />
-              {/* FIX: md:hover biar gak ghost hover di mobile */}
+              {/* FIX: Hover pake md: prefix biar aman di mobile */}
               <button type="submit" className="bg-accent text-white border-[3px] border-main px-4 font-black md:hover:bg-black transition-colors shadow-sm active:translate-y-1">
                 🔍
               </button>
@@ -176,7 +178,8 @@ export default async function DracinHomePage() {
           {/* Filter Chips */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {['🔥 Hot Ranking', '❤️ For You', '🆕 Latest Drop', '🎬 Ongoing', '✅ Completed'].map((chip, i) => (
-              <button key={i} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#000] transition-all active:translate-y-0 active:shadow-none">
+              {/* FIX: Shadow Hover pake #171717 */}
+              <button key={i} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
                 {chip}
               </button>
             ))}
