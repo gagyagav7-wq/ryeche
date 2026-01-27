@@ -4,11 +4,10 @@ import BrutCard from "@/components/BrutCard";
 import { getDramaDetail } from "@/lib/api";
 import dynamic from "next/dynamic";
 
-// DYNAMIC IMPORT (SSR False)
 const EpisodeAutoNext = dynamic(() => import("@/components/EpisodeAutoNext"), {
   ssr: false,
   loading: () => (
-    <div className="aspect-video w-full bg-black flex items-center justify-center text-white font-bold tracking-widest animate-pulse border-[3px] border-[#171717]">
+    <div className="aspect-video w-full bg-black flex items-center justify-center text-white font-bold animate-pulse border-[3px] border-[#171717]">
       LOADING PLAYER...
     </div>
   ),
@@ -31,25 +30,28 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   let data;
   let errorMsg = null;
 
-  // 1. FETCH DATA (Dengan Error Handling Robust)
   try {
     data = await getDramaDetail(id);
   } catch (error: any) {
-    console.error("Server Fetch Error:", error);
-    errorMsg = error.message || "Failed to fetch drama data";
+    console.error("Page Fetch Error:", error);
+    errorMsg = error.message;
   }
 
-  // 2. ERROR UI (JANGAN BLANK/NOTFOUND)
-  if (errorMsg || !data || (!data.info && !data.episodes)) {
+  // --- UI ERROR DENGAN TOMBOL RETRY ---
+  if (errorMsg || !data) {
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center bg-[#F4F4F0] p-6 text-[#171717]">
         <BrutCard className="bg-white border-[3px] border-red-500 shadow-[8px_8px_0px_#ef4444] max-w-md w-full text-center p-8">
           <div className="text-6xl mb-4">💀</div>
           <h1 className="text-2xl font-black uppercase mb-2">System Error</h1>
           <p className="font-mono text-xs bg-gray-100 p-2 rounded mb-6 text-left overflow-x-auto border border-gray-300">
-            {errorMsg || "API returned empty data/null info"}
+            {errorMsg || "Data not found"}
           </p>
           <div className="flex gap-4 justify-center">
+            {/* Tombol Refresh Halaman (Retry) */}
+            <a href={`/dracin/${id}`} className="px-6 py-3 bg-red-500 text-white font-bold uppercase hover:bg-red-600 transition-colors cursor-pointer border-2 border-black shadow-[4px_4px_0px_black]">
+              COBA LAGI
+            </a>
             <Link href="/dracin" className="px-6 py-3 bg-[#171717] text-white font-bold uppercase hover:translate-y-1 hover:shadow-none transition-all">
               &larr; Library
             </Link>
@@ -59,38 +61,30 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     );
   }
 
-  // 3. LOGIC PENYELAMAT (Fallback)
-  if (data && !data.info && data.episodes && data.episodes.length > 0) {
-     const firstEp = data.episodes[0];
-     const firstEpName = firstEp.name || "";
-     const cleanTitle = firstEpName ? firstEpName.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
-     
-     data.info = {
-        id: String(id),
-        title: cleanTitle,
-        synopsis: firstEp.raw?.introduce || "Sinopsis belum tersedia.",
-        cover_url: firstEp.raw?.chapter_cover || "" 
-     };
-  }
-
-  // 4. PREPARE DATA (Hitung Episode Aktif & Next ID)
-  const episodes = Array.isArray(data.episodes) ? data.episodes : [];
+  // --- PREPARE DATA ---
+  const episodes = data.episodes;
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   
-  // Cari index aktif
   const activeIndex = episodes.findIndex((ep: any) => String(ep.id) === String(epIdParam));
   const validIndex = activeIndex >= 0 ? activeIndex : 0;
   
   const activeEpisode = episodes[validIndex];
-  // Cuma kirim ID episode selanjutnya (Hemat Payload)
   const nextEpisode = episodes[validIndex + 1]; 
   const nextEpId = nextEpisode ? String(nextEpisode.id) : undefined;
 
-  const dramaTitle = data.info.title || "";
-  const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
+  // LOGIC PROXY:
+  // Kita inject '/api/proxy' kalau perlu, tapi lebih aman pakai direct dulu.
+  // VideoPlayer akan handle error 403 dan user bisa reload kalau perlu.
+  // ATAU: Kita bisa paksa proxy untuk testing:
+  // const directUrl = activeEpisode?.video_url || "";
+  // const videoUrl = `/api/proxy?url=${encodeURIComponent(directUrl)}`; 
+  // ^ Un-comment baris atas kalau mau paksa semua lewat proxy.
+  
+  const videoUrl = activeEpisode?.video_url || "";
   const videoType = determineVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
+  const dramaTitle = data.info.title;
 
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
@@ -110,14 +104,13 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          {/* KOLOM KIRI: Player & Info */}
           <div className="lg:col-span-8 flex flex-col gap-6">
              <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
                <div className="aspect-video w-full">
                  {videoUrl ? (
                    <EpisodeAutoNext
                      dramaId={id}
-                     nextEpId={nextEpId} // Kirim ID doang
+                     nextEpId={nextEpId}
                      url={videoUrl}
                      type={videoType}
                      storageKey={storageKey}
@@ -143,7 +136,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
              </BrutCard>
           </div>
 
-          {/* KOLOM KANAN: Playlist */}
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
                 <aside className="relative z-10 bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65svh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
