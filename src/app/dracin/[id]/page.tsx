@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
-import VideoPlayer from "@/components/VideoPlayer"; 
+// import VideoPlayer diganti wrapper baru ini:
+import EpisodeAutoNext from "@/components/EpisodeAutoNext"; 
 import { getDramaDetail } from "@/lib/api";
 
-// Helper deteksi tipe video (Regex robust)
+// Helper deteksi tipe video
 const determineVideoType = (url: string) => {
   if (!url) return "mp4";
   return /\.m3u8(\?|$)/i.test(url) ? "hls" : "mp4";
@@ -51,10 +52,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
   
-  // Safe Title untuk Replace nanti
   const dramaTitle = data.info.title || "";
 
-  // Logic Direct Video
+  // Logic Video URL & Type
   const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
   const videoType = determineVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
@@ -62,7 +62,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
       
-      {/* UPDATE 1: Noise Layer di -z-10 biar aman banget */}
+      {/* Noise Texture (Tetap ada tapi sangat ringan dan di belakang layer) */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-10" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
@@ -86,16 +86,18 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
           {/* KOLOM KIRI: Player & Info */}
           <div className="lg:col-span-8 flex flex-col gap-6">
              
-             {/* VIDEO PLAYER */}
+             {/* VIDEO PLAYER CONTAINER */}
              <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
                <div className="aspect-video w-full">
                  {videoUrl ? (
-                   <VideoPlayer 
-                     url={videoUrl} 
-                     type={videoType} 
+                   // GANTI PAKE WRAPPER AUTO-NEXT
+                   <EpisodeAutoNext
+                     dramaId={id}
+                     episodes={episodes}
+                     activeEpId={String(activeEpisode?.id || "")}
+                     url={videoUrl}
+                     type={videoType}
                      storageKey={storageKey}
-                     subtitles={[]}
-                     key={String(activeEpisode?.id || "init")}
                    />
                  ) : (
                    <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
@@ -124,12 +126,15 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
              </BrutCard>
           </div>
 
-          {/* KOLOM KANAN: Playlist (PLAIN CONTAINER FIX) */}
+          {/* KOLOM KANAN: Playlist */}
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
                 
-                {/* UPDATE 2: Height Mobile pake 65vh biar aman, Desktop pake calc */}
-                <aside className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65vh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
+                {/* UPDATE: 
+                   1. relative z-10 biar wheel gak nyangkut.
+                   2. h-[65svh] buat fix iOS address bar.
+                */}
+                <aside className="relative z-10 bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65svh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
                   
                   {/* Playlist Header */}
                   <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] flex justify-between items-center shrink-0">
@@ -142,7 +147,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                   </div>
 
                   {/* Scrollable Area */}
-                  {/* UPDATE 3: custom-scrollbar DIHAPUS dulu, ditambah touch-pan-y */}
                   <div 
                     className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-white overscroll-contain touch-pan-y"
                     style={{ WebkitOverflowScrolling: "touch" }}
@@ -150,11 +154,17 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     {episodes.map((ep: any, idx: number) => {
                       const isActive = String(ep.id) === String(activeEpisode?.id);
                       
-                      // UPDATE 4: Safe Replace Title
+                      // UPDATE: SAFE STRING REPLACE
                       const epName = ep.name || "";
-                      const displayName = dramaTitle 
-                        ? epName.replace(dramaTitle, "").replace(/-EP\.\d+/, "").trim() 
-                        : epName;
+                      let displayName = epName;
+                      
+                      // Cuma hapus judul drama kalau ada di DEPAN (prefix)
+                      if (dramaTitle && displayName.startsWith(dramaTitle)) {
+                         displayName = displayName.substring(dramaTitle.length).trim();
+                      }
+                      
+                      // Bersihin sisa "-EP.XX"
+                      displayName = displayName.replace(/-EP\.\d+.*$/i, "").trim();
 
                       return (
                         <Link 
