@@ -4,13 +4,12 @@ import Hls from "hls.js";
 import Plyr from "plyr";
 import "plyr/dist/plyr.css";
 
-// 1. Tambah prop onEnded di sini
 interface VideoPlayerProps {
   url: string;
   type: "mp4" | "hls";
   subtitles?: { url: string; lang: string }[];
   storageKey: string;
-  onEnded?: () => void; // <--- INI BARU
+  onEnded?: () => void;
 }
 
 export default function VideoPlayer({ url, type, subtitles = [], storageKey, onEnded }: VideoPlayerProps) {
@@ -27,7 +26,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
     let hls: Hls | null = null;
     let player: Plyr | null = null;
 
-    // Setup HLS / MP4 (Sama kayak sebelumnya...)
+    // Setup HLS / MP4
     if (type === "hls" && Hls.isSupported()) {
       hls = new Hls();
       hls.loadSource(url);
@@ -38,20 +37,17 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
         }
       });
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS (Safari)
       video.src = url;
     } else {
+      // MP4 biasa
       video.src = url;
     }
 
-    // Initialize Plyr
+    // Initialize Plyr (Tanpa 'tracks' di config, karena udah di JSX)
     player = new Plyr(video, {
       controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "captions", "settings", "fullscreen"],
-      tracks: subtitles.map((sub) => ({
-        kind: "captions",
-        label: sub.lang,
-        src: sub.url,
-        srcLang: sub.lang,
-      })),
+      // HAPUS BAGIAN TRACKS YANG BIKIN ERROR ITU
     });
 
     // Load saved time
@@ -67,7 +63,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
       }
     }, 5000);
 
-    // 2. Pasang Event Listener 'ended'
+    // Event Listener 'ended'
     const handleEnded = () => {
        if (onEnded) onEnded();
     };
@@ -75,7 +71,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
 
     return () => {
       clearInterval(saveInterval);
-      video.removeEventListener("ended", handleEnded); // Cleanup listener
+      video.removeEventListener("ended", handleEnded);
       if (hls) hls.destroy();
       if (player) player.destroy();
     };
@@ -91,7 +87,24 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
 
   return (
     <div className="relative w-full h-full bg-black">
-      <video ref={videoRef} className="plyr-react plyr" playsInline crossOrigin="anonymous" />
+      <video 
+        ref={videoRef} 
+        className="plyr-react plyr" 
+        playsInline 
+        crossOrigin="anonymous"
+      >
+        {/* INI CARA BENER PASANG SUBTITLE BIAR GAK ERROR TYPE */}
+        {subtitles.map((sub, index) => (
+          <track
+            key={index}
+            kind="captions"
+            label={sub.lang}
+            srcLang={sub.lang}
+            src={sub.url}
+            default={index === 0}
+          />
+        ))}
+      </video>
     </div>
   );
 }
