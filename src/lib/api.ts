@@ -1,4 +1,8 @@
-const BASE_URL = "https://api.sansekai.my.id/api/flickreels";
+const BASE_URL = process.env.API_BASE_URL; 
+
+if (!BASE_URL) {
+  throw new Error("API_BASE_URL belum diset di .env.local!");
+}
 
 const HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
