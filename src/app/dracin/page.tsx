@@ -1,10 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
-// Revalidate tiap 60 detik
 export const revalidate = 60;
 
 // --- COMPONENTS ---
@@ -23,11 +21,13 @@ const RankingBadge = ({ rank }: { rank: number }) => {
 };
 
 const DramaGrid = ({ 
+  id, // Tambah ID buat Anchor Link
   title, 
   subtitle, 
   items, 
   isRanking = false 
 }: { 
+  id: string,
   title: string, 
   subtitle: string, 
   items: any[], 
@@ -37,7 +37,7 @@ const DramaGrid = ({
 
   if (safeItems.length === 0) {
     return (
-      <section className="space-y-6 opacity-50 py-10">
+      <section id={id} className="space-y-6 opacity-50 py-10 scroll-mt-24">
         <div className="flex items-end gap-4 border-b-[3px] border-main pb-2">
           <h2 className="text-3xl font-black uppercase">{title}</h2>
         </div>
@@ -47,7 +47,7 @@ const DramaGrid = ({
   }
 
   return (
-    <section className="space-y-6">
+    <section id={id} className="space-y-6 scroll-mt-24">
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b-[3px] border-main pb-4 gap-2">
         <div className="flex items-center gap-3">
           <div className="h-10 w-2 bg-accent border-[3px] border-main"></div>
@@ -56,10 +56,13 @@ const DramaGrid = ({
             <p className="text-sm font-bold opacity-60 uppercase tracking-widest mt-1">{subtitle}</p>
           </div>
         </div>
-        {/* FIX: VIEW ALL SEKARANG JADI LINK KE SEARCH */}
         <div className="hidden md:block">
-          <Link href="/dracin/search">
-            <span className="text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer hover:bg-accent transition-colors">VIEW ALL &rarr;</span>
+          {/* FIX: Link langsung di-style, jangan pake span/button di dalemnya */}
+          <Link 
+            href="/dracin/search" 
+            className="inline-block text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer hover:bg-accent transition-colors"
+          >
+            VIEW ALL &rarr;
           </Link>
         </div>
       </div>
@@ -117,13 +120,13 @@ export default async function DracinHomePage() {
     getHotRank().catch(() => [])
   ]);
 
-  // Data chip manual buat navigasi cepat
+  // FIX: Hybrid Chip Logic (Anchor buat section home, Search buat kategori lain)
   const chips = [
-    { label: '🔥 Hot Ranking', query: 'hot' },
-    { label: '❤️ For You', query: 'love' }, // Contoh query
-    { label: '🆕 Latest Drop', query: 'new' },
-    { label: '🎬 Ongoing', query: 'ongoing' },
-    { label: '✅ Completed', query: 'completed' },
+    { label: '🔥 Hot Ranking', href: '#hot' },      // Anchor Scroll
+    { label: '❤️ For You', href: '#foryou' },       // Anchor Scroll
+    { label: '🆕 Latest Drop', href: '#new' },      // Anchor Scroll
+    { label: '🎬 Ongoing', href: '/dracin/search?q=ongoing' },   // Search Query
+    { label: '✅ Completed', href: '/dracin/search?q=completed' }, // Search Query
   ];
 
   return (
@@ -169,22 +172,25 @@ export default async function DracinHomePage() {
             </form>
           </div>
 
-          {/* FIX: CHIPS SEKARANG JADI LINK */}
+          {/* FIX: CHIPS PAKAI LINK LANGSUNG (NO BUTTON INSIDE) */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {chips.map((chip, i) => (
-              <Link key={i} href={`/dracin/search?q=${chip.query}`}>
-                <button className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
-                  {chip.label}
-                </button>
+              <Link 
+                key={i} 
+                href={chip.href}
+                className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none block"
+              >
+                {chip.label}
               </Link>
             ))}
           </div>
         </header>
 
         {/* --- CONTENT GRIDS --- */}
-        <DramaGrid title="Hot Ranking 🔥" subtitle="Top 10 Most Watched This Week" items={hotRank} isRanking={true} />
-        <DramaGrid title="For You ❤️" subtitle="Curated picks based on trend" items={forYou} />
-        <DramaGrid title="Fresh Drop 🆕" subtitle="Just uploaded to the server" items={latest} />
+        {/* FIX: Tambah ID buat Anchor Scroll */}
+        <DramaGrid id="hot" title="Hot Ranking 🔥" subtitle="Top 10 Most Watched This Week" items={hotRank} isRanking={true} />
+        <DramaGrid id="foryou" title="For You ❤️" subtitle="Curated picks based on trend" items={forYou} />
+        <DramaGrid id="new" title="Fresh Drop 🆕" subtitle="Just uploaded to the server" items={latest} />
 
       </div>
     </main>
