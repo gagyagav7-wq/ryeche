@@ -4,6 +4,11 @@ import BrutCard from "@/components/BrutCard";
 import VideoPlayer from "@/components/VideoPlayer"; 
 import { getDramaDetail } from "@/lib/api";
 
+// Helper simpel buat deteksi tipe video (Inline biar aman gak ngerusak import)
+const determineVideoType = (url: string) => {
+  return url.includes(".m3u8") ? "hls" : "mp4";
+};
+
 export const revalidate = 60;
 
 interface Props {
@@ -23,6 +28,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   }
 
   // --- LOGIC PENYELAMAT (FALLBACK) ---
+  // Fix 4: Gunakan cover_url agar konsisten dengan schema API
   if (data && !data.info && data.episodes && data.episodes.length > 0) {
      const firstEp = data.episodes[0];
      const cleanTitle = firstEp.name ? firstEp.name.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
@@ -30,7 +36,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
      data.info = {
         title: cleanTitle,
         synopsis: firstEp.raw?.introduce || "Sinopsis belum tersedia.",
-        cover: firstEp.raw?.chapter_cover || ""
+        cover_url: firstEp.raw?.chapter_cover || "" // Changed from cover to cover_url
      };
   }
 
@@ -43,23 +49,28 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
 
-  // Direct Video URL (Bypass Proxy biar ngebut)
+  // Logic Direct Video & Type Detection
   const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
+  
+  // Fix 1: Auto-detect video type (jangan hardcode mp4)
+  const videoType = determineVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
-      {/* Background Noise Texture (Subtle Premium Feel) */}
-      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" 
+      
+      {/* Fix 3: Noise Texture Optimization (Hidden on mobile, absolute positioning) */}
+      <div className="hidden md:block absolute inset-0 opacity-[0.03] pointer-events-none z-0" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       
       <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 relative z-10">
         
-        {/* HEADER: Minimalis, fokus ke Navigasi */}
+        {/* HEADER */}
         <header className="flex items-center gap-4 mb-6">
+           {/* Fix 2: Hover Mobile -> md:group-hover */}
            <Link href="/dracin" className="group">
-              <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none group-hover:bg-[#FDFFB6]">
+              <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none md:group-hover:bg-[#FDFFB6]">
                 &larr; Library
               </div>
            </Link>
@@ -70,16 +81,16 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         {/* LAYOUT GRID UTAMA */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
-          {/* KOLOM KIRI: Player & Info (Hero Section - Lebar 8/12) */}
+          {/* KOLOM KIRI: Player & Info */}
           <div className="lg:col-span-8 flex flex-col gap-6">
              
-             {/* VIDEO PLAYER CONTAINER */}
+             {/* VIDEO PLAYER */}
              <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
                <div className="aspect-video w-full">
                  {videoUrl ? (
                    <VideoPlayer 
                      url={videoUrl} 
-                     type="mp4" 
+                     type={videoType} 
                      storageKey={storageKey}
                      subtitles={[]}
                      key={String(activeEpisode?.id || "init")}
@@ -110,10 +121,12 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
              </BrutCard>
           </div>
 
-          {/* KOLOM KANAN: Playlist (Sticky & Scrollable - Lebar 4/12) */}
+          {/* KOLOM KANAN: Playlist */}
+          {/* Fix 5: min-h-0 di parent kolom */}
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
-                <BrutCard className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] p-0 flex flex-col overflow-hidden h-[500px] lg:h-[calc(100dvh-120px)] transition-all">
+                {/* Fix 5: min-h-0 di flex card & tinggi terkunci viewport */}
+                <BrutCard className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] p-0 flex flex-col overflow-hidden h-[500px] lg:h-[calc(100dvh-120px)] transition-all min-h-0">
                   
                   {/* Playlist Header */}
                   <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] flex justify-between items-center shrink-0">
@@ -125,7 +138,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     </span>
                   </div>
 
-                  {/* Scrollable Area (FIXED!) */}
+                  {/* Scrollable Area */}
+                  {/* Fix 5: flex-1 + min-h-0 + overflow-y-auto adalah kunci scroll flexbox */}
                   <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 custom-scrollbar bg-white">
                     {episodes.map((ep: any, idx: number) => {
                       const isActive = String(ep.id) === String(activeEpisode?.id);
@@ -136,14 +150,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                           replace 
                           className="block group outline-none"
                         >
+                          {/* Fix 2: Hover Mobile -> md:hover */}
                           <div className={`
                             relative p-3 border-2 transition-all duration-200 ease-out
                             ${isActive 
                               ? "bg-[#171717] text-white border-[#171717] translate-x-1" 
-                              : "bg-white border-[#e5e5e5] hover:border-[#171717] hover:bg-[#fafafa] hover:translate-x-1"
+                              : "bg-white border-[#e5e5e5] md:hover:border-[#171717] md:hover:bg-[#fafafa] md:hover:translate-x-1"
                             }
                           `}>
-                            {/* Accent Bar for Active State */}
                             {isActive && (
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FDFFB6]"></div>
                             )}
@@ -163,10 +177,11 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                                 </span>
                               </div>
                               
+                              {/* Fix 2: Icon hover -> md:group-hover */}
                               {isActive ? (
                                 <span className="text-lg">▶</span>
                               ) : (
-                                <span className="text-[#171717] opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                                <span className="text-[#171717] opacity-0 md:group-hover:opacity-100 transition-opacity text-lg">
                                   ▸
                                 </span>
                               )}
