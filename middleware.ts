@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
-// Fail-fast logic: Langsung error kalau JWT_SECRET tidak ada
+// AMAN: Jangan pernah pakai fallback string di production.
 const rawSecret = process.env.JWT_SECRET;
-if (!rawSecret && process.env.NODE_ENV === 'production') {
-  throw new Error("CRITICAL: JWT_SECRET environment variable is not set.");
-}
-const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : new TextEncoder().encode("fallback_dev_secret");
+const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 
 export async function middleware(req: NextRequest) {
-  // Double check saat runtime (opsional, tapi aman)
-  if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-    return new NextResponse("Server Misconfiguration: JWT_SECRET missing", { status: 500 });
+  // FAIL-FAST: Kalau secret gak ada, matikan akses biar gak ada false sense of security
+  if (!SECRET_KEY) {
+    // Cek environment biar di local dev masih "sedikit" longgar kalau lupa, tapi production mati total
+    if (process.env.NODE_ENV === 'production') {
+      return new NextResponse("Server Misconfiguration: JWT_SECRET missing", { status: 500 });
+    }
   }
 
   const session = req.cookies.get('session')?.value;
@@ -20,9 +20,10 @@ export async function middleware(req: NextRequest) {
 
   // 1. Verifikasi Token
   let isAuthenticated = false;
-  if (session) {
+  // Pastikan SECRET_KEY ada sebelum verify (untuk local dev safety check)
+  if (session && SECRET_KEY) {
     try {
-      await jwtVerify(session, SECRET_KEY!, { algorithms: ['HS256'] });
+      await jwtVerify(session, SECRET_KEY, { algorithms: ['HS256'] });
       isAuthenticated = true;
     } catch (err) {
       // Token invalid/expired
@@ -36,7 +37,7 @@ export async function middleware(req: NextRequest) {
   if (isProtected && !isAuthenticated) {
     const loginUrl = new URL('/login', req.url);
     
-    // FIX UX: Ambil path + search params (query) biar user balik ke episode yg bener
+    // UX: Bawa query string biar balik ke episode yang bener
     const fullPath = req.nextUrl.pathname + req.nextUrl.search;
     loginUrl.searchParams.set('callbackUrl', fullPath);
     
