@@ -128,15 +128,18 @@ export default async function DracinHomePage() {
     { label: '✅ Completed', href: '/dracin/search?q=completed' }, // Search Query
   ];
 
+  // ... (Bagian atas sama)
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
       
-      {/* Decorative BG */}
+      {/* Decorative BG (FIX: pointer-events-none WAJIB di semua layer absolute) */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
-      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10" />
-      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10" />
+      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10 pointer-events-none" />
+      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10 pointer-events-none" />
+
+// ... (Sisanya sama)
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-24">
         
