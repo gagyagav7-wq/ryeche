@@ -16,20 +16,29 @@ export default function RegisterPage() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData);
+    const username = String(formData.get("username") || "");
+    const password = String(formData.get("password") || "");
 
     try {
       const res = await fetch("/api/auth/register", {
         method: "POST",
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
       if (res.ok) {
-        router.push("/dashboard");
+        // Auto login & redirect to dashboard
+        router.replace("/dashboard");
         router.refresh();
       } else {
-        const json = await res.json();
-        setError(json.error || "Gagal daftar, coba username lain.");
+        let msg = "Gagal mendaftar, coba username lain.";
+        try {
+          const json = await res.json();
+          msg = json.error || msg;
+        } catch {
+          // Fallback error
+        }
+        setError(msg);
       }
     } catch (err) {
       setError("Gagal menghubungi server.");
@@ -55,7 +64,7 @@ export default function RegisterPage() {
         
         {/* Header */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block hover:scale-105 transition-transform">
+          <Link href="/" className="inline-block transition-transform md:hover:scale-105">
             <h1 className="text-4xl font-black uppercase tracking-tighter text-main">
               BUTTER<span className="text-accent">HUB</span>
             </h1>
@@ -69,7 +78,7 @@ export default function RegisterPage() {
             
             {/* Error Alert */}
             {error && (
-              <div className="bg-surface border-brut border-main p-3 text-sm font-bold flex items-center gap-2 animate-in slide-in-from-top-2 text-red-600">
+              <div className="bg-surface border-brut border-main p-3 text-sm font-bold flex items-center gap-2 text-red-600">
                 <span>⚠️</span> {error}
               </div>
             )}
@@ -79,6 +88,7 @@ export default function RegisterPage() {
               <input
                 name="username"
                 type="text"
+                autoComplete="username"
                 required
                 className="w-full bg-white border-brut border-main p-3 font-bold text-main outline-none focus:ring-4 focus:ring-black/20 transition-all placeholder:opacity-40"
                 placeholder="Pilih nama keren"
@@ -90,6 +100,7 @@ export default function RegisterPage() {
               <input
                 name="password"
                 type="password"
+                autoComplete="new-password"
                 required
                 className="w-full bg-white border-brut border-main p-3 font-bold text-main outline-none focus:ring-4 focus:ring-black/20 transition-all placeholder:opacity-40"
                 placeholder="Rahasia negara"
@@ -97,7 +108,6 @@ export default function RegisterPage() {
             </div>
 
             <div className="pt-2">
-              {/* Variant secondary (Putih/Hitam) biar kontras di background kuning */}
               <BrutButton type="submit" fullWidth disabled={loading} variant="secondary" className="py-3 text-lg bg-white">
                 {loading ? "PROSES..." : "BUAT AKUN"}
               </BrutButton>
