@@ -5,18 +5,16 @@ import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
 // STRATEGI CACHING: Style A (Page-Level ISR)
-// Halaman ini akan di-generate ulang di server paling cepat setiap 60 detik.
-// User dapet speed statis, server gak engap.
 export const revalidate = 60;
 
 // --- COMPONENTS ---
 
-// 1. Ranking Badge (Top 3 Only)
+// 1. Ranking Badge
 const RankingBadge = ({ rank }: { rank: number }) => {
   let bgClass = "bg-surface"; 
-  if (rank === 1) bgClass = "bg-[#FDFFB6]"; // Gold
-  else if (rank === 2) bgClass = "bg-[#E0E0E0]"; // Silver
-  else if (rank === 3) bgClass = "bg-[#FFCCB6]"; // Bronze
+  if (rank === 1) bgClass = "bg-[#FDFFB6]"; 
+  else if (rank === 2) bgClass = "bg-[#E0E0E0]"; 
+  else if (rank === 3) bgClass = "bg-[#FFCCB6]"; 
 
   return (
     <div className={`absolute top-0 left-0 ${bgClass} border-b-[3px] border-r-[3px] border-main px-3 py-1 z-20 shadow-sm`}>
@@ -25,7 +23,7 @@ const RankingBadge = ({ rank }: { rank: number }) => {
   );
 };
 
-// 2. Drama Grid Component (Showcase Style)
+// 2. Drama Grid Component
 const DramaGrid = ({ 
   title, 
   subtitle, 
@@ -52,7 +50,6 @@ const DramaGrid = ({
 
   return (
     <section className="space-y-6">
-      {/* Editorial Section Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b-[3px] border-main pb-4 gap-2">
         <div className="flex items-center gap-3">
           <div className="h-10 w-2 bg-accent border-[3px] border-main"></div>
@@ -66,12 +63,9 @@ const DramaGrid = ({
         </div>
       </div>
       
-      {/* Grid Layout */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
         {safeItems.slice(0, 10).map((d, index) => {
           const rank = index + 1;
-          
-          // Logic Episode Pintar
           const epNum = Number(d.total_ep);
           const episodeText = Number.isFinite(epNum) && epNum > 0 ? `${epNum} EPS` : "ONGOING";
 
@@ -82,13 +76,10 @@ const DramaGrid = ({
               className="group block h-full outline-none focus-visible:ring-4 focus-visible:ring-accent rounded-none relative"
               aria-label={`Nonton ${d.title}`}
             >
-              {/* Card Container */}
-              {/* FIX: Shadow Hover pake #171717 (Main Color) biar konsisten & mewah */}
               <div className="h-full relative overflow-hidden bg-white border-brut border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#171717]">
                 
                 {isRanking && rank <= 3 && <RankingBadge rank={rank} />}
 
-                {/* Poster Image (3:4 Ratio) */}
                 <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-main">
                   <Image 
                     src={d.cover_url || "/placeholder.jpg"} 
@@ -101,20 +92,18 @@ const DramaGrid = ({
                   <div className="hidden md:block absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                 </div>
 
-                {/* Title Strip */}
                 <div className="bg-surface p-3 h-full flex flex-col justify-between">
                   <h3 className="font-bold text-xs md:text-sm truncate uppercase tracking-tight text-main" title={d.title}>
                     {d.title}
                   </h3>
                   <div className="flex justify-between items-center mt-2 border-t-[2px] border-main/10 pt-2">
                     <span className="text-[10px] font-bold opacity-60">{episodeText}</span>
-                    {/* FIX: Underline cuma di desktop hover */}
                     <span className="text-[10px] font-black text-accent md:group-hover:underline">WATCH</span>
                   </div>
                 </div>
               </div>
             </Link>
-          )
+          );
         })}
       </div>
     </section>
@@ -161,14 +150,12 @@ export default async function DracinHomePage() {
               <p className="text-sm font-bold opacity-60 mt-1 pl-1">Katalog Streaming Premium.</p>
             </div>
 
-            {/* Search Bar */}
             <form action="/dracin/search" className="w-full md:w-auto flex gap-2">
               <input 
                 name="q"
                 placeholder="Cari judul..." 
                 className="flex-1 md:w-64 bg-bg border-[3px] border-main p-3 font-bold text-sm outline-none focus:ring-4 focus:ring-accent/20 transition-all placeholder:opacity-40"
               />
-              {/* FIX: Hover pake md: prefix biar aman di mobile */}
               <button type="submit" className="bg-accent text-white border-[3px] border-main px-4 font-black md:hover:bg-black transition-colors shadow-sm active:translate-y-1">
                 🔍
               </button>
@@ -178,7 +165,6 @@ export default async function DracinHomePage() {
           {/* Filter Chips */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {['🔥 Hot Ranking', '❤️ For You', '🆕 Latest Drop', '🎬 Ongoing', '✅ Completed'].map((chip, i) => (
-              {/* FIX: Shadow Hover pake #171717 */}
               <button key={i} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
                 {chip}
               </button>
