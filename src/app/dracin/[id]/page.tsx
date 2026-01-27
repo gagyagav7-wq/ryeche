@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
-import BrutButton from "@/components/BrutButton";
 import VideoPlayer from "@/components/VideoPlayer"; 
 import { getDramaDetail, getVideoType } from "@/lib/api";
 
@@ -39,63 +38,83 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   if (!data || !data.info) return notFound();
 
   const episodes = Array.isArray(data.episodes) ? data.episodes : [];
-  const epIdParam = Array.isArray(searchParams?.epId) ? searchParams.epId[0] : searchParams?.epId;
+  const rawEpId = searchParams?.epId;
+  const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
+  const hasEpisodes = episodes.length > 0;
   const videoUrl = activeEpisode?.video_url || "";
-  
+  const videoType = getVideoType(videoUrl);
+  const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
+
+  // DEBUG VIDEO (Server Side)
+  if (process.env.NODE_ENV !== "production") {
+    console.warn(`[VideoDebug] URL: ${videoUrl ? videoUrl.slice(0, 50) + "..." : "KOSONG"}`);
+  }
+
   return (
-    <main className="min-h-dvh bg-bg text-main p-4 md:p-8 pb-24">
-      {/* HEADER */}
-      <header className="flex gap-4 items-center mb-6">
-         <Link href="/dracin">
-            <span className="px-3 py-1 text-xs font-black bg-white border-[3px] border-main cursor-pointer hover:bg-surface">
-              &larr; BACK
-            </span>
-         </Link>
-         <h1 className="text-xl font-black uppercase truncate">{data.info.title}</h1>
-      </header>
+    <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
+      {/* BG Pointer Events None */}
+      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10 pointer-events-none" />
+      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10 pointer-events-none" />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* PLAYER */}
-        <div className="lg:col-span-2 space-y-4">
-           <div className="bg-black aspect-video border-[3px] border-main shadow-brut relative">
-             {videoUrl ? (
-               <VideoPlayer 
-                 url={videoUrl} 
-                 type={getVideoType(videoUrl)} 
-                 storageKey={`dracin-${id}`}
-                 subtitles={[]}
-                 key={activeEpisode?.id || "init"}
-               />
-             ) : (
-               <div className="flex items-center justify-center h-full text-white font-bold">VIDEO TIDAK TERSEDIA</div>
-             )}
-           </div>
-           <BrutCard className="bg-white border-brut shadow-brut p-4">
-              <h1 className="text-2xl font-black uppercase mb-2">{data.info.title}</h1>
-              <p className="opacity-80 text-sm">{data.info.synopsis || "No synopsis."}</p>
-           </BrutCard>
-        </div>
+      <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8 relative z-10">
+        <header className="flex gap-4 items-center mb-6">
+           <Link href="/dracin">
+              <span className="px-3 py-1 text-xs font-black bg-white border-[3px] border-main cursor-pointer hover:bg-surface">&larr; BACK</span>
+           </Link>
+           <h1 className="text-xl font-black uppercase truncate">{data.info.title}</h1>
+        </header>
 
-        {/* EPISODES */}
-        <div className="lg:col-span-1">
-           <BrutCard className="bg-surface border-brut shadow-brut h-[600px] flex flex-col p-0">
-              <div className="p-4 border-b-[3px] border-main font-black">PLAYLIST ({episodes.length})</div>
-              <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                {episodes.map((ep: any, idx: number) => {
-                  const isActive = String(ep.id) === String(activeEpisode?.id);
-                  return (
-                    <Link key={ep.id} href={`/dracin/${id}?epId=${encodeURIComponent(ep.id)}`} replace 
-                          className={`block p-3 border-[3px] border-main font-bold text-sm ${isActive ? "bg-accent text-white" : "bg-white hover:bg-[#FDFFB6]"}`}>
-                      <div className="flex justify-between">
-                        <span className="truncate">#{idx+1} {ep.name}</span>
-                        {isActive && <span>▶</span>}
-                      </div>
-                    </Link>
-                  )
-                })}
-              </div>
-           </BrutCard>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-4">
+             <div className="bg-black aspect-video border-[3px] border-main shadow-brut relative group">
+               {videoUrl ? (
+                 <VideoPlayer 
+                   url={videoUrl} 
+                   type={videoType} 
+                   storageKey={storageKey}
+                   subtitles={[]}
+                   key={activeEpisode?.id || "init"}
+                 />
+               ) : (
+                 <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
+                    <span className="text-2xl">🔌</span>
+                    <p>VIDEO TIDAK TERSEDIA</p>
+                    <p className="text-xs font-normal opacity-50 mt-2">Cek Network Tab: m3u8 ok tapi ts error?</p>
+                 </div>
+               )}
+             </div>
+             <BrutCard className="bg-white border-brut shadow-brut p-4">
+                <h1 className="text-2xl font-black uppercase mb-2">{data.info.title}</h1>
+                <p className="opacity-80 text-sm">{data.info.synopsis || "No synopsis."}</p>
+             </BrutCard>
+          </div>
+
+          <div className="lg:col-span-1">
+             <BrutCard className="bg-surface border-brut shadow-brut h-[600px] flex flex-col p-0">
+                <div className="p-4 border-b-[3px] border-main font-black">PLAYLIST ({episodes.length})</div>
+                <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                  {episodes.map((ep: any, idx: number) => {
+                    const isActive = String(ep.id) === String(activeEpisode?.id);
+                    return (
+                      <Link 
+                        key={ep.id} 
+                        // FIX: String() sebelum encodeURIComponent
+                        href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
+                        replace 
+                        className={`block p-3 border-[3px] border-main font-bold text-sm transition-all outline-none focus-visible:ring-4 focus-visible:ring-accent ${isActive ? "bg-accent text-white" : "bg-white hover:bg-[#FDFFB6]"}`}
+                      >
+                        <div className="flex justify-between">
+                          <span className="truncate">#{idx+1} {ep.name}</span>
+                          {isActive && <span>▶</span>}
+                        </div>
+                      </Link>
+                    )
+                  })}
+                </div>
+             </BrutCard>
+          </div>
         </div>
       </div>
     </main>
