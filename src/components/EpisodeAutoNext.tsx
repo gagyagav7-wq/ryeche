@@ -4,7 +4,7 @@ import VideoPlayer from "@/components/VideoPlayer";
 
 interface Props {
   dramaId: string;
-  nextEpId?: string; // Cuma butuh ID episode selanjutnya (Hemat Payload!)
+  nextEpId?: string;
   url: string;
   type: "hls" | "mp4";
   storageKey: string;
@@ -21,11 +21,12 @@ export default function EpisodeAutoNext({
 
   const handleEnded = () => {
     if (nextEpId) {
-      console.log("🎬 Episode selesai! Lanjut ke EP:", nextEpId);
+      console.log("🎬 Episode selesai! Auto-replace ke EP:", nextEpId);
       const nextUrl = `/dracin/${dramaId}?epId=${encodeURIComponent(nextEpId)}`;
-      router.push(nextUrl);
+      // Gunakan replace agar history back tetap ke library, bukan episode sebelumnya
+      router.replace(nextUrl);
     } else {
-      console.log("🏁 Tamat bos. Gak ada episode lagi.");
+      console.log("🏁 Tamat bos.");
     }
   };
 
