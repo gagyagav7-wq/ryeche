@@ -19,20 +19,19 @@ const RankingBadge = ({ rank }: { rank: number }) => {
   );
 };
 
-// Component Grid yang menerima 'viewAllLink' untuk navigasi ke page khusus
 const DramaGrid = ({ 
   id, 
   title, 
   subtitle, 
   items, 
-  viewAllLink, 
+  viewAllLink, // <--- PROP BARU
   isRanking = false 
 }: { 
   id: string,
   title: string, 
   subtitle: string, 
   items: any[], 
-  viewAllLink: string,
+  viewAllLink: string, 
   isRanking?: boolean 
 }) => {
   const safeItems = Array.isArray(items) ? items : [];
@@ -49,7 +48,6 @@ const DramaGrid = ({
   }
 
   return (
-    // relative z-10 biar interaksi gak kehalang background
     <section id={id} className="space-y-6 scroll-mt-24 relative z-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b-[3px] border-main pb-4 gap-2">
         <div className="flex items-center gap-3">
@@ -60,8 +58,8 @@ const DramaGrid = ({
           </div>
         </div>
         
-        {/* Tombol VIEW ALL mengarah ke Route Page Khusus (misal: /dracin/hotrank) */}
         <div className="hidden md:block">
+          {/* FIX: Link ke halaman khusus (hotrank/foryou/latest) */}
           <Link 
             href={viewAllLink}
             className="inline-block text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer md:hover:bg-accent transition-colors"
@@ -135,7 +133,7 @@ export default async function DracinHomePage() {
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
       
-      {/* Decorative BG (Pointer Events None WAJIB di sini biar layer bawah gak nge-block klik) */}
+      {/* Decorative BG (WAJIB pointer-events-none) */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
@@ -147,7 +145,6 @@ export default async function DracinHomePage() {
         {/* --- COMMAND BAR --- */}
         <header className="space-y-6 relative z-20">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-[3px] border-main pb-6 bg-surface/90 backdrop-blur-md p-6 border-[3px] border-main shadow-brut">
-            
             <div>
               <div className="flex items-center gap-3">
                 <Link href="/dashboard">
@@ -175,51 +172,21 @@ export default async function DracinHomePage() {
             </form>
           </div>
 
-          {/* Chips Filter (Native <a> untuk anchor, Link untuk route) */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide relative z-30">
             {chips.map((chip, i) => {
               const className = "whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none block cursor-pointer";
-              
               if (chip.href.startsWith('#')) {
-                return (
-                  <a key={i} href={chip.href} className={className}>
-                    {chip.label}
-                  </a>
-                );
+                return <a key={i} href={chip.href} className={className}>{chip.label}</a>;
               }
-              return (
-                <Link key={i} href={chip.href} className={className}>
-                  {chip.label}
-                </Link>
-              );
+              return <Link key={i} href={chip.href} className={className}>{chip.label}</Link>;
             })}
           </div>
         </header>
 
-        {/* --- CONTENT GRIDS --- */}
-        {/* Pass ID untuk scroll anchor, dan viewAllLink untuk tombol View All */}
-        <DramaGrid 
-          id="hot" 
-          title="Hot Ranking 🔥" 
-          subtitle="Top 10 Most Watched This Week" 
-          items={hotRank} 
-          viewAllLink="/dracin/hotrank"
-          isRanking={true} 
-        />
-        <DramaGrid 
-          id="foryou" 
-          title="For You ❤️" 
-          subtitle="Curated picks based on trend" 
-          items={forYou} 
-          viewAllLink="/dracin/foryou"
-        />
-        <DramaGrid 
-          id="new" 
-          title="Fresh Drop 🆕" 
-          subtitle="Just uploaded to the server" 
-          items={latest} 
-          viewAllLink="/dracin/latest"
-        />
+        {/* --- CONTENT GRIDS (Pass link view all yang benar) --- */}
+        <DramaGrid id="hot" title="Hot Ranking 🔥" subtitle="Top 10 Most Watched" items={hotRank} viewAllLink="/dracin/hotrank" isRanking={true} />
+        <DramaGrid id="foryou" title="For You ❤️" subtitle="Curated picks" items={forYou} viewAllLink="/dracin/foryou" />
+        <DramaGrid id="new" title="Fresh Drop 🆕" subtitle="Just uploaded" items={latest} viewAllLink="/dracin/latest" />
 
       </div>
     </main>
