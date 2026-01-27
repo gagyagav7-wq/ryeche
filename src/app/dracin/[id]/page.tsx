@@ -17,7 +17,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
 
   // --- DEBUG LOG START ---
   console.log("=================================");
-  console.log("DEBUG: Minta ID berapa?", id);
+  console.log("DEBUG: ISI DATA ASLI:", JSON.stringify(data, null, 2));
   // --- DEBUG LOG END ---
 
   let data;
