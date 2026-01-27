@@ -28,28 +28,32 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     console.log("DEBUG: ISI DATA ASLI:", JSON.stringify(data, null, 2)); 
     console.log("=================================");
 
+  // ... (ini bagian try-catch lu yang lama)
   } catch (error) {
     console.error("DEBUG ERROR:", error);
-    // ... (kode error lu di bawah sini biarin aja)
-    return (
-      <div className="min-h-dvh flex flex-col items-center justify-center bg-bg gap-6 p-4">
-        <div className="text-6xl">⚠️</div>
-        <BrutCard className="bg-white border-brut shadow-brut max-w-md text-center">
-          <h1 className="text-2xl font-black uppercase mb-2">Gagal Memuat Data</h1>
-          <p className="opacity-70 font-bold mb-6">ID salah atau server error.</p>
-          <Link href="/dracin">
-             <div className="w-full bg-main text-white font-black py-3 border-[3px] border-black text-center cursor-pointer hover:bg-black">
-              &larr; KEMBALI
-            </div>
-          </Link>
-        </BrutCard>
-      </div>
-    );
+    // ... (return error UI) ...
   }
 
-  // Jika data kosong atau tidak ada info, tampilkan 404
+  // ===============================================
+  // 🔥 JURUS PENYELAMAT DARI API BUSUK 🔥
+  // Kalau info NULL, kita maling data dari episode pertama!
+  if (data && !data.info && data.episodes && data.episodes.length > 0) {
+     const firstEp = data.episodes[0];
+     // Bersihin judul (Hapus "-EP.68" di belakangnya biar rapi)
+     const cleanTitle = firstEp.name ? firstEp.name.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
+     
+     data.info = {
+        title: cleanTitle,
+        synopsis: firstEp.raw?.introduce || "Sinopsis belum tersedia.",
+        cover: firstEp.raw?.chapter_cover || ""
+     };
+     console.log("DEBUG: Info berhasil diperbaiki pakai data Episode! Judul:", cleanTitle);
+  }
+  // ===============================================
+
+  // Baru deh cek validasi (sekarang harusnya lolos)
   if (!data || !data.info) {
-    console.log("DEBUG: Data tidak valid, masuk ke notFound()");
+    console.log("DEBUG: Data tetep gak valid, nyerah.");
     return notFound();
   }
 
