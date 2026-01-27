@@ -1,209 +1,212 @@
-"use client";
-import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import Hls from "hls.js";
+import Image from "next/image";
+import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
+import VideoPlayer from "@/components/VideoPlayer"; // Pastikan path ini benar
+import { getDramaDetail, getVideoType } from "@/lib/api";
 
-// Tipe data sesuai API baru
-interface Episode {
-  id: string;
-  name: string;
-  video_url: string;
+// 1. ISR Strategy: Cache halaman selama 60 detik
+export const revalidate = 60;
+
+interface Props {
+  params: { id: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }
 
-interface DramaDetail {
-  info: {
-    id: string;
-    title: string;
-    cover_url: string;
-    synopsis: string;
-    total_ep: string | number;
-  };
-  episodes: Episode[];
-}
+export default async function DramaDetailPage({ params, searchParams }: Props) {
+  const { id } = params;
 
-export default function DramaDetailPage() {
-  const params = useParams();
-  const id = params?.id as string;
+  // 2. Server-Side Fetching
+  let data;
+  try {
+    data = await getDramaDetail(id);
+  } catch (error) {
+    // 3. Error Handling (Manusiawi & Brutal)
+    return (
+      <div className="min-h-dvh flex flex-col items-center justify-center bg-bg gap-6 p-4">
+        <div className="text-6xl">⚠️</div>
+        <BrutCard className="bg-white border-brut shadow-brut max-w-md text-center">
+          <h1 className="text-2xl font-black uppercase mb-2">Gagal Memuat Data</h1>
+          <p className="opacity-70 font-bold mb-6">
+            Mungkin ID salah atau server lagi ngopi. Coba balik lagi nanti, Commander.
+          </p>
+          <Link href="/dracin">
+            <BrutButton fullWidth>&larr; KEMBALI KE MARKAS</BrutButton>
+          </Link>
+        </BrutCard>
+      </div>
+    );
+  }
 
-  const [data, setData] = useState<DramaDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  // Jika data kosong tapi tidak error (edge case)
+  if (!data || !data.info) return notFound();
+
+  // 4. Episode Logic (URL Based State)
+  const episodes = data.episodes || [];
+  const epIdParam = searchParams.epId;
   
-  // State Player
-  const [currentEp, setCurrentEp] = useState<Episode | null>(null);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  // 1. Fetch Data
-  useEffect(() => {
-    if (!id) return;
-    
-    const fetchData = async () => {
-      try {
-        const res = await fetch(`/lib/api_client_side_helper?id=${id}`); 
-        // NOTE: Karena getDramaDetail itu server-side function, kita gak bisa panggil langsung di "use client".
-        // KITA PAKAI FETCH API ROUTE /api INTERNAL ATAU PANGGIL SERVER ACTION.
-        // TAPI UNTUK SIMPEL, SAYA AKAN PANGGIL API LANGSUNG DARI CLIENT PAKE FETCH BIASA:
-        
-        // Panggil API public langsung (Bypass api.ts server function sementara biar jalan di client)
-        const apiRes = await fetch(`https://api.sansekai.my.id/api/flickreels/detailAndAllEpisode?id=${id}`);
-        const json = await apiRes.json();
-        
-        // Normalisasi Manual (Mirip api.ts) biar data konsisten
-        const rawData = json?.data || json?.result || json;
-        if (!rawData) throw new Error("Data kosong");
-
-        const info = rawData.drama || rawData.info;
-        const episodes = rawData.episodes || [];
-
-        setData({
-          info: {
-            id: info.playlet_id || info.id,
-            title: info.title,
-            cover_url: info.cover || info.cover_square || info.cover_vertical,
-            synopsis: info.introduce || info.description || "Sinopsis belum tersedia.",
-            total_ep: info.upload_num || info.chapterCount || 0,
-          },
-          episodes: episodes.map((ep: any) => ({
-            id: ep.id,
-            name: ep.name,
-            video_url: ep.raw?.videoUrl || ep.videoUrl || "",
-          })),
-        });
-
-        // Auto select episode 1
-        if (episodes.length > 0) {
-          setCurrentEp({
-             id: episodes[0].id,
-             name: episodes[0].name,
-             video_url: episodes[0].raw?.videoUrl || episodes[0].videoUrl
-          });
-        }
-
-      } catch (err) {
-        setError("Gagal memuat drama. Coba refresh.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [id]);
-
-  // 2. Setup HLS Player
-  useEffect(() => {
-    if (currentEp && videoRef.current) {
-      const video = videoRef.current;
-      const src = currentEp.video_url;
-
-      if (Hls.isSupported() && src.includes(".m3u8")) {
-        const hls = new Hls();
-        hls.loadSource(src);
-        hls.attachMedia(video);
-      } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-        video.src = src;
-      } else {
-        video.src = src;
-      }
-    }
-  }, [currentEp]);
-
-  if (loading) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center bg-bg">
-        <div className="animate-spin text-4xl">🧈</div>
-      </div>
-    );
-  }
-
-  if (error || !data) {
-    return (
-      <div className="min-h-dvh flex flex-col items-center justify-center bg-bg gap-4">
-        <h1 className="text-2xl font-black">ERROR: {error}</h1>
-        <Link href="/dracin">
-          <BrutButton>KEMBALI KE KATALOG</BrutButton>
-        </Link>
-      </div>
-    );
-  }
+  // Cari episode berdasarkan param, atau default ke episode pertama
+  const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
+  
+  // Safety check jika episode benar-benar kosong
+  const hasEpisodes = episodes.length > 0;
+  const videoUrl = activeEpisode?.video_url || "";
+  const videoType = getVideoType(videoUrl);
 
   return (
-    <main className="min-h-dvh bg-bg text-main p-4 md:p-8 pb-24">
+    <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
       
-      {/* HEADER: Back & Title */}
-      <div className="max-w-6xl mx-auto mb-6 flex items-center gap-4">
-        <Link href="/dracin">
-          <BrutButton variant="secondary" className="px-3 py-1 text-xs">&larr; BACK</BrutButton>
-        </Link>
-        <h1 className="text-xl md:text-3xl font-black uppercase truncate">{data.info.title}</h1>
+      {/* --- DECORATIVE BACKGROUND (Premium & Subtle) --- */}
+      {/* Noise Texture (Desktop Only) */}
+      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
+      {/* Static Shapes */}
+      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10" />
+      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10" />
 
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8">
         
-        {/* KOLOM KIRI: Player & Info */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* --- COMMAND BAR (Top Header) --- */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface/90 backdrop-blur-md p-4 border-[3px] border-main shadow-brut relative z-10">
+          <div className="flex items-center gap-3">
+            <Link href="/dracin">
+              <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto">
+                &larr; BACK
+              </BrutButton>
+            </Link>
+            <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter truncate max-w-[200px] md:max-w-none">
+              BUTTERHUB <span className="opacity-30">/</span> WATCH
+            </h1>
+            <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 border-[2px] border-black shadow-sm -rotate-2">BETA</span>
+          </div>
+          {/* Judul Drama di kanan (Desktop) */}
+          <div className="hidden md:block font-bold opacity-60 uppercase text-sm tracking-widest">
+            {data.info.title}
+          </div>
+        </header>
+
+        {/* --- MAIN LAYOUT (Grid) --- */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* PLAYER */}
-          <div className="aspect-video bg-black border-[3px] border-main shadow-brut relative group">
-            <video 
-              ref={videoRef} 
-              controls 
-              className="w-full h-full object-contain"
-              poster={data.info.cover_url}
-              autoPlay
-            />
+          {/* KOLOM KIRI (2 Span): Player & Info */}
+          <div className="lg:col-span-2 space-y-6">
+            
+            {/* 1. PLAYER CARD */}
+            <div className="bg-black border-[3px] border-main shadow-brut relative group aspect-video overflow-hidden">
+              {hasEpisodes ? (
+                <VideoPlayer 
+                  url={videoUrl} 
+                  type={videoType} 
+                  // Key penting biar player re-mount pas ganti episode
+                  key={activeEpisode.id} 
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full text-white font-bold">
+                  VIDEO TIDAK TERSEDIA
+                </div>
+              )}
+            </div>
+
+            {/* 2. INFO CARD */}
+            <BrutCard className="bg-white border-brut shadow-brut">
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Poster Kecil */}
+                <div className="hidden md:block w-32 shrink-0 aspect-[3/4] relative border-[3px] border-main bg-gray-200">
+                  <Image 
+                    src={data.info.cover_url} 
+                    alt={data.info.title} 
+                    fill 
+                    className="object-cover"
+                    sizes="128px"
+                  />
+                </div>
+                
+                {/* Details */}
+                <div className="space-y-4 flex-1">
+                  <div>
+                    <h1 className="text-2xl md:text-4xl font-black uppercase leading-none mb-2">
+                      {data.info.title}
+                    </h1>
+                    <div className="flex flex-wrap gap-2 text-xs font-bold">
+                      <span className="bg-accent text-white px-2 py-1 border-2 border-main shadow-sm">
+                        {episodes.length} EPISODES
+                      </span>
+                      <span className="bg-[#FDFFB6] text-main px-2 py-1 border-2 border-main shadow-sm">
+                        {activeEpisode ? `PLAYING: EP ${activeEpisode.name}` : "NO DATA"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="h-[2px] w-full bg-main/10" />
+                  
+                  <div className="prose prose-sm max-w-none">
+                    <p className="font-medium opacity-80 leading-relaxed text-sm md:text-base">
+                      {data.info.synopsis || "Sinopsis belum tersedia untuk drama ini."}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </BrutCard>
+
           </div>
 
-          {/* INFO CARD */}
-          <BrutCard className="bg-white border-brut shadow-brut">
-            <h2 className="text-2xl font-black uppercase mb-2">{data.info.title}</h2>
-            <div className="flex gap-2 text-xs font-bold mb-4">
-              <span className="bg-accent text-white px-2 py-1 border border-black">
-                {data.episodes.length} EPS
-              </span>
-              <span className="bg-surface border border-main px-2 py-1">ONGOING</span>
-            </div>
-            <p className="opacity-80 leading-relaxed text-sm md:text-base">
-              {data.info.synopsis}
-            </p>
-          </BrutCard>
-        </div>
+          {/* KOLOM KANAN (1 Span): Episode List */}
+          <div className="lg:col-span-1">
+            <BrutCard className="bg-surface border-brut shadow-brut h-full max-h-[600px] flex flex-col p-0 overflow-hidden">
+              {/* List Header */}
+              <div className="p-4 border-b-[3px] border-main bg-white flex justify-between items-center sticky top-0 z-10">
+                <h3 className="font-black uppercase text-xl flex items-center gap-2">
+                  <span>Playlist</span>
+                  <span className="text-xs bg-main text-white px-2 py-0.5 rounded-full">
+                    {episodes.length}
+                  </span>
+                </h3>
+                <div className="h-2 w-2 bg-accent rounded-full animate-pulse"></div>
+              </div>
+              
+              {/* Scrollable List */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
+                {episodes.length > 0 ? (
+                  episodes.map((ep: any, idx: number) => {
+                    const isActive = String(ep.id) === String(activeEpisode?.id);
+                    // Gunakan <Link> bukan <button> biar server-side friendly
+                    return (
+                      <Link
+                        key={ep.id}
+                        href={`/dracin/${id}?epId=${ep.id}`}
+                        // preventScroll={true} // Opsional: kalau mau gak scroll ke atas
+                        replace // Gunakan replace biar history browser gak penuh sampah ganti episode
+                        className={`
+                          block w-full text-left p-3 border-2 border-main font-bold text-sm transition-all group outline-none focus-visible:ring-4 focus-visible:ring-accent
+                          ${isActive 
+                            ? "bg-accent text-white shadow-[4px_4px_0px_0px_#171717] translate-x-[-2px] translate-y-[-2px] z-10 relative" 
+                            : "bg-white text-main hover:bg-[#FDFFB6] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px] md:hover:shadow-[2px_2px_0px_0px_#171717]"
+                          }
+                        `}
+                      >
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="truncate min-w-0 flex-1">
+                            <span className="opacity-60 mr-2 text-xs">#{idx + 1}</span>
+                            {/* Truncate judul panjang biar layout aman */}
+                            {ep.name || `Episode ${idx + 1}`}
+                          </span>
+                          {isActive && <span className="text-[10px] animate-pulse">▶ playing</span>}
+                        </div>
+                      </Link>
+                    );
+                  })
+                ) : (
+                  <div className="p-8 text-center opacity-50 font-bold">
+                    Belum ada episode.
+                  </div>
+                )}
+              </div>
+            </BrutCard>
+          </div>
 
-        {/* KOLOM KANAN: Episode List */}
-        <div className="lg:col-span-1">
-          <BrutCard className="bg-surface border-brut shadow-brut h-full max-h-[80vh] flex flex-col">
-            <div className="mb-4 border-b-2 border-main pb-2">
-              <h3 className="font-black uppercase text-xl">PILIH EPISODE</h3>
-            </div>
-            
-            <div className="flex-1 overflow-y-auto pr-2 space-y-2 custom-scrollbar">
-              {data.episodes.map((ep, idx) => {
-                const isActive = currentEp?.id === ep.id;
-                return (
-                  <button
-                    key={ep.id}
-                    onClick={() => setCurrentEp(ep)}
-                    className={`w-full text-left p-3 border-2 border-main font-bold text-sm transition-all flex justify-between items-center group
-                      ${isActive 
-                        ? "bg-accent text-white shadow-[4px_4px_0px_0px_#000] translate-x-[-2px] translate-y-[-2px]" 
-                        : "bg-white hover:bg-gray-100"
-                      }`}
-                  >
-                    <span className="truncate w-3/4">
-                      {/* Kalau nama kepanjangan, truncate biar gak pecah layout */}
-                      EP {idx + 1}: {ep.name.replace(data.info.title, "").trim() || "Episode " + (idx+1)}
-                    </span>
-                    {isActive && <span>▶</span>}
-                  </button>
-                );
-              })}
-            </div>
-          </BrutCard>
         </div>
-
       </div>
     </main>
   );
