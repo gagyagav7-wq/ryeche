@@ -6,7 +6,7 @@ import BrutButton from "@/components/BrutButton";
 import VideoPlayer from "@/components/VideoPlayer"; 
 import { getDramaDetail, getVideoType } from "@/lib/api";
 
-// 1. ISR Strategy: Cache halaman selama 60 detik (Server ringan, Data fresh)
+// 1. ISR Strategy: Cache halaman selama 60 detik
 export const revalidate = 60;
 
 interface Props {
@@ -39,31 +39,27 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     );
   }
 
-  // Edge case: Data kosong
   if (!data || !data.info) return notFound();
 
-  // 4. Episode Logic (URL Based State & Safe Params)
+  // 4. Episode Logic (Safe Params)
   const episodes = data.episodes || [];
-  
-  // FIX: Handle searchParams kalau array (misal ?epId=1&epId=2)
   const rawEpId = searchParams.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   
-  // Cari episode berdasarkan param, atau default ke episode pertama
+  // Cari episode aktif, fallback ke index 0
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
   
   const hasEpisodes = episodes.length > 0;
   const videoUrl = activeEpisode?.video_url || "";
   const videoType = getVideoType(videoUrl);
 
-  // Storage key unik per episode buat VideoPlayer (save last duration)
+  // Storage key unik
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
       
-      {/* --- DECORATIVE BACKGROUND (Premium & Subtle) --- */}
-      {/* Noise Texture (Desktop Only) */}
+      {/* --- DECORATIVE BACKGROUND --- */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
@@ -72,7 +68,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8">
         
-        {/* --- COMMAND BAR (Top Header) --- */}
+        {/* --- COMMAND BAR --- */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface/90 backdrop-blur-md p-4 border-[3px] border-main shadow-brut relative z-10">
           <div className="flex items-center gap-3">
             <Link href="/dracin">
@@ -90,10 +86,10 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
           </div>
         </header>
 
-        {/* --- MAIN LAYOUT (Grid) --- */}
+        {/* --- MAIN LAYOUT --- */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* KOLOM KIRI (2 Span): Player & Info */}
+          {/* KOLOM KIRI (Player + Info) */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* 1. PLAYER CARD */}
@@ -102,11 +98,10 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                 <VideoPlayer 
                   url={videoUrl} 
                   type={videoType} 
-                  // FIX: Wajib ada storageKey & subtitles biar gak error props
                   storageKey={storageKey}
                   subtitles={[]} 
-                  // Key penting biar player re-mount pas ganti episode
-                  key={activeEpisode.id} 
+                  // FIX: Safe key access + fallback biar gak crash
+                  key={activeEpisode?.id ?? "no-ep"} 
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-white font-bold">
@@ -120,8 +115,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
               <div className="flex flex-col md:flex-row gap-6">
                 {/* Poster Kecil */}
                 <div className="hidden md:block w-32 shrink-0 aspect-[3/4] relative border-[3px] border-main bg-gray-200">
+                  {/* FIX: Fallback src image biar gak error next/image */}
                   <Image 
-                    src={data.info.cover_url} 
+                    src={data.info.cover_url || "/placeholder.jpg"} 
                     alt={data.info.title} 
                     fill 
                     className="object-cover"
@@ -130,16 +126,17 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                 </div>
                 
                 {/* Details */}
-                <div className="space-y-4 flex-1">
+                <div className="space-y-4 flex-1 min-w-0">
                   <div>
-                    <h1 className="text-2xl md:text-4xl font-black uppercase leading-none mb-2">
+                    <h1 className="text-2xl md:text-4xl font-black uppercase leading-none mb-2 break-words">
                       {data.info.title}
                     </h1>
                     <div className="flex flex-wrap gap-2 text-xs font-bold">
                       <span className="bg-accent text-white px-2 py-1 border-2 border-main shadow-sm">
                         {episodes.length} EPISODES
                       </span>
-                      <span className="bg-[#FDFFB6] text-main px-2 py-1 border-2 border-main shadow-sm">
+                      {/* FIX: Truncate badge playing biar gak ngerusak layout */}
+                      <span className="bg-[#FDFFB6] text-main px-2 py-1 border-2 border-main shadow-sm truncate max-w-[200px]">
                         {activeEpisode ? `PLAYING: EP ${activeEpisode.name}` : "NO DATA"}
                       </span>
                     </div>
@@ -158,10 +155,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
 
           </div>
 
-          {/* KOLOM KANAN (1 Span): Episode List */}
+          {/* KOLOM KANAN (Episode List) */}
           <div className="lg:col-span-1">
             <BrutCard className="bg-surface border-brut shadow-brut h-full max-h-[600px] flex flex-col p-0 overflow-hidden">
-              {/* List Header */}
               <div className="p-4 border-b-[3px] border-main bg-white flex justify-between items-center sticky top-0 z-10">
                 <h3 className="font-black uppercase text-xl flex items-center gap-2">
                   <span>Playlist</span>
@@ -172,7 +168,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                 <div className="h-2 w-2 bg-accent rounded-full animate-pulse"></div>
               </div>
               
-              {/* Scrollable List */}
               <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
                 {episodes.length > 0 ? (
                   episodes.map((ep: any, idx: number) => {
@@ -181,8 +176,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                       <Link
                         key={ep.id}
                         href={`/dracin/${id}?epId=${ep.id}`}
-                        // FIX: Replace biar history gak numpuk pas ganti eps
-                        replace 
+                        replace
                         className={`
                           block w-full text-left p-3 border-[3px] border-main font-bold text-sm transition-all group outline-none focus-visible:ring-4 focus-visible:ring-accent
                           ${isActive 
@@ -194,7 +188,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                         <div className="flex justify-between items-center gap-2">
                           <span className="truncate min-w-0 flex-1">
                             <span className="opacity-60 mr-2 text-xs">#{idx + 1}</span>
-                            {/* Truncate judul panjang biar layout aman */}
                             {ep.name || `Episode ${idx + 1}`}
                           </span>
                           {isActive && <span className="text-[10px] animate-pulse">▶ playing</span>}
