@@ -15,26 +15,21 @@ interface Props {
 export default async function DramaDetailPage({ params, searchParams }: Props) {
   const { id } = params;
 
-  // --- TEMPEL INI ---
+  // --- DEBUG LOG START ---
   console.log("=================================");
   console.log("DEBUG: Minta ID berapa?", id);
-  // ------------------
+  // --- DEBUG LOG END ---
 
   let data;
   try {
     data = await getDramaDetail(id);
     
-    // --- TEMPEL INI JUGA ---
-    console.log("DEBUG: Hasil API apa?", JSON.stringify(data, null, 2));
-    console.log("=================================");
-    // -----------------------
+    // --- DEBUG LOG START ---
+    console.log("DEBUG: Hasil API apa?", JSON.stringify(data ? "ADA DATA" : "KOSONG", null, 2));
+    // --- DEBUG LOG END ---
+
   } catch (error) {
-    // ... (sisanya biarin sama)
-    
-  let data;
-  try {
-    data = await getDramaDetail(id);
-  } catch (error) {
+    console.error("DEBUG ERROR:", error);
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center bg-bg gap-6 p-4">
         <div className="text-6xl">⚠️</div>
@@ -51,14 +46,18 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     );
   }
 
-  if (!data || !data.info) return notFound();
+  // Jika data kosong atau tidak ada info, tampilkan 404
+  if (!data || !data.info) {
+    console.log("DEBUG: Data tidak valid, masuk ke notFound()");
+    return notFound();
+  }
 
   const episodes = Array.isArray(data.episodes) ? data.episodes : [];
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
 
-  // --- LOGIC PROXY BARU ---
+  // Logic Proxy
   let videoUrl = "";
   const rawUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl;
 
@@ -83,6 +82,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Kolom Kiri: Video & Info */}
           <div className="lg:col-span-2 space-y-4">
              <div className="bg-black aspect-video border-[3px] border-main shadow-brut relative group">
                {videoUrl ? (
@@ -108,6 +108,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
              </BrutCard>
           </div>
 
+          {/* Kolom Kanan: Playlist */}
           <div className="lg:col-span-1">
              <BrutCard className="bg-surface border-brut shadow-brut h-[600px] flex flex-col p-0">
                 <div className="p-4 border-b-[3px] border-main font-black">PLAYLIST ({episodes.length})</div>
