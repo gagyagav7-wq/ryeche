@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
 export const revalidate = 60;
@@ -21,7 +20,7 @@ const RankingBadge = ({ rank }: { rank: number }) => {
 };
 
 const DramaGrid = ({ 
-  id, // Tambah ID buat Anchor Link
+  id, 
   title, 
   subtitle, 
   items, 
@@ -37,7 +36,7 @@ const DramaGrid = ({
 
   if (safeItems.length === 0) {
     return (
-      <section id={id} className="space-y-6 opacity-50 py-10 scroll-mt-24">
+      <section id={id} className="space-y-6 opacity-50 py-10 scroll-mt-24 relative z-10">
         <div className="flex items-end gap-4 border-b-[3px] border-main pb-2">
           <h2 className="text-3xl font-black uppercase">{title}</h2>
         </div>
@@ -47,7 +46,8 @@ const DramaGrid = ({
   }
 
   return (
-    <section id={id} className="space-y-6 scroll-mt-24">
+    // FIX: relative z-10 biar interaksi gak kehalang background
+    <section id={id} className="space-y-6 scroll-mt-24 relative z-10">
       <div className="flex flex-col md:flex-row md:items-end justify-between border-b-[3px] border-main pb-4 gap-2">
         <div className="flex items-center gap-3">
           <div className="h-10 w-2 bg-accent border-[3px] border-main"></div>
@@ -57,14 +57,15 @@ const DramaGrid = ({
           </div>
         </div>
         <div className="hidden md:block">
-          {/* FIX: Tambah md: prefix biar gak ghost hover di mobile */}
-          <Link 
-            href="/dracin/search" 
+          {/* FIX: VIEW ALL jadi Anchor Link (<a>) ke section ini sendiri biar fokus */}
+          <a 
+            href={`#${id}`}
             className="inline-block text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer md:hover:bg-accent transition-colors"
           >
-            VIEW ALL &rarr;
-          </Link>
+            VIEW LIST &darr;
+          </a>
         </div>
+      </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
         {safeItems.slice(0, 10).map((d, index) => {
@@ -119,40 +120,36 @@ export default async function DracinHomePage() {
     getHotRank().catch(() => [])
   ]);
 
-  // FIX: Hybrid Chip Logic (Anchor buat section home, Search buat kategori lain)
   const chips = [
-    { label: '🔥 Hot Ranking', href: '#hot' },      // Anchor Scroll
-    { label: '❤️ For You', href: '#foryou' },       // Anchor Scroll
-    { label: '🆕 Latest Drop', href: '#new' },      // Anchor Scroll
-    { label: '🎬 Ongoing', href: '/dracin/search?q=ongoing' },   // Search Query
-    { label: '✅ Completed', href: '/dracin/search?q=completed' }, // Search Query
+    { label: '🔥 Hot Ranking', href: '#hot' },      
+    { label: '❤️ For You', href: '#foryou' },       
+    { label: '🆕 Latest Drop', href: '#new' },      
+    { label: '🎬 Ongoing', href: '/dracin/search?q=ongoing' },   
+    { label: '✅ Completed', href: '/dracin/search?q=completed' }, 
   ];
 
-  // ... (Bagian atas sama)
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
       
-      {/* Decorative BG (FIX: pointer-events-none WAJIB di semua layer absolute) */}
+      {/* Decorative BG (Pointer Events None WAJIB) */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10 pointer-events-none" />
       <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10 pointer-events-none" />
 
-// ... (Sisanya sama)
-
-      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-24">
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-24 relative z-10">
         
         {/* --- COMMAND BAR --- */}
-        <header className="space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-[3px] border-main pb-6 bg-surface/90 backdrop-blur-md p-6 border-[3px] border-main shadow-brut relative z-10">
+        <header className="space-y-6 relative z-20">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-[3px] border-main pb-6 bg-surface/90 backdrop-blur-md p-6 border-[3px] border-main shadow-brut">
             
             <div>
               <div className="flex items-center gap-3">
                 <Link href="/dashboard">
-                  <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto">
+                  <span className="inline-block px-3 py-1 text-xs font-black border-[3px] border-main bg-white md:hover:bg-main md:hover:text-white transition-colors cursor-pointer">
                     &larr; HUB
-                  </BrutButton>
+                  </span>
                 </Link>
                 <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">
                   BUTTERHUB <span className="opacity-30">/</span> DRACIN
@@ -174,22 +171,28 @@ export default async function DracinHomePage() {
             </form>
           </div>
 
-          {/* FIX: CHIPS PAKAI LINK LANGSUNG (NO BUTTON INSIDE) */}
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-            {chips.map((chip, i) => (
-              <Link 
-                key={i} 
-                href={chip.href}
-                className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none block"
-              >
-                {chip.label}
-              </Link>
-            ))}
+          {/* FIX: Pake <a> Native kalau linknya Anchor (#) */}
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide relative z-30">
+            {chips.map((chip, i) => {
+              const className = "whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#171717] transition-all active:translate-y-0 active:shadow-none block cursor-pointer";
+              
+              if (chip.href.startsWith('#')) {
+                return (
+                  <a key={i} href={chip.href} className={className}>
+                    {chip.label}
+                  </a>
+                );
+              }
+              return (
+                <Link key={i} href={chip.href} className={className}>
+                  {chip.label}
+                </Link>
+              );
+            })}
           </div>
         </header>
 
         {/* --- CONTENT GRIDS --- */}
-        {/* FIX: Tambah ID buat Anchor Scroll */}
         <DramaGrid id="hot" title="Hot Ranking 🔥" subtitle="Top 10 Most Watched This Week" items={hotRank} isRanking={true} />
         <DramaGrid id="foryou" title="For You ❤️" subtitle="Curated picks based on trend" items={forYou} />
         <DramaGrid id="new" title="Fresh Drop 🆕" subtitle="Just uploaded to the server" items={latest} />
