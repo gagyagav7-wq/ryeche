@@ -1,7 +1,6 @@
 // src/lib/api.ts
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://sansekai.bospedia.com/api";
 
-// Helper internal untuk fetch agar tidak berulang (Dry Code)
 async function fetchAPI(path: string) {
   const url = `${API_BASE_URL}${path}`;
   console.log(`[SERVER FETCH] Hit: ${url}`);
@@ -20,14 +19,13 @@ async function fetchAPI(path: string) {
     }
 
     const json = await res.json();
-    return json.data || json; // Handle berbagai struktur response
+    return json.data || json; 
   } catch (error: any) {
     console.error(`[FETCH ERROR] ${url}: ${error.message}`);
     throw error;
   }
 }
 
-// 1. Fungsi Detail Drama (Sudah Dioptimasi)
 export async function getDramaDetail(id: string) {
   const rawData = await fetchAPI(`/detail?id=${id}`);
   
@@ -50,22 +48,19 @@ export async function getDramaDetail(id: string) {
   };
 }
 
-// 2. Fungsi Search Drama (Dibutuhkan oleh /dracin/search)
 export async function searchDrama(query: string) {
   return await fetchAPI(`/search?q=${encodeURIComponent(query)}`);
 }
 
-// 3. Fungsi For You (Dibutuhkan oleh /dracin/foryou)
 export async function getForYou() {
   return await fetchAPI(`/foryou`);
 }
 
-// 4. Fungsi Hot Rank (Dibutuhkan oleh /dracin/hotrank)
 export async function getHotRank() {
   return await fetchAPI(`/hotrank`);
 }
 
-// 5. Fungsi Latest/Home (Dibutuhkan oleh /dracin)
-export async function getLatestDrama() {
+// FIX: Nama disamakan jadi getLatest supaya build lolos
+export async function getLatest() {
   return await fetchAPI(`/latest`);
 }
