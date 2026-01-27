@@ -11,8 +11,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(""); // <-- Tambah state error ini
 
-  // ... imports
-  // ... component start
+  // ... imports dan kode lain
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -33,14 +32,20 @@ export default function LoginPage() {
       });
 
       if (res.ok) {
-        // FIX SECURITY: Validasi callbackUrl biar gak redirect ke website luar (phishing)
         const rawCallback = searchParams.get("callbackUrl") || "/dashboard";
-        const safeCallback = rawCallback.startsWith("/") ? rawCallback : "/dashboard";
+        
+        // SECURITY FIX: Anti Open Redirect yang ketat
+        // Tolak "//evil.com" dan bypass character "\"
+        const safeCallback = 
+          rawCallback.startsWith("/") && 
+          !rawCallback.startsWith("//") && 
+          !rawCallback.includes("\\")
+            ? rawCallback 
+            : "/dashboard";
         
         router.replace(safeCallback);
         router.refresh();
       } else {
-        // ... error handling (sama kayak sebelumnya)
         let msg = "Login gagal, coba lagi.";
         try { const json = await res.json(); msg = json.error || msg; } catch {}
         setError(msg);
@@ -52,7 +57,7 @@ export default function LoginPage() {
     }
   }
 
-// ... render UI (sama kayak sebelumnya)
+// ... sisa kode render UI
 
   return (
     <main className="min-h-dvh flex flex-col items-center justify-center p-4 bg-bg text-main relative overflow-hidden">
