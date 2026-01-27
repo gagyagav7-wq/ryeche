@@ -1,15 +1,10 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import VideoPlayer from "@/components/VideoPlayer";
-import { useEffect } from "react";
-
-type Ep = { id: string | number };
 
 interface Props {
   dramaId: string;
-  episodes: Ep[];
-  activeEpId: string;
+  nextEpId?: string; // Cuma butuh ID episode selanjutnya (Hemat Payload!)
   url: string;
   type: "hls" | "mp4";
   storageKey: string;
@@ -17,8 +12,7 @@ interface Props {
 
 export default function EpisodeAutoNext({
   dramaId,
-  episodes,
-  activeEpId,
+  nextEpId,
   url,
   type,
   storageKey,
@@ -26,19 +20,12 @@ export default function EpisodeAutoNext({
   const router = useRouter();
 
   const handleEnded = () => {
-    // Cari index episode sekarang
-    const idx = episodes.findIndex((e) => String(e.id) === String(activeEpId));
-    
-    // Cek apakah ada episode selanjutnya?
-    if (idx >= 0 && idx < episodes.length - 1) {
-      const nextEp = episodes[idx + 1];
-      console.log("🎬 Episode selesai! Lanjut ke EP:", nextEp.id);
-      
-      // Pindah halaman
-      const nextUrl = `/dracin/${dramaId}?epId=${encodeURIComponent(String(nextEp.id))}`;
+    if (nextEpId) {
+      console.log("🎬 Episode selesai! Lanjut ke EP:", nextEpId);
+      const nextUrl = `/dracin/${dramaId}?epId=${encodeURIComponent(nextEpId)}`;
       router.push(nextUrl);
     } else {
-      console.log("🏁 Udah tamat bos. Gak ada episode lagi.");
+      console.log("🏁 Tamat bos. Gak ada episode lagi.");
     }
   };
 
@@ -48,7 +35,7 @@ export default function EpisodeAutoNext({
       type={type}
       storageKey={storageKey}
       subtitles={[]}
-      onEnded={handleEnded} // Trigger fungsi di atas
+      onEnded={handleEnded}
     />
   );
 }
