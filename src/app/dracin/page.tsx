@@ -57,15 +57,14 @@ const DramaGrid = ({
           </div>
         </div>
         <div className="hidden md:block">
-          {/* FIX: Link langsung di-style, jangan pake span/button di dalemnya */}
+          {/* FIX: Tambah md: prefix biar gak ghost hover di mobile */}
           <Link 
             href="/dracin/search" 
-            className="inline-block text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer hover:bg-accent transition-colors"
+            className="inline-block text-xs font-bold bg-black text-white px-2 py-1 cursor-pointer md:hover:bg-accent transition-colors"
           >
             VIEW ALL &rarr;
           </Link>
         </div>
-      </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
         {safeItems.slice(0, 10).map((d, index) => {
