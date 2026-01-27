@@ -4,7 +4,7 @@ import BrutCard from "@/components/BrutCard";
 import VideoPlayer from "@/components/VideoPlayer"; 
 import { getDramaDetail } from "@/lib/api";
 
-// Helper simpel buat deteksi tipe video (Inline biar aman gak ngerusak import)
+// Helper deteksi tipe video
 const determineVideoType = (url: string) => {
   return url.includes(".m3u8") ? "hls" : "mp4";
 };
@@ -27,16 +27,16 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     console.error("Error fetching drama:", error);
   }
 
-  // --- LOGIC PENYELAMAT (FALLBACK) ---
-  // Fix 4: Gunakan cover_url agar konsisten dengan schema API
+  // --- LOGIC PENYELAMAT (FALLBACK & SCHEMA CONSISTENCY) ---
   if (data && !data.info && data.episodes && data.episodes.length > 0) {
      const firstEp = data.episodes[0];
      const cleanTitle = firstEp.name ? firstEp.name.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
      
      data.info = {
+        id: String(id), // Fix 5: Inject ID biar konsisten schema
         title: cleanTitle,
         synopsis: firstEp.raw?.introduce || "Sinopsis belum tersedia.",
-        cover_url: firstEp.raw?.chapter_cover || "" // Changed from cover to cover_url
+        cover_url: firstEp.raw?.chapter_cover || "" 
      };
   }
 
@@ -50,17 +50,18 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
 
   // Logic Direct Video & Type Detection
+  // NOTE: Jika HLS error (404 segment/CORS), cek Network Tab browser.
+  // Direct URL ke CDN biasanya butuh Origin Header yang pas atau token. 
+  // Jika gagal terus, pertimbangkan proxy server-side khusus HLS.
   const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
-  
-  // Fix 1: Auto-detect video type (jangan hardcode mp4)
   const videoType = determineVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
       
-      {/* Fix 3: Noise Texture Optimization (Hidden on mobile, absolute positioning) */}
-      <div className="hidden md:block absolute inset-0 opacity-[0.03] pointer-events-none z-0" 
+      {/* Fix 3: Noise Texture Opacity 0.02 (Lebih Ringan & Bersih) */}
+      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none z-0" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       
@@ -68,7 +69,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         
         {/* HEADER */}
         <header className="flex items-center gap-4 mb-6">
-           {/* Fix 2: Hover Mobile -> md:group-hover */}
            <Link href="/dracin" className="group">
               <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none md:group-hover:bg-[#FDFFB6]">
                 &larr; Library
@@ -99,6 +99,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                    <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
                       <span className="text-4xl mb-4">🔌</span>
                       <p className="tracking-widest text-sm opacity-80">SOURCE NOT FOUND</p>
+                      <p className="text-xs opacity-50 mt-2">Try selecting another episode</p>
                    </div>
                  )}
                </div>
@@ -122,10 +123,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
           </div>
 
           {/* KOLOM KANAN: Playlist */}
-          {/* Fix 5: min-h-0 di parent kolom */}
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
-                {/* Fix 5: min-h-0 di flex card & tinggi terkunci viewport */}
                 <BrutCard className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] p-0 flex flex-col overflow-hidden h-[500px] lg:h-[calc(100dvh-120px)] transition-all min-h-0">
                   
                   {/* Playlist Header */}
@@ -139,7 +138,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                   </div>
 
                   {/* Scrollable Area */}
-                  {/* Fix 5: flex-1 + min-h-0 + overflow-y-auto adalah kunci scroll flexbox */}
                   <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 custom-scrollbar bg-white">
                     {episodes.map((ep: any, idx: number) => {
                       const isActive = String(ep.id) === String(activeEpisode?.id);
@@ -147,15 +145,15 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                         <Link 
                           key={ep.id} 
                           href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
-                          replace 
+                          // Fix 1: Hapus replace untuk stabilitas Router
                           className="block group outline-none"
                         >
-                          {/* Fix 2: Hover Mobile -> md:hover */}
+                          {/* Fix 4: Border style "Neo Brutal Luxe" (Transparansi di inactive) */}
                           <div className={`
                             relative p-3 border-2 transition-all duration-200 ease-out
                             ${isActive 
                               ? "bg-[#171717] text-white border-[#171717] translate-x-1" 
-                              : "bg-white border-[#e5e5e5] md:hover:border-[#171717] md:hover:bg-[#fafafa] md:hover:translate-x-1"
+                              : "bg-white border-[#171717]/30 md:hover:border-[#171717] md:hover:bg-[#fafafa] md:hover:translate-x-1"
                             }
                           `}>
                             {isActive && (
@@ -177,7 +175,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                                 </span>
                               </div>
                               
-                              {/* Fix 2: Icon hover -> md:group-hover */}
                               {isActive ? (
                                 <span className="text-lg">▶</span>
                               ) : (
