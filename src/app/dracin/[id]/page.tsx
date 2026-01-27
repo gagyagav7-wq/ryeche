@@ -41,52 +41,28 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
-  // ... kode atas sama ...
-
-  // ... (kode atas sama)
-
   const hasEpisodes = episodes.length > 0;
 
-  // LOGIC BARU (PAKAI PROXY):
+  // --- LOGIC PROXY BARU ---
   let videoUrl = "";
-  // Ambil URL dari properti yang tersedia (video_url atau videoUrl atau raw.videoUrl)
+  // Ambil URL dari properti yang tersedia (priority check)
   const rawUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl;
 
   if (rawUrl) {
+    // Encode URL asli dan kirim ke Proxy kita
     const encodedOriginalUrl = encodeURIComponent(rawUrl);
-    // Proxy Route Handler
     videoUrl = `/api/proxy?url=${encodedOriginalUrl}`;
   }
 
-  // Kita hardcode mp4 karena proxy kita stream content-type video/mp4
+  // Hardcode mp4 karena proxy kita ngasih stream mp4
   const videoType = "mp4"; 
-  
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
-
-  // ... (kode tengah sama)
-
-  // Di bagian Return JSX (VideoPlayer):
-  <VideoPlayer 
-    url={videoUrl} 
-    type={videoType} 
-    storageKey={storageKey}
-    subtitles={[]}
-    // FIX: String() biar aman kalo ID-nya angka 0
-    key={String(activeEpisode?.id || "init")} 
-  />
-  
-  // DEBUG VIDEO (Server Side)
-  if (process.env.NODE_ENV !== "production") {
-    console.warn(`[VideoDebug] URL: ${videoUrl ? videoUrl.slice(0, 50) + "..." : "KOSONG"}`);
-  }
 
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
-      {/* BG Pointer Events None */}
+      {/* Background Safe */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
-      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10 pointer-events-none" />
-      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10 pointer-events-none" />
-
+      
       <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8 relative z-10">
         <header className="flex gap-4 items-center mb-6">
            <Link href="/dracin">
@@ -104,19 +80,20 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                    type={videoType} 
                    storageKey={storageKey}
                    subtitles={[]}
-                   key={activeEpisode?.id || "init"}
+                   key={String(activeEpisode?.id || "init")}
                  />
                ) : (
                  <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
                     <span className="text-2xl">🔌</span>
                     <p>VIDEO TIDAK TERSEDIA</p>
-                    <p className="text-xs font-normal opacity-50 mt-2">Cek Network Tab: m3u8 ok tapi ts error?</p>
                  </div>
                )}
              </div>
              <BrutCard className="bg-white border-brut shadow-brut p-4">
                 <h1 className="text-2xl font-black uppercase mb-2">{data.info.title}</h1>
-                <p className="opacity-80 text-sm">{data.info.synopsis || "No synopsis."}</p>
+                <p className="opacity-80 text-sm leading-relaxed whitespace-pre-wrap">
+                  {data.info.synopsis || "No synopsis available."}
+                </p>
              </BrutCard>
           </div>
 
@@ -129,13 +106,12 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     return (
                       <Link 
                         key={ep.id} 
-                        // FIX: String() sebelum encodeURIComponent
                         href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
                         replace 
                         className={`block p-3 border-[3px] border-main font-bold text-sm transition-all outline-none focus-visible:ring-4 focus-visible:ring-accent ${isActive ? "bg-accent text-white" : "bg-white hover:bg-[#FDFFB6]"}`}
                       >
-                        <div className="flex justify-between">
-                          <span className="truncate">#{idx+1} {ep.name}</span>
+                        <div className="flex justify-between items-center gap-2">
+                          <span className="truncate w-[80%]">#{idx+1} {ep.name}</span>
                           {isActive && <span>▶</span>}
                         </div>
                       </Link>
