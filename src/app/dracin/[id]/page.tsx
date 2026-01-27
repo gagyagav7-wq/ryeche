@@ -62,13 +62,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
 
-  // Logic Proxy
+  // Logic Direct (Tanpa Proxy)
   let videoUrl = "";
   const rawUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl;
 
   if (rawUrl) {
-    const encodedOriginalUrl = encodeURIComponent(rawUrl);
-    videoUrl = `/api/proxy?url=${encodedOriginalUrl}`;
+    // Langsung pake URL asli, gak usah lewat /api/proxy
+    videoUrl = rawUrl;
+    console.log("DEBUG: Player pake URL direct:", videoUrl);
   }
 
   const videoType = "mp4"; 
