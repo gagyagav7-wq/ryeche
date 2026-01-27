@@ -22,18 +22,17 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
     const video = videoRef.current;
     if (!video) return;
 
-    // CLEANUP AWAL
     setError(null);
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (plyrRef.current) { plyrRef.current.destroy(); plyrRef.current = null; }
 
     const handleNativeError = () => {
       const err = video.error;
-      if (err && err.code === 4) {
-        setError({
-          title: "SOURCE REFUSED (403/404)",
-          msg: "Server video menolak akses. Kemungkinan butuh Proxy/Token."
-        });
+      if (err) {
+         setError({
+           title: "VIDEO ERROR",
+           msg: `Native Error Code: ${err.code} (${err.message})`
+         });
       }
     };
     video.addEventListener("error", handleNativeError);
@@ -52,20 +51,15 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
 
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
+            // DETEKSI 403 / CORS
             if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-              // DETEKSI 403 / CORS
-              if (data.response && (data.response.code === 403 || data.response.code === 404)) {
-                setError({
-                  title: `ACCESS DENIED (${data.response.code})`,
-                  msg: "Link video mati atau diproteksi. Butuh Proxy."
-                });
-              } else {
-                setError({
-                  title: "NETWORK ERROR",
-                  msg: "Gagal memuat video. Cek koneksi atau refresh."
-                });
-              }
-              hls.destroy();
+               // Fallback kalau response undefined
+               const status = data.response?.code || "Unknown";
+               setError({
+                  title: `NETWORK ERROR (${status})`,
+                  msg: "Gagal memuat stream. Kemungkinan butuh Proxy (CORS/403)."
+               });
+               hls.destroy();
             } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
               hls.recoverMediaError();
             } else {
@@ -80,7 +74,6 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
         video.src = url;
       }
 
-      // Init Plyr (Tanpa Controls Attribute di JSX biar gak dobel)
       plyrRef.current = new Plyr(video, {
         controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "captions", "settings", "fullscreen"],
         autoplay: false,
@@ -90,7 +83,6 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
 
     initPlayer();
 
-    // Event & Interval
     const saveInterval = setInterval(() => {
       if (video && !video.paused) localStorage.setItem(storageKey, video.currentTime.toString());
     }, 5000);
@@ -110,12 +102,16 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
   }, [url, type, subtitles, storageKey, onEnded]);
 
   if (error) {
+    // FIX JSX: Pastikan tidak ada typo closing tag
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white p-6 text-center z-50">
         <span className="text-4xl mb-2">🚫</span>
         <h3 className="text-xl font-bold text-red-500 mb-2">{error.title}</h3>
         <p className="text-sm font-mono mb-4">{error.msg}</p>
-        <button onClick={() => window.location.reload()} className="px-4 py-2 bg-white text-black font-bold text-xs uppercase border-2 border-red-500">
+        <button 
+          onClick={() => window.location.reload()} 
+          className="px-4 py-2 bg-white text-black font-bold text-xs uppercase border-2 border-red-500"
+        >
           REFRESH
         </button>
       </div>
