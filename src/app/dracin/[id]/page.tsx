@@ -3,7 +3,7 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
 import VideoPlayer from "@/components/VideoPlayer"; 
-import { getDramaDetail, getVideoType } from "@/lib/api";
+import { getDramaDetail } from "@/lib/api";
 
 export const revalidate = 60;
 
@@ -41,26 +41,21 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
-  const hasEpisodes = episodes.length > 0;
 
   // --- LOGIC PROXY BARU ---
   let videoUrl = "";
-  // Ambil URL dari properti yang tersedia (priority check)
   const rawUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl;
 
   if (rawUrl) {
-    // Encode URL asli dan kirim ke Proxy kita
     const encodedOriginalUrl = encodeURIComponent(rawUrl);
     videoUrl = `/api/proxy?url=${encodedOriginalUrl}`;
   }
 
-  // Hardcode mp4 karena proxy kita ngasih stream mp4
   const videoType = "mp4"; 
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
-      {/* Background Safe */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
       
       <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8 relative z-10">
