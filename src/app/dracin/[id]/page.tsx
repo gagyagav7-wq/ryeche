@@ -41,11 +41,40 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
+  // ... kode atas sama ...
+
+  // ... (kode atas sama)
+
   const hasEpisodes = episodes.length > 0;
-  const videoUrl = activeEpisode?.video_url || "";
-  const videoType = getVideoType(videoUrl);
+
+  // LOGIC BARU (PAKAI PROXY):
+  let videoUrl = "";
+  // Ambil URL dari properti yang tersedia (video_url atau videoUrl atau raw.videoUrl)
+  const rawUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl;
+
+  if (rawUrl) {
+    const encodedOriginalUrl = encodeURIComponent(rawUrl);
+    // Proxy Route Handler
+    videoUrl = `/api/proxy?url=${encodedOriginalUrl}`;
+  }
+
+  // Kita hardcode mp4 karena proxy kita stream content-type video/mp4
+  const videoType = "mp4"; 
+  
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
+  // ... (kode tengah sama)
+
+  // Di bagian Return JSX (VideoPlayer):
+  <VideoPlayer 
+    url={videoUrl} 
+    type={videoType} 
+    storageKey={storageKey}
+    subtitles={[]}
+    // FIX: String() biar aman kalo ID-nya angka 0
+    key={String(activeEpisode?.id || "init")} 
+  />
+  
   // DEBUG VIDEO (Server Side)
   if (process.env.NODE_ENV !== "production") {
     console.warn(`[VideoDebug] URL: ${videoUrl ? videoUrl.slice(0, 50) + "..." : "KOSONG"}`);
