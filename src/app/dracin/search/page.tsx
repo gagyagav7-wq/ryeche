@@ -1,10 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import BrutCard from "@/components/BrutCard";
-import BrutButton from "@/components/BrutButton";
+import BrutButton from "@/components/BrutButton"; // Asumsi BrutButton ada
 import { searchDrama } from "@/lib/api";
 
-// Search gak boleh dicache (Realtime)
 export const dynamic = "force-dynamic";
 
 export default async function SearchPage({
@@ -17,20 +15,19 @@ export default async function SearchPage({
 
   return (
     <main className="min-h-dvh bg-bg text-main p-4 md:p-8">
-      {/* HEADER */}
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/dracin">
-            <BrutButton variant="secondary" className="px-3 py-1 text-xs">
+            {/* FIX: Link styling manual biar gak nested button */}
+            <span className="inline-block px-3 py-1 text-xs font-black border-[3px] border-main bg-white hover:bg-main hover:text-white transition-colors cursor-pointer">
               &larr; BACK
-            </BrutButton>
+            </span>
           </Link>
           <h1 className="text-2xl md:text-3xl font-black uppercase">
             SEARCH: <span className="text-accent">"{query}"</span>
           </h1>
         </div>
         
-        {/* Search Bar Ulang */}
         <form action="/dracin/search" className="flex gap-2 w-full md:w-auto">
           <input
             name="q"
@@ -44,7 +41,6 @@ export default async function SearchPage({
         </form>
       </div>
 
-      {/* RESULTS GRID */}
       <div className="max-w-7xl mx-auto">
         {results.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
@@ -79,7 +75,6 @@ export default async function SearchPage({
           </div>
         ) : (
           <div className="text-center py-20 opacity-50">
-            <div className="text-6xl mb-4">🕵️‍♂️</div>
             <h2 className="text-2xl font-black uppercase">Tidak Ditemukan</h2>
             <p className="font-bold">Coba kata kunci lain, Commander.</p>
           </div>
