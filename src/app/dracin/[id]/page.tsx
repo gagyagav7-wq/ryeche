@@ -15,6 +15,22 @@ interface Props {
 export default async function DramaDetailPage({ params, searchParams }: Props) {
   const { id } = params;
 
+  // --- TEMPEL INI ---
+  console.log("=================================");
+  console.log("DEBUG: Minta ID berapa?", id);
+  // ------------------
+
+  let data;
+  try {
+    data = await getDramaDetail(id);
+    
+    // --- TEMPEL INI JUGA ---
+    console.log("DEBUG: Hasil API apa?", JSON.stringify(data, null, 2));
+    console.log("=================================");
+    // -----------------------
+  } catch (error) {
+    // ... (sisanya biarin sama)
+    
   let data;
   try {
     data = await getDramaDetail(id);
