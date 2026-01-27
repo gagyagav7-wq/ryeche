@@ -3,10 +3,10 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
-import VideoPlayer from "@/components/VideoPlayer"; // Pastikan path ini benar
+import VideoPlayer from "@/components/VideoPlayer"; 
 import { getDramaDetail, getVideoType } from "@/lib/api";
 
-// 1. ISR Strategy: Cache halaman selama 60 detik
+// 1. ISR Strategy: Cache halaman selama 60 detik (Server ringan, Data fresh)
 export const revalidate = 60;
 
 interface Props {
@@ -39,20 +39,25 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     );
   }
 
-  // Jika data kosong tapi tidak error (edge case)
+  // Edge case: Data kosong
   if (!data || !data.info) return notFound();
 
-  // 4. Episode Logic (URL Based State)
+  // 4. Episode Logic (URL Based State & Safe Params)
   const episodes = data.episodes || [];
-  const epIdParam = searchParams.epId;
+  
+  // FIX: Handle searchParams kalau array (misal ?epId=1&epId=2)
+  const rawEpId = searchParams.epId;
+  const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   
   // Cari episode berdasarkan param, atau default ke episode pertama
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
   
-  // Safety check jika episode benar-benar kosong
   const hasEpisodes = episodes.length > 0;
   const videoUrl = activeEpisode?.video_url || "";
   const videoType = getVideoType(videoUrl);
+
+  // Storage key unik per episode buat VideoPlayer (save last duration)
+  const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
@@ -62,7 +67,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
-      {/* Static Shapes */}
       <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10" />
       <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10" />
 
@@ -81,7 +85,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
             </h1>
             <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 border-[2px] border-black shadow-sm -rotate-2">BETA</span>
           </div>
-          {/* Judul Drama di kanan (Desktop) */}
           <div className="hidden md:block font-bold opacity-60 uppercase text-sm tracking-widest">
             {data.info.title}
           </div>
@@ -99,6 +102,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                 <VideoPlayer 
                   url={videoUrl} 
                   type={videoType} 
+                  // FIX: Wajib ada storageKey & subtitles biar gak error props
+                  storageKey={storageKey}
+                  subtitles={[]} 
                   // Key penting biar player re-mount pas ganti episode
                   key={activeEpisode.id} 
                 />
@@ -171,18 +177,17 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                 {episodes.length > 0 ? (
                   episodes.map((ep: any, idx: number) => {
                     const isActive = String(ep.id) === String(activeEpisode?.id);
-                    // Gunakan <Link> bukan <button> biar server-side friendly
                     return (
                       <Link
                         key={ep.id}
                         href={`/dracin/${id}?epId=${ep.id}`}
-                        // preventScroll={true} // Opsional: kalau mau gak scroll ke atas
-                        replace // Gunakan replace biar history browser gak penuh sampah ganti episode
+                        // FIX: Replace biar history gak numpuk pas ganti eps
+                        replace 
                         className={`
-                          block w-full text-left p-3 border-2 border-main font-bold text-sm transition-all group outline-none focus-visible:ring-4 focus-visible:ring-accent
+                          block w-full text-left p-3 border-[3px] border-main font-bold text-sm transition-all group outline-none focus-visible:ring-4 focus-visible:ring-accent
                           ${isActive 
                             ? "bg-accent text-white shadow-[4px_4px_0px_0px_#171717] translate-x-[-2px] translate-y-[-2px] z-10 relative" 
-                            : "bg-white text-main hover:bg-[#FDFFB6] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px] md:hover:shadow-[2px_2px_0px_0px_#171717]"
+                            : "bg-white text-main md:hover:bg-[#FDFFB6] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px] md:hover:shadow-[2px_2px_0px_0px_#171717]"
                           }
                         `}
                       >
