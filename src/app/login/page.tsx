@@ -16,21 +16,29 @@ export default function LoginPage() {
     setError("");
 
     const formData = new FormData(e.currentTarget);
-    const data = Object.fromEntries(formData);
+    const username = String(formData.get("username") || "");
+    const password = String(formData.get("password") || "");
 
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
       if (res.ok) {
-        // Redirect ke dashboard
-        router.push("/dashboard");
+        // Pakai replace biar user gak bisa back ke login
+        router.replace("/dashboard");
         router.refresh();
       } else {
-        const json = await res.json();
-        setError(json.error || "Login gagal, coba lagi.");
+        let msg = "Login gagal, coba lagi.";
+        try {
+          const json = await res.json();
+          msg = json.error || msg;
+        } catch {
+          // Fallback kalau response bukan JSON valid
+        }
+        setError(msg);
       }
     } catch (err) {
       setError("Gagal menghubungi server.");
@@ -47,16 +55,16 @@ export default function LoginPage() {
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       
-      {/* Shapes: Tajam & Statis (Biar ringan) */}
+      {/* Shapes: Tajam & Statis */}
       <div className="absolute top-[-5%] left-[-10%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-brut border-main opacity-100 -z-10" />
       <div className="absolute bottom-[-10%] right-[-10%] w-72 h-72 bg-[#FDFFB6] border-brut border-main rotate-45 -z-10" />
 
       {/* --- CONTENT --- */}
       <div className="w-full max-w-sm relative z-10">
         
-        {/* Header */}
+        {/* Header (No Hover Scale on Mobile) */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block hover:scale-105 transition-transform">
+          <Link href="/" className="inline-block transition-transform md:hover:scale-105">
             <h1 className="text-4xl font-black uppercase tracking-tighter text-main">
               BUTTER<span className="text-accent">HUB</span>
             </h1>
@@ -70,7 +78,7 @@ export default function LoginPage() {
             
             {/* Error Alert */}
             {error && (
-              <div className="bg-[#FFB5C2] border-brut border-main p-3 text-sm font-bold flex items-center gap-2 animate-in slide-in-from-top-2 text-black">
+              <div className="bg-[#FFB5C2] border-brut border-main p-3 text-sm font-bold flex items-center gap-2 text-black">
                 <span>🚫</span> {error}
               </div>
             )}
@@ -80,6 +88,7 @@ export default function LoginPage() {
               <input
                 name="username"
                 type="text"
+                autoComplete="username"
                 required
                 className="w-full bg-bg border-brut border-main p-3 font-bold text-main outline-none focus:ring-4 focus:ring-accent/30 transition-all placeholder:opacity-40"
                 placeholder="Ex: jagoan_neon"
@@ -93,6 +102,7 @@ export default function LoginPage() {
               <input
                 name="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 className="w-full bg-bg border-brut border-main p-3 font-bold text-main outline-none focus:ring-4 focus:ring-accent/30 transition-all placeholder:opacity-40"
                 placeholder="••••••••"
