@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
-// import VideoPlayer diganti wrapper baru ini:
-import EpisodeAutoNext from "@/components/EpisodeAutoNext"; 
+import EpisodeAutoNext from "@/components/EpisodeAutoNext"; // Pastikan file ini udah dibuat di Step 2 sebelumnya
 import { getDramaDetail } from "@/lib/api";
 
-// Helper deteksi tipe video
+// Helper deteksi tipe video (Robust Regex)
 const determineVideoType = (url: string) => {
   if (!url) return "mp4";
   return /\.m3u8(\?|$)/i.test(url) ? "hls" : "mp4";
@@ -21,7 +20,7 @@ interface Props {
 export default async function DramaDetailPage({ params, searchParams }: Props) {
   const { id } = params;
 
-  // --- LOGIC FETCH DATA ---
+  // --- 1. FETCH DATA ---
   let data;
   try {
     data = await getDramaDetail(id);
@@ -29,7 +28,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     console.error("Error fetching drama:", error);
   }
 
-  // --- LOGIC PENYELAMAT (FALLBACK) ---
+  // --- 2. LOGIC PENYELAMAT (FALLBACK DATA) ---
   if (data && !data.info && data.episodes && data.episodes.length > 0) {
      const firstEp = data.episodes[0];
      const firstEpName = firstEp.name || "";
@@ -43,10 +42,10 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
      };
   }
 
-  // Validasi Akhir
+  // Validasi Akhir: Kalau tetep kosong, 404.
   if (!data || !data.info) return notFound();
 
-  // --- PREPARE DATA ---
+  // --- 3. PREPARE EPISODE & PLAYER ---
   const episodes = Array.isArray(data.episodes) ? data.episodes : [];
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
@@ -54,7 +53,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   
   const dramaTitle = data.info.title || "";
 
-  // Logic Video URL & Type
+  // Logic Video URL
   const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
   const videoType = determineVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
@@ -62,14 +61,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
       
-      {/* Noise Texture (Tetap ada tapi sangat ringan dan di belakang layer) */}
+      {/* BACKGROUND NOISE: -z-10 (PENTING: Biar gak nutupin klik) */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-10" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
       
       <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 relative z-10">
         
-        {/* HEADER */}
+        {/* HEADER: Navigasi */}
         <header className="flex items-center gap-4 mb-6">
            <Link href="/dracin" className="group">
               <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none md:group-hover:bg-[#FDFFB6]">
@@ -80,17 +79,17 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
            <span className="font-bold text-xs uppercase tracking-widest opacity-50 hidden md:block">ButterHub Premium Player</span>
         </header>
 
-        {/* LAYOUT GRID UTAMA */}
+        {/* LAYOUT UTAMA: Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
           
-          {/* KOLOM KIRI: Player & Info */}
+          {/* KIRI: Player & Info (Lebar 8) */}
           <div className="lg:col-span-8 flex flex-col gap-6">
              
-             {/* VIDEO PLAYER CONTAINER */}
+             {/* PLAYER WRAPPER */}
              <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
                <div className="aspect-video w-full">
                  {videoUrl ? (
-                   // GANTI PAKE WRAPPER AUTO-NEXT
+                   // Menggunakan Wrapper Client untuk Auto-Next Logic
                    <EpisodeAutoNext
                      dramaId={id}
                      episodes={episodes}
@@ -103,7 +102,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                    <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
                       <span className="text-4xl mb-4">🔌</span>
                       <p className="tracking-widest text-sm opacity-80">SOURCE NOT FOUND</p>
-                      <p className="text-xs opacity-50 mt-2">Try selecting another episode</p>
+                      <p className="text-xs opacity-50 mt-2 text-balance">
+                        Video stream mungkin error atau expired. Coba refresh atau pilih episode lain.
+                      </p>
                    </div>
                  )}
                </div>
@@ -126,13 +127,14 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
              </BrutCard>
           </div>
 
-          {/* KOLOM KANAN: Playlist */}
+          {/* KANAN: Playlist (Lebar 4) */}
           <div className="lg:col-span-4 min-h-0 z-20">
              <div className="lg:sticky lg:top-6">
                 
-                {/* UPDATE: 
-                   1. relative z-10 biar wheel gak nyangkut.
-                   2. h-[65svh] buat fix iOS address bar.
+                {/* CONTAINER PLAYLIST:
+                    - Pake <aside> plain (bukan BrutCard) biar scroll aman.
+                    - relative z-10 biar di atas noise.
+                    - h-[65svh] buat mobile, calc() buat desktop.
                 */}
                 <aside className="relative z-10 bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65svh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
                   
@@ -146,7 +148,10 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     </span>
                   </div>
 
-                  {/* Scrollable Area */}
+                  {/* SCROLL AREA:
+                      - touch-pan-y & WebkitOverflowScrolling buat iOS licin.
+                      - overscroll-contain biar gak scroll body.
+                  */}
                   <div 
                     className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-white overscroll-contain touch-pan-y"
                     style={{ WebkitOverflowScrolling: "touch" }}
@@ -154,16 +159,12 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     {episodes.map((ep: any, idx: number) => {
                       const isActive = String(ep.id) === String(activeEpisode?.id);
                       
-                      // UPDATE: SAFE STRING REPLACE
+                      // Logic Nama Episode Bersih
                       const epName = ep.name || "";
                       let displayName = epName;
-                      
-                      // Cuma hapus judul drama kalau ada di DEPAN (prefix)
                       if (dramaTitle && displayName.startsWith(dramaTitle)) {
                          displayName = displayName.substring(dramaTitle.length).trim();
                       }
-                      
-                      // Bersihin sisa "-EP.XX"
                       displayName = displayName.replace(/-EP\.\d+.*$/i, "").trim();
 
                       return (
@@ -172,11 +173,15 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                           href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
                           className="block group outline-none"
                         >
+                          {/* VISUAL HIERARCHY:
+                              - Active: Border tebal solid, item hitam.
+                              - Inactive: Border tipis transparan (opacity 30%), hover baru solid.
+                          */}
                           <div className={`
-                            relative p-3 border-2 transition-all duration-200 ease-out
+                            relative p-3 transition-all duration-200 ease-out
                             ${isActive 
-                              ? "bg-[#171717] text-white border-[#171717] translate-x-1" 
-                              : "bg-white border-[#171717]/30 md:hover:border-[#171717] md:hover:bg-[#fafafa] md:hover:translate-x-1"
+                              ? "bg-[#171717] text-white border-2 border-[#171717] translate-x-1" 
+                              : "bg-white border-2 border-[#171717]/30 md:hover:border-[#171717] md:hover:bg-[#fafafa] md:hover:translate-x-1"
                             }
                           `}>
                             {isActive && (
