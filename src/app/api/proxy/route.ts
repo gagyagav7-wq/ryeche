@@ -1,41 +1,40 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  // Ambil path yang mau ditembak (contoh: /detailAndAllEpisode?id=4885)
-  const path = searchParams.get('path');
-  const query = searchParams.get('query'); // Buat search
+export async function GET(req: NextRequest) {
+  const url = req.nextUrl.searchParams.get("url");
 
-  if (!path) {
-    return NextResponse.json({ error: 'Path is required' }, { status: 400 });
+  if (!url) {
+    return new NextResponse("Missing URL", { status: 400 });
   }
 
-  // Base URL Sansekai
-  const BASE_URL = 'https://api.sansekai.my.id/api/flickreels';
-  
-  // Rakit URL target
-  // Kalau ada query search, tempel juga
-  const targetUrl = query 
-    ? `${BASE_URL}${path}?query=${query}`
-    : `${BASE_URL}${path}`;
-
   try {
-    const res = await fetch(targetUrl, {
+    // Kita fetch video dari server, menyamar sebagai browser polos
+    const response = await fetch(url, {
       headers: {
-        // PENTING: Kita "bohong" dikit, pura-pura request dari browser biasa
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        // Kadang API ngecek Referer, kosongin atau samain kalau perlu
-        'Referer': 'https://api.sansekai.my.id/' 
+        // PENTING: Pura-pura jadi browser tapi tanpa referer yang mencurigakan
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://farsunpteltd.com/", // Tembak referer ke dirinya sendiri biar dikira internal
+        "Origin": "https://farsunpteltd.com/"
       },
-      next: { revalidate: 3600 } // Cache 1 jam biar gak nyepam server dia
     });
 
-    if (!res.ok) throw new Error('API Error');
+    if (!response.ok) {
+      console.error(`Proxy Error: ${response.status} ${response.statusText}`);
+      return new NextResponse(`Upstream Error: ${response.status}`, { status: response.status });
+    }
 
-    const data = await res.json();
-    return NextResponse.json(data);
+    // Streaming data video langsung ke user
+    // Kita copy headers penting kayak Content-Type (video/mp4)
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set("Access-Control-Allow-Origin", "*"); // Biar player frontend seneng
+
+    return new NextResponse(response.body, {
+      status: 200,
+      headers: newHeaders,
+    });
 
   } catch (error) {
-    return NextResponse.json({ error: 'Gagal fetch ke Sansekai' }, { status: 500 });
+    console.error("Proxy Failed:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
   }
 }
