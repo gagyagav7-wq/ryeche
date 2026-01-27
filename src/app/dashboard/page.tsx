@@ -21,23 +21,15 @@ export default function DashboardPage() {
     }
   };
 
-  // ... imports
-  // ... component start
-
   return (
     <main className="min-h-dvh bg-bg text-main p-4 md:p-8 relative overflow-hidden">
       
       {/* --- DECORATIVE BG (Performance Optimized) --- */}
-      {/* FIX: blur-none di mobile, md:blur-xl di desktop */}
+      {/* Blur dikurangi jadi xl biar lebih ringan di mobile & dimatikan total di HP */}
       <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-[#FDFFB6] rounded-full border-brut border-main opacity-60 -z-10 blur-none md:blur-xl" />
       <div className="absolute bottom-[-10%] left-[-5%] w-80 h-80 bg-[#A8E6CF] rounded-full border-brut border-main opacity-60 -z-10 blur-none md:blur-xl" />
 
       <div className="max-w-6xl mx-auto space-y-8">
-         {/* ... (Sisanya sama persis) */}
-      </div>
-    </main>
-  );
-}
         
         {/* HEADER */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-brut border-main pb-6 bg-white/50 backdrop-blur-sm p-4 rounded-sm border-brut shadow-brut-sm">
