@@ -22,7 +22,7 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
     const video = videoRef.current;
     if (!video) return;
 
-    // 1. Reset State saat URL berubah
+    // 1. CLEANUP & RESET (Penting biar gak numpuk instance)
     setError(null);
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -33,34 +33,53 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
       plyrRef.current = null;
     }
 
-    // 2. Setup Playback
+    // 2. ERROR HANDLER (Di-define di sini biar bisa di-remove)
+    const handleNativeError = () => {
+      const err = video.error;
+      let msg = "Unknown Error";
+      if (err) {
+        switch (err.code) {
+          case 1: msg = "Aborted: Fetching process aborted by user."; break;
+          case 2: msg = "Network: Error downloading video (Check Network Tab)."; break;
+          case 3: msg = "Decode: Error decoding video media."; break;
+          case 4: msg = "Source Not Supported: Server refused connection (403/404) or format invalid."; break;
+        }
+      }
+      setError(`Native Video Error: ${msg}`);
+    };
+
+    // Pasang listener native error
+    video.addEventListener("error", handleNativeError);
+
+    // 3. SETUP PLAYER
     const initPlayer = () => {
-      // HLS HANDLING
+      // --- LOGIC HLS ---
       if (type === "hls" && Hls.isSupported()) {
-        const hls = new Hls({
-          // Config debug HLS (Opsional: nyalain kalau mau liat log detail di console)
-          debug: false, 
-          xhrSetup: function (xhr, url) {
-             // CORS Credential (kadang butuh, kadang malah bikin error. Default off dulu)
-             // xhr.withCredentials = true; 
-          },
-        });
-        
+        const hls = new Hls({ debug: false }); // Debug false biar console bersih
         hlsRef.current = hls;
+
         hls.loadSource(url);
         hls.attachMedia(video);
 
-        // ERROR HANDLING HLS
+        // Resume Time saat Manifest Siap (Lebih aman dari loadedmetadata)
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          const savedTime = localStorage.getItem(storageKey);
+          if (savedTime) {
+            video.currentTime = parseFloat(savedTime);
+          }
+        });
+
         hls.on(Hls.Events.ERROR, (event, data) => {
-          console.error("HLS ERROR:", data);
           if (data.fatal) {
+            console.error("HLS FATAL ERROR:", data);
             switch (data.type) {
               case Hls.ErrorTypes.NETWORK_ERROR:
-                setError(`Network Error: Gagal konek ke server video. (CORS/403/404)`);
-                hls.startLoad();
+                // JANGAN RETRY INFINITE LOOP. Kalau 403, ya udah error aja.
+                setError("Network Error: Gagal memuat stream (CORS/403 Forbidden). Cek Network Tab.");
+                hls.destroy(); 
                 break;
               case Hls.ErrorTypes.MEDIA_ERROR:
-                setError("Media Error: Format video rusak/tidak didukung.");
+                setError("Media Error: Segmen video rusak.");
                 hls.recoverMediaError();
                 break;
               default:
@@ -71,22 +90,26 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
           }
         });
       } 
-      // NATIVE HLS (SAFARI)
+      // --- LOGIC NATIVE HLS (SAFARI) ---
       else if (video.canPlayType("application/vnd.apple.mpegurl")) {
         video.src = url;
-        video.addEventListener('error', (e) => {
-           setError(`Native Playback Error: ${(e.target as HTMLVideoElement).error?.message}`);
-        });
+        // Resume time native
+        video.addEventListener("loadedmetadata", () => {
+           const savedTime = localStorage.getItem(storageKey);
+           if (savedTime) video.currentTime = parseFloat(savedTime);
+        }, { once: true });
       } 
-      // MP4 DIRECT
+      // --- LOGIC MP4 ---
       else {
         video.src = url;
-        video.addEventListener('error', (e) => {
-           setError(`MP4 Error: ${(e.target as HTMLVideoElement).error?.message || "Source refused connection"}`);
-        });
+        // Resume time MP4
+        video.addEventListener("loadedmetadata", () => {
+           const savedTime = localStorage.getItem(storageKey);
+           if (savedTime) video.currentTime = parseFloat(savedTime);
+        }, { once: true });
       }
 
-      // 3. Initialize Plyr
+      // 4. INIT PLYR (Tanpa Controls Attribute di JSX)
       const player = new Plyr(video, {
         controls: ["play-large", "play", "progress", "current-time", "mute", "volume", "captions", "settings", "fullscreen"],
         autoplay: false,
@@ -97,66 +120,57 @@ export default function VideoPlayer({ url, type, subtitles = [], storageKey, onE
 
     initPlayer();
 
-    // 4. Load Saved Time
-    const savedTime = localStorage.getItem(storageKey);
-    if (savedTime && video) {
-      // Tunggu metadata loaded baru seek (biar ga error)
-      video.addEventListener('loadedmetadata', () => {
-         video.currentTime = parseFloat(savedTime);
-      }, { once: true });
-    }
-
-    // 5. Save Progress Interval
+    // 5. SAVE PROGRESS & AUTO NEXT
     const saveInterval = setInterval(() => {
       if (video && !video.paused) {
         localStorage.setItem(storageKey, video.currentTime.toString());
       }
     }, 5000);
 
-    // 6. Event Listener Ended
     const handleEnded = () => {
        if (onEnded) onEnded();
     };
     video.addEventListener("ended", handleEnded);
 
-    // CLEANUP
+    // 6. FINAL CLEANUP (Anti Memory Leak)
     return () => {
       clearInterval(saveInterval);
       video.removeEventListener("ended", handleEnded);
+      video.removeEventListener("error", handleNativeError); // <--- INI PENTING
+      
       if (hlsRef.current) hlsRef.current.destroy();
       if (plyrRef.current) plyrRef.current.destroy();
-      // Penting: Kosongkan src biar browser gak download di background
-      video.removeAttribute('src'); 
+      
+      video.removeAttribute("src");
       video.load();
     };
   }, [url, type, subtitles, storageKey, onEnded]);
 
-  // UI ERROR (Biar gak cuma blank hitam)
+  // UI ERROR OVERLAY
   if (error) {
     return (
       <div className="absolute inset-0 flex flex-col items-center justify-center bg-black text-white p-6 text-center z-50">
-        <span className="text-4xl mb-2">⚠️</span>
-        <h3 className="text-xl font-bold text-red-500 mb-2">VIDEO ERROR</h3>
-        <p className="text-sm opacity-80 mb-4">{error}</p>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-white text-black font-bold text-xs uppercase"
-        >
-          Refresh Page
+        <span className="text-4xl mb-2">🚫</span>
+        <h3 className="text-xl font-bold text-red-500 mb-2">PLAYBACK FAILED</h3>
+        <p className="text-xs font-mono bg-gray-900 p-2 rounded mb-4 max-w-md break-words">
+          {error}
         </button>
+        <div className="text-xs opacity-60 max-w-xs">
+          Tip: Jika error "CORS" atau "403", berarti server video menolak akses direct. Butuh Proxy Server.
+        </div>
       </div>
     );
   }
 
   return (
     <div className="relative w-full h-full bg-black">
+      {/* HAPUS ATRIBUT CONTROLS BIAR GAK BENTROK SAMA PLYR */}
       <video 
         ref={videoRef} 
         className="plyr-react plyr" 
         playsInline 
-        controls 
         preload="metadata"
-        crossOrigin="anonymous" // Penting buat CORS
+        crossOrigin="anonymous" 
       >
         {subtitles.map((sub, index) => (
           <track
