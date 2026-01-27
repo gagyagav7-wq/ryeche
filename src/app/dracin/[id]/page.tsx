@@ -15,31 +15,18 @@ interface Props {
 export default async function DramaDetailPage({ params, searchParams }: Props) {
   const { id } = params;
 
-  // 1. Log ID dulu (Ini bener di sini)
-  console.log("=================================");
-  console.log("DEBUG: Minta ID berapa?", id);
-
   let data;
   try {
-    // 2. Ambil data dulu
     data = await getDramaDetail(id);
-    
-    // 3. BARU LOG ISI DATANYA DI SINI (JANGAN DI ATAS!)
-    console.log("DEBUG: ISI DATA ASLI:", JSON.stringify(data, null, 2)); 
-    console.log("=================================");
-
-  // ... (ini bagian try-catch lu yang lama)
   } catch (error) {
-    console.error("DEBUG ERROR:", error);
-    // ... (return error UI) ...
+    console.error("Error fetching drama:", error);
   }
 
-  // ===============================================
-  // 🔥 JURUS PENYELAMAT DARI API BUSUK 🔥
-  // Kalau info NULL, kita maling data dari episode pertama!
+  // --- LOGIC PERBAIKAN DATA (FALLBACK) ---
+  // Kalau API ngasih info kosong, kita ambil dari episode pertama
   if (data && !data.info && data.episodes && data.episodes.length > 0) {
      const firstEp = data.episodes[0];
-     // Bersihin judul (Hapus "-EP.68" di belakangnya biar rapi)
+     // Bersihin judul
      const cleanTitle = firstEp.name ? firstEp.name.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
      
      data.info = {
@@ -47,31 +34,19 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         synopsis: firstEp.raw?.introduce || "Sinopsis belum tersedia.",
         cover: firstEp.raw?.chapter_cover || ""
      };
-     console.log("DEBUG: Info berhasil diperbaiki pakai data Episode! Judul:", cleanTitle);
   }
-  // ===============================================
+  // ---------------------------------------
 
-  // Baru deh cek validasi (sekarang harusnya lolos)
-  if (!data || !data.info) {
-    console.log("DEBUG: Data tetep gak valid, nyerah.");
-    return notFound();
-  }
+  // Validasi Akhir
+  if (!data || !data.info) return notFound();
 
   const episodes = Array.isArray(data.episodes) ? data.episodes : [];
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
 
-  // Logic Direct (Tanpa Proxy)
-  let videoUrl = "";
-  const rawUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl;
-
-  if (rawUrl) {
-    // Langsung pake URL asli, gak usah lewat /api/proxy
-    videoUrl = rawUrl;
-    console.log("DEBUG: Player pake URL direct:", videoUrl);
-  }
-
+  // Logic Direct Video (Langsung ke Sumber)
+  const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
   const videoType = "mp4"; 
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
