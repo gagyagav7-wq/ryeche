@@ -1,7 +1,15 @@
 import { NextResponse } from 'next/server';
-import { logout } from '@/lib/auth';
 
 export async function POST() {
-  await logout();
-  return NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true });
+  
+  // Hapus cookie dengan menimpa nilai kosong & expired date masa lalu
+  // Wajib set path: '/' agar kena di semua route
+  response.cookies.set('session', '', { 
+    path: '/', 
+    expires: new Date(0),
+    httpOnly: true 
+  });
+  
+  return response;
 }
