@@ -29,7 +29,10 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
             Mungkin ID salah atau server lagi ngopi. Coba balik lagi nanti, Commander.
           </p>
           <Link href="/dracin">
-            <BrutButton fullWidth>&larr; KEMBALI KE MARKAS</BrutButton>
+            {/* FIX: Pakai fullWidth di BrutButton kalau support, atau style manual */}
+            <div className="w-full bg-main text-white font-black py-3 border-[3px] border-black text-center cursor-pointer hover:bg-black">
+              &larr; KEMBALI KE MARKAS
+            </div>
           </Link>
         </BrutCard>
       </div>
@@ -41,8 +44,6 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const episodes = Array.isArray(data.episodes) ? data.episodes : [];
   const rawEpId = searchParams.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
-  
-  // Cari episode
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
   
   const hasEpisodes = episodes.length > 0;
@@ -50,24 +51,28 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
   const videoType = getVideoType(videoUrl);
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
-  // DEBUG VIDEO URL (Server Side Log - Cek di Terminal)
-  if (!videoUrl) {
-    console.warn(`[VideoMissing] DramaID: ${id}, EpID: ${activeEpisode?.id}, Name: ${activeEpisode?.name}`);
+  // --- DEBUGGING VIDEO URL (Cek Terminal Server) ---
+  if (hasEpisodes) {
+    console.warn(`[VideoDebug] ID: ${id} | Ep: ${activeEpisode?.id} | URL: ${videoUrl ? videoUrl.slice(0, 100) : "KOSONG/NULL"}`);
   }
+  // ------------------------------------------------
 
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
-      {/* BG Shapes */}
+      {/* Decorative BG */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
       <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10" />
       <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10" />
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8">
-        {/* COMMAND BAR */}
+        {/* HEADER */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-surface/90 backdrop-blur-md p-4 border-[3px] border-main shadow-brut relative z-10">
           <div className="flex items-center gap-3">
             <Link href="/dracin">
-              <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto">&larr; BACK</BrutButton>
+              {/* FIX: Tombol Back Semantic (Link > styled span) */}
+              <span className="inline-block px-3 py-1 text-xs font-black bg-white border-[3px] border-main hover:bg-surface transition-colors cursor-pointer">
+                &larr; BACK
+              </span>
             </Link>
             <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter truncate max-w-[200px] md:max-w-none">
               BUTTERHUB <span className="opacity-30">/</span> WATCH
@@ -80,9 +85,8 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             
-            {/* PLAYER CARD */}
+            {/* PLAYER */}
             <div className="bg-black border-[3px] border-main shadow-brut relative group aspect-video overflow-hidden">
-              {/* FIX: Cek hasEpisodes DAN videoUrl */}
               {hasEpisodes && videoUrl ? (
                 <VideoPlayer 
                   url={videoUrl} 
@@ -98,11 +102,13 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                   <p className="text-xs opacity-50 font-normal">
                     {hasEpisodes ? "Link video rusak dari server pusat." : "Belum ada episode yang diupload."}
                   </p>
+                  {/* Debug ID di UI (Optional, hapus kalau mau bersih) */}
+                  <p className="text-[10px] opacity-30 font-mono mt-4">ID: {activeEpisode?.id || "N/A"}</p>
                 </div>
               )}
             </div>
 
-            {/* INFO CARD */}
+            {/* INFO */}
             <BrutCard className="bg-white border-brut shadow-brut">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="hidden md:block w-32 shrink-0 aspect-[3/4] relative border-[3px] border-main bg-gray-200">
@@ -137,9 +143,7 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
                     return (
                       <Link 
                         key={ep.id} 
-                        // Encode URI biar aman
                         href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
-                        // Hapus replace kalau Next.js warning
                         replace 
                         className={`block w-full text-left p-3 border-[3px] border-main font-bold text-sm transition-all group outline-none focus-visible:ring-4 focus-visible:ring-accent ${isActive ? "bg-accent text-white shadow-[4px_4px_0px_0px_#171717] translate-x-[-2px] translate-y-[-2px] z-10 relative" : "bg-white text-main md:hover:bg-[#FDFFB6] md:hover:translate-x-[-2px] md:hover:translate-y-[-2px] md:hover:shadow-[2px_2px_0px_0px_#171717]"}`}
                       >
