@@ -7,48 +7,43 @@ const HEADERS = {
 
 // --- FUNGSI PEMBERSIH DATA (FILTER) ---
 const normalizeData = (item: any) => {
-  // Cek minimal punya ID dan Title, kalau gak ada anggap sampah
   if (!item || (!item.playlet_id && !item.id)) return null;
 
   return {
     id: item.playlet_id || item.id,
     title: item.title || "No Title",
-    // Kalau gak ada cover, pake placeholder bawaan
     cover_url: item.cover || item.cover_square || item.cover_vertical || "https://placehold.co/400x600/000000/FFF?text=No+Image", 
     synopsis: item.introduce || item.description || item.desc || "No synopsis available.",
     total_ep: item.upload_num || item.chapterCount || 0
   };
 };
 
-// --- FUNGSI PENCARI HARTA KARUN (RECURSIVE) ---
-// Ini bakal nyari Array di dalem object JSON secara otomatis
+// --- FUNGSI PENCARI LIST (RECURSIVE) ---
 function findList(data: any): any[] {
   if (!data) return [];
   
-  // 1. Kalau langsung ketemu Array, balikin
   if (Array.isArray(data)) {
-    // Tapi cek dulu, isinya drama atau kategori? 
-    // Kalau isinya punya properti 'list', berarti ini Kategori! Gali lagi.
     if (data.length > 0 && data[0].list) {
       return findList(data[0].list);
     }
     return data;
   }
 
-  // 2. Cek properti umum
   if (data.data) return findList(data.data);
   if (data.result) return findList(data.result);
   if (data.list) return findList(data.list);
 
-  // 3. Nyerah
   return [];
 }
 
-async function fetchAPI(endpoint: string) {
+// --- HELPER FETCHER BERSIH ---
+// Kita tambahkan parameter 'options' biar fleksibel
+// TAPI defaultnya kosong, biar ikut aturan Page (Style A)
+async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   try {
     const res = await fetch(`${BASE_URL}${endpoint}`, {
       headers: HEADERS,
-      next: { revalidate: 0 } 
+      ...options // Spread options biar bisa override kalau perlu
     });
     if (!res.ok) return null;
     return await res.json();
@@ -58,25 +53,23 @@ async function fetchAPI(endpoint: string) {
   }
 }
 
-// 1. Get Latest
+// 1. Get Latest (Ikut Cache Halaman)
 export async function getLatest() {
   const json = await fetchAPI("/latest");
   const rawList = findList(json);
-  // Filter(Boolean) buat buang yang null (data ompong)
   return rawList.map(normalizeData).filter(Boolean);
 }
 
-// 2. Get For You
+// 2. Get For You (Ikut Cache Halaman)
 export async function getForYou() {
   const json = await fetchAPI("/foryou");
   const rawList = findList(json);
   return rawList.map(normalizeData).filter(Boolean);
 }
 
-// 3. Get Hot Rank
+// 3. Get Hot Rank (Ikut Cache Halaman)
 export async function getHotRank() {
   const json = await fetchAPI("/hotrank");
-  // Hotrank biasanya array kategori, kita ambil list dari item pertama
   const rawData = json?.data || json || [];
   if (Array.isArray(rawData) && rawData.length > 0 && rawData[0].data) {
      return rawData[0].data.map(normalizeData).filter(Boolean);
@@ -84,7 +77,7 @@ export async function getHotRank() {
   return [];
 }
 
-// 4. Get Detail Drama
+// 4. Get Detail Drama (Ikut Cache Halaman)
 export async function getDramaDetail(id: string) {
   const json = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
   
@@ -112,15 +105,17 @@ export async function getDramaDetail(id: string) {
   return rawData;
 }
 
-// 5. Search
+// 5. Search (PENGECUALIAN: Wajib No-Store)
+// Search gak boleh dicache karena input user beda-beda
 export async function searchDrama(query: string) {
   if (!query) return [];
-  const json = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
+  // Di sini kita paksa cache: 'no-store' khusus buat search
+  const json = await fetchAPI(`/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
   const rawList = findList(json);
   return rawList.map(normalizeData).filter(Boolean);
 }
 
-// 6. Video Type
+// 6. Video Type Helper
 export function getVideoType(url: string) {
   if (!url) return "hls";
   if (url.includes(".m3u8")) return "hls";
