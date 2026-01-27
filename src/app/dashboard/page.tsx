@@ -35,9 +35,9 @@ export default function DashboardPage() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-brut border-main pb-6 bg-white/50 backdrop-blur-sm p-4 rounded-sm border-brut shadow-brut-sm">
           <div>
             <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter">
-              COMMAND<span className="text-accent">CENTER</span>
+              BUTTER<span className="text-accent">HUB</span>
             </h1>
-            <p className="text-sm font-bold opacity-60">Selamat datang kembali, Commander.</p>
+            <p className="text-sm font-bold opacity-60">Selamat datang kembali, Creamy.</p>
           </div>
           <BrutButton 
             onClick={handleLogout} 
