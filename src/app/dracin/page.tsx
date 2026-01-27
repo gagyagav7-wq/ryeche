@@ -4,20 +4,22 @@ import BrutCard from "@/components/BrutCard";
 import BrutButton from "@/components/BrutButton";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
 
-// Agar data selalu fresh saat user masuk dashboard
-export const dynamic = 'force-dynamic';
+// OPTIMASI: Revalidate tiap 60 detik (ISR). 
+// Gak bikin server berat kayak 'force-dynamic', tapi data tetep fresh.
+export const revalidate = 60;
 
 // --- COMPONENTS ---
 
 // 1. Ranking Badge (Top 3 Only)
 const RankingBadge = ({ rank }: { rank: number }) => {
-  let bgClass = "bg-surface"; // Default
-  if (rank === 1) bgClass = "bg-[#FDFFB6]"; // Gold-ish
+  let bgClass = "bg-surface"; 
+  if (rank === 1) bgClass = "bg-[#FDFFB6]"; // Gold
   else if (rank === 2) bgClass = "bg-[#E0E0E0]"; // Silver
   else if (rank === 3) bgClass = "bg-[#FFCCB6]"; // Bronze
 
   return (
-    <div className={`absolute top-0 left-0 ${bgClass} border-b-2 border-r-2 border-main px-3 py-1 z-20 shadow-sm`}>
+    // Border manual 3px biar konsisten sama 'border-brut'
+    <div className={`absolute top-0 left-0 ${bgClass} border-b-[3px] border-r-[3px] border-main px-3 py-1 z-20 shadow-sm`}>
       <span className="font-black text-sm text-main">#{rank}</span>
     </div>
   );
@@ -35,13 +37,12 @@ const DramaGrid = ({
   items: any[], 
   isRanking?: boolean 
 }) => {
-  // Safety check: Pastikan items adalah array
   const safeItems = Array.isArray(items) ? items : [];
 
   if (safeItems.length === 0) {
     return (
       <section className="space-y-6 opacity-50 py-10">
-        <div className="flex items-end gap-4 border-b-2 border-main pb-2">
+        <div className="flex items-end gap-4 border-b-[3px] border-main pb-2">
           <h2 className="text-3xl font-black uppercase">{title}</h2>
         </div>
         <p className="font-bold">Data belum tersedia, Commander.</p>
@@ -52,9 +53,9 @@ const DramaGrid = ({
   return (
     <section className="space-y-6">
       {/* Editorial Section Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between border-b-2 border-main pb-4 gap-2">
+      <div className="flex flex-col md:flex-row md:items-end justify-between border-b-[3px] border-main pb-4 gap-2">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-2 bg-accent border-2 border-main"></div>
+          <div className="h-10 w-2 bg-accent border-[3px] border-main"></div>
           <div>
             <h2 className="text-3xl md:text-4xl font-black uppercase leading-none tracking-tight">{title}</h2>
             <p className="text-sm font-bold opacity-60 uppercase tracking-widest mt-1">{subtitle}</p>
@@ -74,19 +75,17 @@ const DramaGrid = ({
           return (
             <Link 
               key={d.id} 
-              // Routing diarahkan ke /dracin/[id] sesuai struktur baru
-              href={`/dracin/${d.id}`} 
+              href={`/dracin/${d.id}`} // Route ke folder baru
               className="group block h-full outline-none focus-visible:ring-4 focus-visible:ring-accent rounded-none relative"
               aria-label={`Nonton ${d.title}`}
             >
-              {/* Card Container: Border Brutal Standard */}
-              <div className="h-full relative overflow-hidden bg-white border-2 border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#000]">
+              {/* Card Container: Pake border-brut (atau border-[3px]) biar TEBAL */}
+              <div className="h-full relative overflow-hidden bg-white border-brut border-main shadow-brut transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[6px_6px_0px_0px_#000]">
                 
-                {/* Ranking Badge (Hot Rank Top 3) */}
                 {isRanking && rank <= 3 && <RankingBadge rank={rank} />}
 
                 {/* Poster Image (3:4 Ratio) */}
-                <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-2 border-main">
+                <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-main">
                   <Image 
                     src={d.cover_url || "/placeholder.jpg"} 
                     alt={d.title}
@@ -95,16 +94,15 @@ const DramaGrid = ({
                     className="object-cover transition-transform duration-500 md:group-hover:scale-105"
                     unoptimized={true} 
                   />
-                  {/* Overlay Gradient on Hover (Desktop Only) */}
                   <div className="hidden md:block absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors pointer-events-none" />
                 </div>
 
-                {/* Title Strip (Milk Overlay Style) */}
+                {/* Title Strip */}
                 <div className="bg-surface p-3 h-full flex flex-col justify-between">
                   <h3 className="font-bold text-xs md:text-sm truncate uppercase tracking-tight text-main" title={d.title}>
                     {d.title}
                   </h3>
-                  <div className="flex justify-between items-center mt-2 border-t border-main/10 pt-2">
+                  <div className="flex justify-between items-center mt-2 border-t-[2px] border-main/10 pt-2">
                     <span className="text-[10px] font-bold opacity-60">{episodeText}</span>
                     <span className="text-[10px] font-black text-accent group-hover:underline">WATCH</span>
                   </div>
@@ -121,7 +119,6 @@ const DramaGrid = ({
 // --- MAIN PAGE ---
 
 export default async function DracinHomePage() {
-  // Fetch Data Parallel
   const [latest, forYou, hotRank] = await Promise.all([
     getLatest().catch(() => []), 
     getForYou().catch(() => []), 
@@ -131,57 +128,51 @@ export default async function DracinHomePage() {
   return (
     <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
       
-      {/* --- DECORATIVE BACKGROUND (Subtle & Luxury) --- */}
-      {/* Noise Texture (Desktop Only - Performance Optimized) */}
+      {/* Decorative BG */}
       <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
-      
-      {/* Static Shapes (Clean Look) */}
-      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-2 border-main opacity-40 -z-10" />
-      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-2 border-main rotate-12 opacity-40 -z-10" />
+      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10" />
+      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10" />
 
-      {/* --- CONTAINER --- */}
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 pb-24">
         
-        {/* --- COMMAND BAR (HEADER) --- */}
+        {/* --- COMMAND BAR --- */}
         <header className="space-y-6">
-          {/* Top Row: Brand & Nav & Search */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-main pb-6 bg-surface/90 backdrop-blur-md p-6 border-2 border-main shadow-brut relative z-10">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-[3px] border-main pb-6 bg-surface/90 backdrop-blur-md p-6 border-[3px] border-main shadow-brut relative z-10">
             
-            {/* Left: Brand */}
             <div>
               <div className="flex items-center gap-3">
                 <Link href="/dashboard">
-                  <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto">
+                  <BrutButton variant="secondary" className="px-3 py-1 text-xs h-auto border-[3px]">
                     &larr; HUB
                   </BrutButton>
                 </Link>
                 <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">
                   BUTTERHUB <span className="opacity-30">/</span> DRACIN
                 </h1>
-                <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 border border-black shadow-sm rotate-3">BETA</span>
+                <span className="bg-accent text-white text-[10px] font-bold px-2 py-0.5 border-[2px] border-black shadow-sm rotate-3">BETA</span>
               </div>
               <p className="text-sm font-bold opacity-60 mt-1 pl-1">Katalog Streaming Premium.</p>
             </div>
 
-            {/* Right: Search Bar (Route ke /dracin/search) */}
+            {/* Search Bar */}
             <form action="/dracin/search" className="w-full md:w-auto flex gap-2">
               <input 
                 name="q"
                 placeholder="Cari judul..." 
-                className="flex-1 md:w-64 bg-bg border-2 border-main p-3 font-bold text-sm outline-none focus:ring-4 focus:ring-accent/20 transition-all placeholder:opacity-40"
+                className="flex-1 md:w-64 bg-bg border-[3px] border-main p-3 font-bold text-sm outline-none focus:ring-4 focus:ring-accent/20 transition-all placeholder:opacity-40"
               />
-              <button type="submit" className="bg-accent text-white border-2 border-main px-4 font-black hover:bg-black transition-colors shadow-sm active:translate-y-1">
+              <button type="submit" className="bg-accent text-white border-[3px] border-main px-4 font-black hover:bg-black transition-colors shadow-sm active:translate-y-1">
                 🔍
               </button>
             </form>
           </div>
 
-          {/* Filter Chips (Visual Only - Desktop Hover) */}
+          {/* Filter Chips */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {['🔥 Hot Ranking', '❤️ For You', '🆕 Latest Drop', '🎬 Ongoing', '✅ Completed'].map((chip, i) => (
-              <button key={i} className="whitespace-nowrap px-4 py-2 bg-white border-2 border-main font-bold text-xs uppercase shadow-sm md:hover:translate-y-[-2px] md:hover:shadow-brut transition-all active:translate-y-0 active:shadow-none">
+              <button key={i} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-main font-bold text-xs uppercase shadow-brut md:hover:translate-y-[-2px] md:hover:shadow-[4px_4px_0px_0px_#000] transition-all active:translate-y-0 active:shadow-none">
                 {chip}
               </button>
             ))}
@@ -189,28 +180,9 @@ export default async function DracinHomePage() {
         </header>
 
         {/* --- CONTENT GRIDS --- */}
-        
-        {/* 1. Hot Ranking */}
-        <DramaGrid 
-          title="Hot Ranking 🔥" 
-          subtitle="Top 10 Most Watched This Week" 
-          items={hotRank} 
-          isRanking={true} 
-        />
-
-        {/* 2. For You */}
-        <DramaGrid 
-          title="For You ❤️" 
-          subtitle="Curated picks based on trend" 
-          items={forYou} 
-        />
-
-        {/* 3. Latest Uploads */}
-        <DramaGrid 
-          title="Fresh Drop 🆕" 
-          subtitle="Just uploaded to the server" 
-          items={latest} 
-        />
+        <DramaGrid title="Hot Ranking 🔥" subtitle="Top 10 Most Watched This Week" items={hotRank} isRanking={true} />
+        <DramaGrid title="For You ❤️" subtitle="Curated picks based on trend" items={forYou} />
+        <DramaGrid title="Fresh Drop 🆕" subtitle="Just uploaded to the server" items={latest} />
 
       </div>
     </main>
