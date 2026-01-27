@@ -15,21 +15,22 @@ interface Props {
 export default async function DramaDetailPage({ params, searchParams }: Props) {
   const { id } = params;
 
-  // --- DEBUG LOG START ---
+  // 1. Log ID dulu (Ini bener di sini)
   console.log("=================================");
-  console.log("DEBUG: ISI DATA ASLI:", JSON.stringify(data, null, 2));
-  // --- DEBUG LOG END ---
+  console.log("DEBUG: Minta ID berapa?", id);
 
   let data;
   try {
+    // 2. Ambil data dulu
     data = await getDramaDetail(id);
     
-    // --- DEBUG LOG START ---
-    console.log("DEBUG: Hasil API apa?", JSON.stringify(data ? "ADA DATA" : "KOSONG", null, 2));
-    // --- DEBUG LOG END ---
+    // 3. BARU LOG ISI DATANYA DI SINI (JANGAN DI ATAS!)
+    console.log("DEBUG: ISI DATA ASLI:", JSON.stringify(data, null, 2)); 
+    console.log("=================================");
 
   } catch (error) {
     console.error("DEBUG ERROR:", error);
+    // ... (kode error lu di bawah sini biarin aja)
     return (
       <div className="min-h-dvh flex flex-col items-center justify-center bg-bg gap-6 p-4">
         <div className="text-6xl">⚠️</div>
