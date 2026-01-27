@@ -1,24 +1,30 @@
 import Link from "next/link";
 import Image from "next/image";
-import BrutButton from "@/components/BrutButton"; // Asumsi BrutButton ada
 import { searchDrama } from "@/lib/api";
 
-export const dynamic = "force-dynamic";
+// Caching: Biar fetch API yang nentuin (no-store), page gak usah maksa SSR berat
+// Hapus 'export const dynamic = "force-dynamic";'
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { q: string };
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  const query = searchParams.q || "";
+  // FIX: Normalize searchParams (Handle array/undefined)
+  const qRaw = searchParams?.q;
+  const query = Array.isArray(qRaw) ? qRaw[0] : (qRaw || "");
+  
   const results = query ? await searchDrama(query) : [];
 
   return (
-    <main className="min-h-dvh bg-bg text-main p-4 md:p-8">
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+    <main className="min-h-dvh bg-bg text-main p-4 md:p-8 relative overflow-hidden">
+      {/* Decorative BG (FIX: pointer-events-none WAJIB) */}
+      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10 pointer-events-none" />
+      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10 pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row gap-4 items-center justify-between relative z-10">
         <div className="flex items-center gap-4">
           <Link href="/dracin">
-            {/* FIX: Link styling manual biar gak nested button */}
             <span className="inline-block px-3 py-1 text-xs font-black border-[3px] border-main bg-white hover:bg-main hover:text-white transition-colors cursor-pointer">
               &larr; BACK
             </span>
@@ -41,7 +47,7 @@ export default async function SearchPage({
         </form>
       </div>
 
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto relative z-10">
         {results.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
             {results.map((d: any) => (
