@@ -1,13 +1,20 @@
-const BASE_URL = process.env.API_BASE_URL; 
+// src/lib/api.ts
 
+// Ambil dari Environment Variable
+const BASE_URL = process.env.API_BASE_URL;
+
+// Validasi Safety
 if (!BASE_URL) {
-  throw new Error("API_BASE_URL belum diset di .env.local!");
+  console.error("FATAL: API_BASE_URL is not defined.");
+  throw new Error("API_BASE_URL missing");
 }
 
 const HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  "User-Agent": "Mozilla/5.0 ...",
   "Accept": "application/json"
 };
+
+// ... sisa fungsi fetchAPI dan wrapper lainnya tetap sama ...
 
 // --- FUNGSI PEMBERSIH DATA (FILTER) ---
 const normalizeData = (item: any) => {
