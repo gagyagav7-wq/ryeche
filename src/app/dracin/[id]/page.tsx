@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 import BrutCard from "@/components/BrutCard";
 import VideoPlayer from "@/components/VideoPlayer"; 
@@ -15,6 +14,7 @@ interface Props {
 export default async function DramaDetailPage({ params, searchParams }: Props) {
   const { id } = params;
 
+  // --- LOGIC FETCH DATA ---
   let data;
   try {
     data = await getDramaDetail(id);
@@ -22,11 +22,9 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
     console.error("Error fetching drama:", error);
   }
 
-  // --- LOGIC PERBAIKAN DATA (FALLBACK) ---
-  // Kalau API ngasih info kosong, kita ambil dari episode pertama
+  // --- LOGIC PENYELAMAT (FALLBACK) ---
   if (data && !data.info && data.episodes && data.episodes.length > 0) {
      const firstEp = data.episodes[0];
-     // Bersihin judul
      const cleanTitle = firstEp.name ? firstEp.name.replace(/-EP\.\d+.*$/i, "").trim() : "Drama Tanpa Judul";
      
      data.info = {
@@ -35,84 +33,153 @@ export default async function DramaDetailPage({ params, searchParams }: Props) {
         cover: firstEp.raw?.chapter_cover || ""
      };
   }
-  // ---------------------------------------
 
   // Validasi Akhir
   if (!data || !data.info) return notFound();
 
+  // --- PREPARE DATA ---
   const episodes = Array.isArray(data.episodes) ? data.episodes : [];
   const rawEpId = searchParams?.epId;
   const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
   const activeEpisode = episodes.find((ep: any) => String(ep.id) === String(epIdParam)) || episodes[0];
 
-  // Logic Direct Video (Langsung ke Sumber)
+  // Direct Video URL (Bypass Proxy biar ngebut)
   const videoUrl = activeEpisode?.video_url || activeEpisode?.videoUrl || activeEpisode?.raw?.videoUrl || "";
-  const videoType = "mp4"; 
   const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
 
   return (
-    <main className="min-h-dvh bg-bg text-main relative overflow-hidden">
-      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-20" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+    <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
+      {/* Background Noise Texture (Subtle Premium Feel) */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
+      </div>
       
-      <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 space-y-8 relative z-10">
-        <header className="flex gap-4 items-center mb-6">
-           <Link href="/dracin">
-              <span className="px-3 py-1 text-xs font-black bg-white border-[3px] border-main cursor-pointer hover:bg-surface">&larr; BACK</span>
+      <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 relative z-10">
+        
+        {/* HEADER: Minimalis, fokus ke Navigasi */}
+        <header className="flex items-center gap-4 mb-6">
+           <Link href="/dracin" className="group">
+              <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none group-hover:bg-[#FDFFB6]">
+                &larr; Library
+              </div>
            </Link>
-           <h1 className="text-xl font-black uppercase truncate">{data.info.title}</h1>
+           <div className="h-[2px] flex-1 bg-[#171717] opacity-20 hidden md:block"></div>
+           <span className="font-bold text-xs uppercase tracking-widest opacity-50 hidden md:block">ButterHub Premium Player</span>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Kolom Kiri: Video & Info */}
-          <div className="lg:col-span-2 space-y-4">
-             <div className="bg-black aspect-video border-[3px] border-main shadow-brut relative group">
-               {videoUrl ? (
-                 <VideoPlayer 
-                   url={videoUrl} 
-                   type={videoType} 
-                   storageKey={storageKey}
-                   subtitles={[]}
-                   key={String(activeEpisode?.id || "init")}
-                 />
-               ) : (
-                 <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
-                    <span className="text-2xl">🔌</span>
-                    <p>VIDEO TIDAK TERSEDIA</p>
-                 </div>
-               )}
+        {/* LAYOUT GRID UTAMA */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          
+          {/* KOLOM KIRI: Player & Info (Hero Section - Lebar 8/12) */}
+          <div className="lg:col-span-8 flex flex-col gap-6">
+             
+             {/* VIDEO PLAYER CONTAINER */}
+             <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
+               <div className="aspect-video w-full">
+                 {videoUrl ? (
+                   <VideoPlayer 
+                     url={videoUrl} 
+                     type="mp4" 
+                     storageKey={storageKey}
+                     subtitles={[]}
+                     key={String(activeEpisode?.id || "init")}
+                   />
+                 ) : (
+                   <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
+                      <span className="text-4xl mb-4">🔌</span>
+                      <p className="tracking-widest text-sm opacity-80">SOURCE NOT FOUND</p>
+                   </div>
+                 )}
+               </div>
              </div>
-             <BrutCard className="bg-white border-brut shadow-brut p-4">
-                <h1 className="text-2xl font-black uppercase mb-2">{data.info.title}</h1>
-                <p className="opacity-80 text-sm leading-relaxed whitespace-pre-wrap">
-                  {data.info.synopsis || "No synopsis available."}
-                </p>
-             </BrutCard>
-          </div>
 
-          {/* Kolom Kanan: Playlist */}
-          <div className="lg:col-span-1">
-             <BrutCard className="bg-surface border-brut shadow-brut h-[600px] flex flex-col p-0">
-                <div className="p-4 border-b-[3px] border-main font-black">PLAYLIST ({episodes.length})</div>
-                <div className="flex-1 overflow-y-auto p-2 space-y-2 custom-scrollbar">
-                  {episodes.map((ep: any, idx: number) => {
-                    const isActive = String(ep.id) === String(activeEpisode?.id);
-                    return (
-                      <Link 
-                        key={ep.id} 
-                        href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
-                        replace 
-                        className={`block p-3 border-[3px] border-main font-bold text-sm transition-all outline-none focus-visible:ring-4 focus-visible:ring-accent ${isActive ? "bg-accent text-white" : "bg-white hover:bg-[#FDFFB6]"}`}
-                      >
-                        <div className="flex justify-between items-center gap-2">
-                          <span className="truncate w-[80%]">#{idx+1} {ep.name}</span>
-                          {isActive && <span>▶</span>}
-                        </div>
-                      </Link>
-                    )
-                  })}
+             {/* INFO CARD */}
+             <BrutCard className="bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] p-6 md:p-8">
+                <div className="flex flex-col gap-4">
+                  <h1 className="text-2xl md:text-3xl font-black uppercase leading-tight tracking-tight">
+                    {data.info.title}
+                  </h1>
+                  <div className="flex gap-3 text-xs font-bold uppercase tracking-widest opacity-60">
+                    <span className="bg-[#171717] text-white px-2 py-1">Drama</span>
+                    <span className="border border-[#171717] px-2 py-1">HD 1080p</span>
+                  </div>
+                  <p className="text-sm md:text-base leading-relaxed opacity-80 font-medium max-w-3xl">
+                    {data.info.synopsis || "No synopsis available."}
+                  </p>
                 </div>
              </BrutCard>
           </div>
+
+          {/* KOLOM KANAN: Playlist (Sticky & Scrollable - Lebar 4/12) */}
+          <div className="lg:col-span-4 min-h-0 z-20">
+             <div className="lg:sticky lg:top-6">
+                <BrutCard className="bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] p-0 flex flex-col overflow-hidden h-[500px] lg:h-[calc(100dvh-120px)] transition-all">
+                  
+                  {/* Playlist Header */}
+                  <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] flex justify-between items-center shrink-0">
+                    <span className="font-black text-lg uppercase tracking-tight flex items-center gap-2">
+                      <span>📺</span> Playlist
+                    </span>
+                    <span className="text-xs font-bold bg-[#171717] text-white px-2 py-1 rounded-sm">
+                      {episodes.length} EP
+                    </span>
+                  </div>
+
+                  {/* Scrollable Area (FIXED!) */}
+                  <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 custom-scrollbar bg-white">
+                    {episodes.map((ep: any, idx: number) => {
+                      const isActive = String(ep.id) === String(activeEpisode?.id);
+                      return (
+                        <Link 
+                          key={ep.id} 
+                          href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} 
+                          replace 
+                          className="block group outline-none"
+                        >
+                          <div className={`
+                            relative p-3 border-2 transition-all duration-200 ease-out
+                            ${isActive 
+                              ? "bg-[#171717] text-white border-[#171717] translate-x-1" 
+                              : "bg-white border-[#e5e5e5] hover:border-[#171717] hover:bg-[#fafafa] hover:translate-x-1"
+                            }
+                          `}>
+                            {/* Accent Bar for Active State */}
+                            {isActive && (
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FDFFB6]"></div>
+                            )}
+
+                            <div className="flex justify-between items-center gap-3 pl-2">
+                              <div className="flex flex-col min-w-0">
+                                {isActive && (
+                                  <span className="text-[10px] font-black text-[#FDFFB6] tracking-widest mb-0.5 animate-pulse">
+                                    NOW PLAYING
+                                  </span>
+                                )}
+                                <span className={`text-sm font-bold truncate ${isActive ? "text-white" : "text-[#171717]"}`}>
+                                  Episode {idx + 1}
+                                </span>
+                                <span className={`text-xs truncate opacity-70 ${isActive ? "text-gray-300" : "text-gray-500"}`}>
+                                  {ep.name.replace(data.info.title, "").replace(/-EP\.\d+/, "").trim() || "Watch Now"}
+                                </span>
+                              </div>
+                              
+                              {isActive ? (
+                                <span className="text-lg">▶</span>
+                              ) : (
+                                <span className="text-[#171717] opacity-0 group-hover:opacity-100 transition-opacity text-lg">
+                                  ▸
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </BrutCard>
+             </div>
+          </div>
+
         </div>
       </div>
     </main>
