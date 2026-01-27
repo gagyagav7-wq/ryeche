@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+/* TAMBAHAN BARU: Smooth Scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* ... sisanya biarin sama ... */
+
 @layer base {
   /* Fix Input Zoom iPhone */
   input, textarea, select {
