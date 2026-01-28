@@ -3,35 +3,34 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansek
 
 // 1. Helper: Gali array drama dari struktur JSON yang aneh-aneh
 const extractArray = (raw: any): any[] => {
-  // Kalau raw udah array, mungkin itu list drama langsung ATAU array column (kayak kasus /latest)
+  // KASUS 1: Raw adalah Array langsung
   if (Array.isArray(raw)) {
-    // Cek apakah item pertama punya properti 'list' yang isinya array?
-    // Kasus: [ { title: "Baru", list: [...] } ]
+    // Cek kasus /latest: [ { title: "Baru", list: [...] } ]
     if (raw.length > 0 && raw[0] && Array.isArray(raw[0].list)) {
       return raw[0].list;
     }
-    // Kalau gak, asumsi ini array drama biasa
     return raw;
   }
 
+  // KASUS 2: Raw adalah Object
   if (!raw || typeof raw !== 'object') return [];
 
-  // Cek key 'list' di root object (Kasus umum)
+  // Cek kasus /foryou: { list: [...] }
   if (Array.isArray(raw.list)) return raw.list;
   
-  // Cek key 'items'
+  // Cek kasus umum: { items: [...] }
   if (Array.isArray(raw.items)) return raw.items;
 
-  // Cek key 'data' (Recursive check: siapa tau data.list)
+  // Cek kasus nested data: { data: [...] } atau { data: { list: [...] } }
   if (raw.data) {
      if (Array.isArray(raw.data)) {
-        // Ulangi logika cek array column
+        // Ulangi logika cek array column (Recursive lite)
         if (raw.data.length > 0 && raw.data[0] && Array.isArray(raw.data[0].list)) {
             return raw.data[0].list;
         }
         return raw.data;
      }
-     // data: { list: [] }
+     // data: { list: [] } <-- INI YANG /foryou PAKE!
      if (Array.isArray(raw.data.list)) return raw.data.list;
   }
 
@@ -40,20 +39,23 @@ const extractArray = (raw: any): any[] => {
 
 // 2. Helper: Normalisasi Item (Mapping field API ke UI ButterHub)
 const normalizeDrama = (d: any) => {
-  // Mapping field API Flickreels yang "unik"
+  // Kalau item kosong/iklan, skip aja (return null nanti difilter)
+  if (!d || (!d.playlet_id && !d.id && !d.title)) return null;
+
+  // Mapping field API Flickreels
   const rawCover = d.cover || d.cover_url || d.thumbnail || d.poster || "";
   
-  // Proxy image hotlink (Opsional, set true kalau gambar masih pecah 403)
+  // Proxy image hotlink (Set true jika gambar pecah)
   const useProxy = true; 
   const coverUrl = useProxy && rawCover && rawCover.startsWith("http")
     ? `/api/proxy?url=${encodeURIComponent(rawCover)}` 
     : rawCover;
 
   return {
-    id: String(d.playlet_id || d.id || d.drama_id || ""), // Prioritas: playlet_id
+    id: String(d.playlet_id || d.id || d.drama_id || ""), 
     title: d.title || d.name || "Untitled Drama",
     cover_url: coverUrl,
-    total_ep: d.upload_num || d.total_ep || d.episode_count || "?" // Prioritas: upload_num
+    total_ep: d.upload_num || d.total_ep || d.episode_count || "?" 
   };
 };
 
@@ -72,11 +74,12 @@ async function fetchAPI(path: string) {
     if (!res.ok) throw new Error(`API Error: ${res.status}`);
     
     const json = await res.json();
-    // Kembalikan json.data dulu biar diekstrak sama helper
+    // PENTING: Kembalikan json.data jika ada, kalau tidak json utuh.
+    // Helper extractArray akan handle sisanya.
     return json.data || json; 
   } catch (error: any) {
     console.error(`[FETCH FAIL] ${url}: ${error.message}`);
-    return []; // Return array kosong biar gak crash map
+    return []; 
   }
 }
 
@@ -84,16 +87,15 @@ async function fetchAPI(path: string) {
 
 export async function getDramaDetail(id: string) {
   const rawData = await fetchAPI(`/detailAndAllEpisode?id=${id}`);
-  
-  // Handle kalau detail null
   if (!rawData) return null;
 
-  // Detail biasanya struktur langsung, tapi episodenya di array
-  const episodes = extractArray(rawData.episodes).map((ep: any) => ({
-    id: String(ep.id || ep.episode_id),
-    name: ep.title || ep.name || `Episode ${ep.id}`,
-    video_url: ep.video_url || ep.videoUrl || "",
-  }));
+  const episodes = extractArray(rawData.episodes)
+    .map((ep: any) => ({
+      id: String(ep.id || ep.episode_id),
+      name: ep.title || ep.name || `Episode ${ep.id}`,
+      video_url: ep.video_url || ep.videoUrl || "",
+    }))
+    .filter(Boolean); // Hapus yang null
 
   return {
     info: {
@@ -108,20 +110,20 @@ export async function getDramaDetail(id: string) {
 
 export async function searchDrama(query: string) {
   const raw = await fetchAPI(`/search?query=${encodeURIComponent(query)}`);
-  return extractArray(raw).map(normalizeDrama);
+  return extractArray(raw).map(normalizeDrama).filter(Boolean);
 }
 
 export async function getForYou() {
   const raw = await fetchAPI(`/foryou`);
-  return extractArray(raw).map(normalizeDrama);
+  return extractArray(raw).map(normalizeDrama).filter(Boolean);
 }
 
 export async function getHotRank() {
   const raw = await fetchAPI(`/hotrank`);
-  return extractArray(raw).map(normalizeDrama);
+  return extractArray(raw).map(normalizeDrama).filter(Boolean);
 }
 
 export async function getLatest() {
   const raw = await fetchAPI(`/latest`);
-  return extractArray(raw).map(normalizeDrama);
+  return extractArray(raw).map(normalizeDrama).filter(Boolean);
 }
