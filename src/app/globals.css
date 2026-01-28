@@ -2,20 +2,21 @@
 @tailwind components;
 @tailwind utilities;
 
+/* --- DESIGN TOKENS: PREMIUM CREAMY BRUTALISM --- */
 :root {
-  /* --- PALETTE: CREAMY ARCHIVE --- */
-  --neo-bg: #FDFBF7;          /* Warm Cream/Ivory - Base */
-  --neo-surface: #FFFFFF;     /* Pure White - Cards */
-  --neo-ink: #121212;         /* Off-Black - Stroke & Text */
-  --neo-muted: #9CA3AF;       /* Grey text */
+  /* Canvas & Surface */
+  --neo-bg: #FDFBF7;          /* Premium Cream/Ivory */
+  --neo-surface: #FFFFFF;     /* Pure White */
+  --neo-ink: #121212;         /* Off-Black (Soft) */
+  --neo-muted: #9CA3AF;       /* Technical Grey */
   
-  /* --- ACCENTS (Use Sparingly) --- */
-  --neo-butter: #FDFFB6;      /* Highlight */
-  --neo-pink: #FF9A9E;        /* Brand */
-  --neo-mint: #A8E6CF;        /* Active Status */
-  --neo-gray: #F3F4F6;        /* Locked/Inactive */
+  /* Restrained Accents (Hanya untuk highlight) */
+  --neo-accent-butter: #FDFFB6; 
+  --neo-accent-pink: #FF9A9E;
+  --neo-accent-mint: #A8E6CF; /* Active status */
+  --neo-accent-gray: #F3F4F6; /* Locked status */
 
-  /* --- DIMENSIONS (The Brutal DNA) --- */
+  /* The Brutal DNA */
   --neo-stroke: 3px;          /* Tebal Konsisten */
   --neo-shadow-x: 8px;        /* Deep Shadow */
   --neo-shadow-y: 8px;
@@ -25,53 +26,34 @@
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  /* Noise Texture: Kunci nuansa "Premium Paper" */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-  -webkit-font-smoothing: antialiased;
+  /* Noise Texture wajib untuk kesan 'Premium Paper' */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
 @layer components {
-  /* CONTAINER */
+  /* MASTER CONTAINER */
   .neo-container {
     @apply max-w-7xl mx-auto px-6 md:px-12;
   }
 
-  /* CARD SYSTEM */
-  .neo-card {
+  /* COMPONENT: ARCHIVE CARD (Base) */
+  .archive-card {
     @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden transition-all duration-300;
     box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-ink);
   }
   
-  .neo-card:hover {
+  .archive-card:hover {
     transform: translate(-2px, -2px);
     box-shadow: 12px 12px 0px var(--neo-ink);
   }
-  
-  /* BUTTON SYSTEM */
-  .neo-btn {
-    @apply inline-flex items-center justify-center px-8 py-4 font-black uppercase tracking-wider text-xs border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[6px] transition-all;
-  }
-  
-  .neo-btn-primary {
-    @apply bg-[var(--neo-ink)] text-white hover:bg-white hover:text-[var(--neo-ink)];
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
-  }
-  .neo-btn-primary:hover {
-    box-shadow: 6px 6px 0px var(--neo-ink);
-    transform: translate(-1px, -1px);
-  }
 
-  .neo-btn-secondary {
-    @apply bg-[var(--neo-butter)] text-[var(--neo-ink)] hover:bg-white;
-    box-shadow: 4px 4px 0px var(--neo-ink);
+  /* COMPONENT: STATUS BADGE (Minimalist) */
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-widest border border-[var(--neo-ink)] rounded-sm bg-white;
   }
-  .neo-btn-secondary:hover {
-    box-shadow: 6px 6px 0px var(--neo-ink);
-    transform: translate(-1px, -1px);
-  }
-
-  /* BADGES */
-  .neo-chip {
-    @apply inline-flex items-center px-2 py-1 text-[9px] font-black uppercase tracking-widest border border-[var(--neo-ink)] rounded-sm bg-white;
+  
+  /* COMPONENT: CTA BUTTON (Snappy) */
+  .neo-action-btn {
+    @apply inline-flex items-center justify-center px-4 py-2 font-black uppercase tracking-wider text-[10px] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white hover:bg-[var(--neo-ink)] hover:text-white transition-all;
   }
 }
