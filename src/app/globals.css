@@ -9,22 +9,24 @@ html {
 }
 
 :root {
-  /* --- PALETTE: CREAMY LUXURY BRUTALISM --- */
+  /* --- PALETTE: LUXURY CREAMY BRUTALISM --- */
   --neo-bg: #F2F0E9;          /* Bone/Ivory - Base Background */
   --neo-surface: #FFFFFF;     /* Pure White - Card Background */
   --neo-stroke: #121212;      /* Ink Black - Borders & Text */
   --neo-muted: #8A8A8A;       /* Technical Grey */
   
   /* Accents */
-  --neo-pink: #FF9A9E;        /* ButterHub Pink signature */
-  --neo-pink-light: #FECFEF;  
+  --neo-pink: #FF9A9E;        /* ButterHub Pink */
   --neo-yellow: #FDFFB6;      /* Highlight/Marker */
-  --neo-blue: #A8E6CF;        /* Secondary Accent */
+  --neo-mint: #A8E6CF;        /* Tools/Secondary Accent */
 
   /* --- DIMENSIONS --- */
-  --neo-border: 3px;          /* Konsisten tebal */
-  --neo-shadow: 8px;          /* Deep shadow */
-  --neo-radius: 6px;          /* Tight radius */
+  --neo-border: 3px;          /* Stroke Tebal */
+  --neo-shadow: 8px;          /* Hard Shadow Deep */
+  --neo-radius: 6px;          /* Tight Radius */
+  
+  /* --- SPACING --- */
+  --space-unit: 8px;
 }
 
 /* Base Styles Override */
