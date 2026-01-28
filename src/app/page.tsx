@@ -30,7 +30,7 @@ export default function LandingPage() {
 
         {/* Badge: Hibiscus Pink */}
         <div className="bg-[#FF99C8] border-[3px] border-[#0F172A] px-4 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest shadow-[4px_4px_0px_#0F172A] mb-8 transform -rotate-2 hover:rotate-0 transition-transform cursor-default">
-           Private Oasis Access
+           Free Access
         </div>
 
         {/* Title: Stacked & Bold */}
@@ -53,10 +53,10 @@ export default function LandingPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
            <Link href="/login" className="btn-mango">
-             Enter Paradise
+             Login
            </Link>
            <Link href="/register" className="btn-outline">
-             Get Ticket
+             Register
            </Link>
         </div>
       </section>
