@@ -2,58 +2,50 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- DESIGN TOKENS: PREMIUM CREAMY BRUTALISM --- */
 :root {
-  /* Canvas & Surface */
-  --neo-bg: #FDFBF7;          /* Premium Cream/Ivory */
-  --neo-surface: #FFFFFF;     /* Pure White */
-  --neo-ink: #121212;         /* Off-Black (Soft) */
-  --neo-muted: #9CA3AF;       /* Technical Grey */
-  
-  /* Restrained Accents (Hanya untuk highlight) */
-  --neo-accent-butter: #FDFFB6; 
-  --neo-accent-pink: #FF9A9E;
-  --neo-accent-mint: #A8E6CF; /* Active status */
-  --neo-accent-gray: #F3F4F6; /* Locked status */
+  /* --- PALETTE: CINEMATIC CREAM --- */
+  --neo-bg: #F3F0E7;          /* Lebih earthy/warm dikit dari sebelumnya */
+  --neo-surface: #FFFFFF;
+  --neo-ink: #0F0F0F;         /* Black almost black */
+  --neo-accent: #E5FD76;      /* Acid Lime/Yellow (Trend Brutalism 2024) */
+  --neo-accent-pink: #FF90E8; 
 
-  /* The Brutal DNA */
-  --neo-stroke: 3px;          /* Tebal Konsisten */
-  --neo-shadow-x: 8px;        /* Deep Shadow */
-  --neo-shadow-y: 8px;
-  --neo-radius: 8px;          /* Clean Radius */
+  /* --- DIMENSIONS --- */
+  --neo-stroke: 3px;
+  --neo-shadow: 6px;          /* Sedikit lebih tight */
+  --neo-radius: 0px;          /* KITA COBA KOTAK TAJAM (Sharp) buat kesan Brutal Fashion */
 }
 
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  /* Noise Texture wajib untuk kesan 'Premium Paper' */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  background-image: radial-gradient(#121212 0.5px, transparent 0.5px);
+  background-size: 24px 24px; /* Dot pattern halus */
 }
 
 @layer components {
-  /* MASTER CONTAINER */
-  .neo-container {
-    @apply max-w-7xl mx-auto px-6 md:px-12;
-  }
-
-  /* COMPONENT: ARCHIVE CARD (Base) */
-  .archive-card {
-    @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden transition-all duration-300;
-    box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-ink);
+  /* CARD SYSTEM: SHARP & BOLD */
+  .bento-card {
+    @apply border-[3px] border-black bg-white relative overflow-hidden transition-all duration-300;
+    box-shadow: 6px 6px 0px #000;
   }
   
-  .archive-card:hover {
+  .bento-card:hover {
+    box-shadow: 10px 10px 0px #000;
     transform: translate(-2px, -2px);
-    box-shadow: 12px 12px 0px var(--neo-ink);
   }
 
-  /* COMPONENT: STATUS BADGE (Minimalist) */
-  .status-badge {
-    @apply inline-flex items-center gap-1.5 px-2 py-1 text-[9px] font-black uppercase tracking-widest border border-[var(--neo-ink)] rounded-sm bg-white;
+  /* BUTTON SYSTEM */
+  .btn-brutal {
+    @apply px-6 py-3 font-black uppercase text-xs border-[3px] border-black bg-[#E5FD76] text-black transition-all hover:bg-black hover:text-[#E5FD76] hover:shadow-[4px_4px_0px_#000];
   }
-  
-  /* COMPONENT: CTA BUTTON (Snappy) */
-  .neo-action-btn {
-    @apply inline-flex items-center justify-center px-4 py-2 font-black uppercase tracking-wider text-[10px] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white hover:bg-[var(--neo-ink)] hover:text-white transition-all;
-  }
+}
+
+/* MARQUEE ANIMATION */
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-100%); }
+}
+.animate-marquee {
+  animation: marquee 20s linear infinite;
 }
