@@ -8,7 +8,8 @@ const IconBox = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 const IconLock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>;
 const IconBolt = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
 
-// --- DATA: ARSIP HIBURAN (Tanpa Downloader) ---
+// --- DATA: ARSIP HIBURAN ---
+// Note: Link diarahkan ke route masing-masing agar Middleware bekerja.
 const SUB_CHANNELS = [
   { id: "flickreels", name: "FlickReels", tag: "SHORT MOVIE", status: "ACTIVE", icon: <IconFilm />, link: "/login" },
   { id: "netshort", name: "NetShort", tag: "VERTICAL HD", status: "ACTIVE", icon: <IconMobile />, link: "/login" },
@@ -76,7 +77,7 @@ export default function LandingPage() {
         {/* GRID LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
 
-            {/* --- MASTER CARD (DRACIN) - The Big Kahuna --- 
+            {/* --- MASTER CARD (DRACIN) --- 
                 Warm colors for the main entertainment hub */}
             <div className="trop-card lg:col-span-2 p-8 md:p-10 flex flex-col md:flex-row items-start gap-8 bg-white group">
                 
@@ -100,7 +101,8 @@ export default function LandingPage() {
 
                     <div className="mt-8 pt-6 border-t-[2px] border-dashed border-[#E7E5D8] flex justify-between items-center w-full">
                         <span className="text-xs font-bold opacity-40 uppercase">Status: Sunny ☀️</span>
-                        <Link href="/login" className="font-black text-sm uppercase border-b-2 border-[#0F172A] hover:text-[#FF9F1C] hover:border-[#FF9F1C] transition-colors">
+                        {/* Link ke /dracin biar middleware yang ngecek login */}
+                        <Link href="/dracin" className="font-black text-sm uppercase border-b-2 border-[#0F172A] hover:text-[#FF9F1C] hover:border-[#FF9F1C] transition-colors">
                             Buka Hub &rarr;
                         </Link>
                     </div>
@@ -154,6 +156,7 @@ export default function LandingPage() {
         {/* THE DOWNLOADER ISLAND */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             
+            {/* LINK KE /downloader - Middleware akan menangkap ini dan memaksa login */}
             <Link href="/downloader" className="trop-card p-8 bg-[#2EC4B6] flex flex-col md:flex-row items-center gap-8 group hover:bg-[#25B0A2] transition-colors col-span-1 md:col-span-2">
                 
                 {/* Icon Circle */}
