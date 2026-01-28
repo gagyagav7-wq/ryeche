@@ -1,14 +1,18 @@
 "use client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useDebouncedCallback } from "use-debounce"; // Kita pake native timeout aja biar gak perlu install lib
+import { ChangeEvent } from "react";
 
 export default function SearchBar({ placeholder }: { placeholder: string }) {
   const searchParams = useSearchParams();
   const { replace } = useRouter();
 
-  // Debounce manual biar gak nambah library berat
+  // Variable timeout untuk debounce manual
+  let timeoutId: NodeJS.Timeout;
+
   const handleSearch = (term: string) => {
-    const params = new URLSearchParams(searchParams);
+    // FIX: Tambahkan .toString() agar TypeScript tidak error
+    const params = new URLSearchParams(searchParams.toString());
+    
     if (term) {
       params.set("q", term);
     } else {
@@ -17,12 +21,11 @@ export default function SearchBar({ placeholder }: { placeholder: string }) {
     replace(`/dracin/search?${params.toString()}`);
   };
 
-  // Timer buat debounce
-  let timeoutId: NodeJS.Timeout;
-  const onInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     clearTimeout(timeoutId);
     const val = e.target.value;
-    timeoutId = setTimeout(() => handleSearch(val), 500); // Tunggu 500ms
+    // Tunggu 500ms sebelum execute search
+    timeoutId = setTimeout(() => handleSearch(val), 500);
   };
 
   return (
@@ -36,7 +39,8 @@ export default function SearchBar({ placeholder }: { placeholder: string }) {
       />
       <button 
         className="bg-[#171717] text-white border-[3px] border-[#171717] px-4 font-black transition-colors active:translate-y-1"
-        onClick={() => {}} // Tombol cuma hiasan visual karena input udah otomatis
+        type="button"
+        onClick={() => {}} 
       >
         🔍
       </button>
