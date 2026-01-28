@@ -1,132 +1,142 @@
+import Image from "next/image";
 import Link from "next/link";
-import BrutCard from "@/components/BrutCard";
-import BrutButton from "@/components/BrutButton";
+import { getLatest, getForYou, getHotRank } from "@/lib/api";
+import SearchBar from "@/components/SearchBar";
 
-export default function LandingPage() {
+export const revalidate = 60;
+
+const FALLBACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="100%" height="100%" fill="#e5e5e5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="32" font-weight="800" fill="#171717">BUTTERHUB</text></svg>`);
+
+const VIEW_ALL_STYLE = "inline-flex items-center gap-2 text-[11px] font-black uppercase bg-black text-white px-3 py-2 border-[3px] border-[#171717] shadow-[4px_4px_0px_#171717] md:hover:bg-[#FDFFB6] md:hover:text-[#171717] transition-all active:translate-y-1 active:shadow-none cursor-pointer";
+
+// Komponen Internal untuk Section Drama
+const DramaSection = ({ title, subtitle, items, href }: any) => {
+  // Safety check: pastiin items itu array
+  const safeItems = Array.isArray(items) ? items : [];
+
   return (
-    <main className="min-h-dvh relative overflow-hidden bg-bg text-main selection:bg-accent selection:text-white flex flex-col">
+    <section className="space-y-6 scroll-mt-24 relative z-10">
+      <div className="flex justify-between items-end border-b-[3px] border-[#171717] pb-4 gap-2">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-2 bg-[#FDFFB6] border-[3px] border-[#171717]"></div>
+          <div>
+            <h2 className="text-2xl md:text-4xl font-black uppercase leading-none tracking-tight">{title}</h2>
+            <p className="text-[10px] md:text-sm font-bold opacity-60 uppercase tracking-widest mt-1">{subtitle}</p>
+          </div>
+        </div>
+        <Link href={href} className={VIEW_ALL_STYLE}>VIEW ALL →</Link>
+      </div>
       
-      {/* --- DECORATIVE LAYERS (Performance Optimized) --- */}
-      {/* Noise Texture: Hidden di mobile biar scroll licin, Absolute di desktop */}
-      <div className="hidden md:block absolute inset-0 opacity-[0.03] pointer-events-none -z-20" 
+      {safeItems.length === 0 ? (
+        <div className="py-10 text-center opacity-50 font-bold">Belum ada data.</div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+          {safeItems.slice(0, 10).map((d: any) => (
+            <Link key={d.id} href={`/dracin/${d.id}`} className="group block h-full outline-none">
+              <div className="h-full relative overflow-hidden bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] transition-all duration-300 md:group-hover:-translate-y-1 md:group-hover:shadow-[8px_8px_0px_#171717]">
+                <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-[#171717]">
+                  <Image 
+                    src={d.cover_url || FALLBACK} 
+                    alt={d.title} 
+                    fill 
+                    className="object-cover transition-transform duration-500 md:group-hover:scale-105" 
+                    unoptimized 
+                  />
+                  <div className="absolute top-2 right-2 bg-[#171717] text-white text-[9px] font-black px-1.5 py-0.5 border border-white">
+                    {d.total_ep} EP
+                  </div>
+                </div>
+                <div className="bg-white p-3">
+                  <h3 className="font-black text-xs md:text-sm truncate uppercase text-[#171717]" title={d.title}>{d.title}</h3>
+                  <div className="flex justify-between items-center mt-2 border-t-2 border-[#171717]/10 pt-2">
+                    <span className="text-[10px] font-bold opacity-60">DRAMA</span>
+                    <span className="text-[10px] font-black text-[#171717] uppercase group-hover:underline">WATCH</span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+};
+
+export default async function DracinHomePage() {
+  // Fetch data secara parallel biar cepet
+  const [latest, forYou, hotRank] = await Promise.all([
+    getLatest().catch(() => []), 
+    getForYou().catch(() => []), 
+    getHotRank().catch(() => [])
+  ]);
+
+  const chips = [
+    { label: '🔥 Hot Ranking', href: '/dracin/hotrank' },      
+    { label: '❤️ For You', href: '/dracin/foryou' },       
+    { label: '🆕 Latest Drop', href: '/dracin/latest' },
+  ];
+
+  return (
+    <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden pb-24">
+      {/* Decorative Backgrounds (Pointer events disabled) */}
+      <div className="fixed inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
-      {/* Shapes: Tajam tanpa blur (Neo-Brutalism style) */}
-      <div className="absolute top-[-5%] right-[-10%] md:right-[5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-brut border-main opacity-100 -z-10" />
-      <div className="absolute bottom-[10%] left-[-15%] md:left-[-5%] w-72 h-72 bg-[#FDFFB6] border-brut border-main rotate-12 -z-10" />
-
-      {/* --- MAIN CONTENT WRAPPER --- */}
-      {/* Flex-grow ensures content takes space, pushing footer down appropriately */}
-      <div className="flex-grow flex items-center w-full">
-        <div className="max-w-6xl mx-auto w-full p-6 md:p-10 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* === KOLOM KIRI: HERO TEXT & CTA === */}
-          <div className="space-y-8 z-10 text-center lg:text-left pt-10 lg:pt-0">
-            
-            {/* Brand Badge */}
-            <div className="inline-flex relative">
-              <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9]">
-                BUTTER<br/><span className="text-accent">HUB</span>
-              </h1>
-              {/* Badge: Pakai border-brut biar konsisten dengan theme */}
-              <span className="absolute -top-6 -right-6 md:-right-10 rotate-6 bg-main text-white text-xs md:text-sm font-bold px-3 py-1 border-brut border-white shadow-brut">
-                BETA v1.0
-              </span>
+      <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 relative z-10">
+        
+        {/* --- HEADER DENGAN SEARCH BAR --- */}
+        <header className="space-y-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717]">
+            <div>
+              <div className="flex items-center gap-3">
+                <Link href="/dashboard" className="px-3 py-1 text-xs font-black border-[3px] border-[#171717] bg-white md:hover:bg-[#171717] md:hover:text-white transition-all">
+                    HUB
+                </Link>
+                <h1 className="text-2xl md:text-3xl font-black uppercase tracking-tighter">
+                  BUTTERHUB / DRACIN
+                </h1>
+              </div>
+              <p className="text-xs font-bold opacity-50 mt-1 pl-1 hidden md:block">Premium Asian Drama Collection</p>
             </div>
 
-            {/* Subtext */}
-            <p className="text-lg md:text-2xl font-bold opacity-90 max-w-lg mx-auto lg:mx-0 leading-tight">
-              Satu akses. Semua hiburan. <br className="hidden md:block" />
-              Platform <span className="bg-[#A8E6CF] px-1 border-brut border-main">Dracin</span>, <span className="bg-[#FDFFB6] px-1 border-brut border-main">Downloader</span>, dan <span className="bg-accent px-1 text-white border-brut border-main">Tools</span> paling brutal.
-            </p>
-
-            {/* Feature Chips (Static - No Hover to avoid sticky touch on mobile) */}
-            <div className="flex flex-wrap gap-3 justify-center lg:justify-start">
-              {['📺 Streaming HD', '⬇️ No-WM Download', '🛠️ Utility'].map((chip, idx) => (
-                <div key={idx} className="bg-surface border-brut border-main px-4 py-2 rounded-full text-xs md:text-sm font-black shadow-brut cursor-default">
-                  {chip}
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop CTA (Hidden on Mobile) */}
-            <div className="hidden lg:flex gap-4 pt-4">
-              <Link href="/login" className="w-48 outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none group">
-                <BrutButton fullWidth variant="primary" className="h-14 text-lg">
-                  MASUK HUB
-                </BrutButton>
-              </Link>
-              <Link href="/register" className="w-48 outline-none focus-visible:ring-4 focus-visible:ring-main/30 rounded-none group">
-                <BrutButton fullWidth variant="secondary" className="h-14 text-lg">
-                  DAFTAR
-                </BrutButton>
-              </Link>
-            </div>
+            {/* INTEGRASI SEARCH BAR BARU */}
+            <SearchBar placeholder="Cari judul drama..." />
           </div>
 
-          {/* === KOLOM KANAN: CARD STACK (Desktop Only) === */}
-          {/* Hidden on mobile, so hover effects are safe here */}
-          <div className="hidden lg:block relative h-[500px] w-full">
-            {/* Card 3 (Belakang - Tools) */}
-            <div className="absolute top-12 right-12 w-80 rotate-6 hover:rotate-12 transition-transform duration-300 z-10">
-              <BrutCard className="bg-gray-200" title="TOOLS">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">🛠️</div>
-                  <p className="text-sm font-bold opacity-70 truncate">Utility belt buat power user.</p>
-                </div>
-              </BrutCard>
-            </div>
-
-            {/* Card 2 (Tengah - Downloader) */}
-            <div className="absolute top-24 right-24 w-80 -rotate-3 hover:-rotate-6 transition-transform duration-300 z-20">
-              <BrutCard className="bg-[#FDFFB6]" title="DOWNLOADER">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl">⚡</div>
-                  <p className="text-sm font-bold opacity-70 truncate">Sedot video TikTok/IG polos.</p>
-                </div>
-              </BrutCard>
-            </div>
-
-            {/* Card 1 (Depan - Dracin) - Main Focus */}
-            <div className="absolute top-40 right-36 w-80 -rotate-6 hover:rotate-0 transition-transform duration-300 z-30 group cursor-default">
-              <BrutCard className="bg-white" title="DRACIN">
-                <div className="space-y-3">
-                  <div className="aspect-video bg-main w-full relative overflow-hidden border-b-brut border-main">
-                     <div className="absolute inset-0 bg-accent opacity-20 group-hover:opacity-40 transition-opacity"></div>
-                     <div className="absolute inset-0 flex items-center justify-center text-white font-black text-4xl">▶</div>
-                  </div>
-                  <div className="flex items-center gap-3 px-1">
-                    <div className="text-3xl">🍿</div>
-                    <p className="text-sm font-bold truncate">Nonton ribuan drama on-going.</p>
-                  </div>
-                </div>
-              </BrutCard>
-            </div>
+          {/* Quick Chips */}
+          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+            {chips.map((chip, i) => (
+              <Link key={i} href={chip.href} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-[#171717] font-black text-[10px] uppercase shadow-[3px_3px_0px_#171717] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
+                {chip.label}
+              </Link>
+            ))}
           </div>
+        </header>
 
-        </div>
+        {/* --- CONTENT SECTIONS --- */}
+        <DramaSection 
+          title="Hot Ranking 🔥" 
+          subtitle="Top 10 Most Watched" 
+          items={hotRank} 
+          href="/dracin/hotrank" 
+        />
+        
+        <DramaSection 
+          title="For You ❤️" 
+          subtitle="Curated picks just for you" 
+          items={forYou} 
+          href="/dracin/foryou" 
+        />
+        
+        <DramaSection 
+          title="Fresh Drop 🆕" 
+          subtitle="Just uploaded this week" 
+          items={latest} 
+          href="/dracin/latest" 
+        />
+
       </div>
-
-      {/* === MOBILE STICKY CTA === */}
-      {/* Sticky bottom + Backdrop blur + Safe area padding */}
-      <div className="lg:hidden sticky bottom-0 left-0 right-0 px-4 pt-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] bg-bg/95 backdrop-blur-md border-t-brut border-main z-50 flex gap-3 shadow-[0_-4px_0_0_rgba(0,0,0,1)]">
-        <Link href="/login" className="flex-1 outline-none focus-visible:ring-4 focus-visible:ring-main">
-          <BrutButton fullWidth variant="primary" className="py-3 text-lg">
-            LOGIN
-          </BrutButton>
-        </Link>
-        <Link href="/register" className="flex-1 outline-none focus-visible:ring-4 focus-visible:ring-main">
-          <BrutButton fullWidth variant="secondary" className="py-3 text-lg">
-            DAFTAR
-          </BrutButton>
-        </Link>
-      </div>
-
-      {/* Footer: Menggunakan mt-auto agar selalu di bawah konten */}
-      <footer className="hidden lg:block w-full py-6 text-center mt-auto text-xs font-bold opacity-40 uppercase tracking-widest pointer-events-none">
-        ButterHub Project © 2026
-      </footer>
     </main>
   );
 }
