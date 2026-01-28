@@ -1,183 +1,125 @@
+import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
-import BrutCard from "@/components/BrutCard";
 import { getDramaDetail } from "@/lib/api";
-import dynamic from "next/dynamic";
 
-const EpisodeAutoNext = dynamic(() => import("@/components/EpisodeAutoNext"), {
-  ssr: false,
-  loading: () => (
-    <div className="aspect-video w-full bg-black flex items-center justify-center text-white font-bold animate-pulse border-[3px] border-[#171717]">
-      LOADING PLAYER...
-    </div>
-  ),
-});
+// FORCE DYNAMIC biar log server keluar terus setiap refresh
+export const dynamic = "force-dynamic";
 
-const determineVideoType = (url: string) => {
-  if (!url) return "mp4";
-  return /\.m3u8(\?|$)/i.test(url) ? "hls" : "mp4";
-};
+export default async function DramaDetailPage({ params }: { params: { id: string } }) {
+  const data = await getDramaDetail(params.id);
 
-export const revalidate = 60;
-
-interface Props {
-  params: { id: string };
-  searchParams: { [key: string]: string | string[] | undefined };
-}
-
-export default async function DramaDetailPage({ params, searchParams }: Props) {
-  const { id } = params;
-  let data;
-  let errorMsg = null;
-
-  try {
-    data = await getDramaDetail(id);
-  } catch (error: any) {
-    console.error("Page Fetch Error:", error);
-    errorMsg = error.message;
-  }
-
-  // --- UI ERROR DENGAN TOMBOL RETRY ---
-  if (errorMsg || !data) {
+  if (!data) {
     return (
-      <div className="min-h-dvh flex flex-col items-center justify-center bg-[#F4F4F0] p-6 text-[#171717]">
-        <BrutCard className="bg-white border-[3px] border-red-500 shadow-[8px_8px_0px_#ef4444] max-w-md w-full text-center p-8">
-          <div className="text-6xl mb-4">💀</div>
-          <h1 className="text-2xl font-black uppercase mb-2">System Error</h1>
-          <p className="font-mono text-xs bg-gray-100 p-2 rounded mb-6 text-left overflow-x-auto border border-gray-300">
-            {errorMsg || "Data not found"}
-          </p>
-          <div className="flex gap-4 justify-center">
-            {/* Tombol Refresh Halaman (Retry) */}
-            <a href={`/dracin/${id}`} className="px-6 py-3 bg-red-500 text-white font-bold uppercase hover:bg-red-600 transition-colors cursor-pointer border-2 border-black shadow-[4px_4px_0px_black]">
-              COBA LAGI
-            </a>
-            <Link href="/dracin" className="px-6 py-3 bg-[#171717] text-white font-bold uppercase hover:translate-y-1 hover:shadow-none transition-all">
-              &larr; Library
-            </Link>
-          </div>
-        </BrutCard>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F4F4F0] text-[#171717]">
+        <h1 className="text-4xl font-black mb-2">404</h1>
+        <p className="font-bold">Data drama tidak ditemukan atau API Error.</p>
+        <Link href="/dracin" className="mt-4 px-4 py-2 bg-black text-white font-bold">← KEMBALI</Link>
       </div>
     );
   }
 
-  // --- PREPARE DATA ---
-  const episodes = data.episodes;
-  const rawEpId = searchParams?.epId;
-  const epIdParam = Array.isArray(rawEpId) ? rawEpId[0] : rawEpId;
-  
-  const activeIndex = episodes.findIndex((ep: any) => String(ep.id) === String(epIdParam));
-  const validIndex = activeIndex >= 0 ? activeIndex : 0;
-  
-  const activeEpisode = episodes[validIndex];
-  const nextEpisode = episodes[validIndex + 1]; 
-  const nextEpId = nextEpisode ? String(nextEpisode.id) : undefined;
-
-  // LOGIC PROXY:
-  // Kita inject '/api/proxy' kalau perlu, tapi lebih aman pakai direct dulu.
-  // VideoPlayer akan handle error 403 dan user bisa reload kalau perlu.
-  // ATAU: Kita bisa paksa proxy untuk testing:
-  // const directUrl = activeEpisode?.video_url || "";
-  // const videoUrl = `/api/proxy?url=${encodeURIComponent(directUrl)}`; 
-  // ^ Un-comment baris atas kalau mau paksa semua lewat proxy.
-  
-  const videoUrl = activeEpisode?.video_url || "";
-  const videoType = determineVideoType(videoUrl);
-  const storageKey = `dracin-${id}-ep-${activeEpisode?.id || 'default'}`;
-  const dramaTitle = data.info.title;
+  const { info, episodes } = data;
+  const firstEpisode = episodes.length > 0 ? episodes[0] : null;
 
   return (
-    <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden selection:bg-[#FDFFB6]">
-      <div className="hidden md:block absolute inset-0 opacity-[0.02] pointer-events-none -z-10" 
-           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
-      </div>
-      
-      <div className="max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8 relative z-10">
-        <header className="flex items-center gap-4 mb-6">
-           <Link href="/dracin" className="group">
-              <div className="px-4 py-2 bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] font-black text-sm uppercase tracking-wider transition-transform active:translate-y-1 active:shadow-none md:group-hover:bg-[#FDFFB6]">
-                &larr; Library
-              </div>
-           </Link>
-           <div className="h-[2px] flex-1 bg-[#171717] opacity-20 hidden md:block"></div>
-           <span className="font-bold text-xs uppercase tracking-widest opacity-50 hidden md:block">ButterHub Premium Player</span>
-        </header>
+    <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] pb-24">
+      {/* HEADER */}
+      <header className="bg-white border-b-[3px] border-[#171717] p-4 sticky top-0 z-50 flex items-center justify-between shadow-sm">
+        <Link href="/dracin" className="font-black text-xs border-[3px] border-[#171717] px-3 py-1 hover:bg-[#171717] hover:text-white transition-colors">
+          ← BACK
+        </Link>
+        <h1 className="font-black uppercase truncate max-w-[200px]">{info.title}</h1>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-          <div className="lg:col-span-8 flex flex-col gap-6">
-             <div className="bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative group overflow-hidden rounded-sm">
-               <div className="aspect-video w-full">
-                 {videoUrl ? (
-                   <EpisodeAutoNext
-                     dramaId={id}
-                     nextEpId={nextEpId}
-                     url={videoUrl}
-                     type={videoType}
-                     storageKey={storageKey}
-                   />
-                 ) : (
-                   <div className="flex flex-col items-center justify-center h-full text-white font-bold p-4 text-center">
-                      <span className="text-4xl mb-4">🔌</span>
-                      <p className="tracking-widest text-sm opacity-80">SOURCE NOT FOUND</p>
-                   </div>
-                 )}
-               </div>
-             </div>
-             
-             <BrutCard className="bg-white border-2 border-[#171717] shadow-[4px_4px_0px_#171717] p-6 md:p-8">
-                <div className="flex flex-col gap-4">
-                  <h1 className="text-2xl md:text-3xl font-black uppercase leading-tight tracking-tight">
-                    {data.info.title}
-                  </h1>
-                  <p className="text-sm md:text-base leading-relaxed opacity-80 font-medium max-w-3xl">
-                    {data.info.synopsis || "No synopsis available."}
-                  </p>
+      <div className="max-w-6xl mx-auto p-4 md:p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+        
+        {/* KOLOM KIRI: PLAYER & DEBUG AREA */}
+        <div className="md:col-span-2 space-y-6">
+          <div className="aspect-video bg-black border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717] relative overflow-hidden flex flex-col items-center justify-center text-white">
+            
+            {/* KONDISI 1: EPISODE KOSONG */}
+            {!firstEpisode ? (
+              <div className="text-center p-4">
+                <p className="font-bold text-red-500 text-xl">⚠ LIST EPISODE KOSONG</p>
+                <p className="text-xs opacity-70 mt-2">Cek log server, array episodes tidak ditemukan.</p>
+              </div>
+            ) 
+            /* KONDISI 2: ADA EPISODE TAPI VIDEO URL KOSONG */
+            : !firstEpisode.hasVideo ? (
+              <div className="text-center p-6 bg-gray-900 w-full h-full flex flex-col justify-center items-center">
+                <p className="font-bold text-yellow-400 text-2xl mb-2">⚠ SOURCE NOT FOUND</p>
+                <div className="text-left bg-black p-4 rounded border border-gray-700 font-mono text-[10px] max-w-lg overflow-auto">
+                  <p className="text-green-400">$ Debug Info:</p>
+                  <p>ID: {firstEpisode.id}</p>
+                  <p>Name: {firstEpisode.name}</p>
+                  <p className="text-red-400">VideoURL: (Empty String)</p>
+                  <p className="mt-2 text-gray-500">Masalah: Mapping field di pickVideoUrl() belum cocok dengan response API.</p>
                 </div>
-             </BrutCard>
+              </div>
+            ) 
+            /* KONDISI 3: VIDEO ADA -> TAMPILKAN NATIVE PLAYER DULU */
+            : (
+              <div className="w-full h-full relative group">
+                <video 
+                  controls 
+                  className="w-full h-full object-contain"
+                  poster={info.cover_url}
+                  playsInline
+                  webkit-playsinline="true"
+                >
+                  <source src={firstEpisode.video_url} />
+                  Browser lu gak support video tag.
+                </video>
+                
+                {/* Debug Overlay (Hover to see URL) */}
+                <div className="absolute top-0 left-0 bg-black/80 text-white text-[10px] p-2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none break-all max-w-full">
+                  Source: {firstEpisode.video_url}
+                </div>
+              </div>
+            )}
+
           </div>
 
-          <div className="lg:col-span-4 min-h-0 z-20">
-             <div className="lg:sticky lg:top-6">
-                <aside className="relative z-10 bg-white border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717] flex flex-col overflow-hidden h-[65svh] lg:h-[calc(100dvh-120px)] transition-all min-h-0 rounded-sm">
-                  <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] flex justify-between items-center shrink-0">
-                    <span className="font-black text-lg uppercase tracking-tight flex items-center gap-2">
-                      <span>📺</span> Playlist
-                    </span>
-                    <span className="text-xs font-bold bg-[#171717] text-white px-2 py-1 rounded-sm">
-                      {episodes.length} EP
-                    </span>
-                  </div>
-                  <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-white overscroll-contain touch-pan-y" style={{ WebkitOverflowScrolling: "touch" }}>
-                    {episodes.map((ep: any, idx: number) => {
-                      const isActive = idx === validIndex;
-                      const epName = ep.name || "";
-                      let displayName = epName;
-                      if (dramaTitle && displayName.startsWith(dramaTitle)) {
-                         displayName = displayName.substring(dramaTitle.length).trim();
-                      }
-                      displayName = displayName.replace(/-EP\.\d+.*$/i, "").trim();
-
-                      return (
-                        <Link key={ep.id} href={`/dracin/${id}?epId=${encodeURIComponent(String(ep.id))}`} className="block group outline-none">
-                          <div className={`relative p-3 transition-all duration-200 ease-out ${isActive ? "bg-[#171717] text-white border-2 border-[#171717] translate-x-1" : "bg-white border-2 border-[#171717]/30 md:hover:border-[#171717] md:hover:bg-[#fafafa] md:hover:translate-x-1"}`}>
-                            {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#FDFFB6]"></div>}
-                            <div className="flex justify-between items-center gap-3 pl-2">
-                              <div className="flex flex-col min-w-0">
-                                {isActive && <span className="text-[10px] font-black text-[#FDFFB6] tracking-widest mb-0.5 animate-pulse">NOW PLAYING</span>}
-                                <span className={`text-sm font-bold truncate ${isActive ? "text-white" : "text-[#171717]"}`}>Episode {idx + 1}</span>
-                                <span className={`text-xs truncate opacity-70 ${isActive ? "text-gray-300" : "text-gray-500"}`}>{displayName || "Watch Now"}</span>
-                              </div>
-                              {isActive ? <span className="text-lg">▶</span> : <span className="text-[#171717] opacity-0 md:group-hover:opacity-100 transition-opacity text-lg">▸</span>}
-                            </div>
-                          </div>
-                        </Link>
-                      )
-                    })}
-                  </div>
-                </aside>
-             </div>
+          {/* INFO CARD */}
+          <div className="bg-white border-[3px] border-[#171717] p-6 shadow-[4px_4px_0px_#171717]">
+            <h2 className="text-2xl font-black uppercase mb-4">{info.title}</h2>
+            <p className="text-sm font-bold opacity-60 leading-relaxed mb-4">
+              {info.synopsis}
+            </p>
+            {firstEpisode?.hasVideo && (
+              <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-2 text-xs font-bold">
+                ℹ️ Jika video loading terus/error tapi URL ada, berarti kena blokir Hotlink (403). Kita butuh Proxy.
+              </div>
+            )}
           </div>
         </div>
+
+        {/* KOLOM KANAN: PLAYLIST */}
+        <div className="bg-white border-[3px] border-[#171717] h-fit max-h-[80vh] overflow-y-auto shadow-[4px_4px_0px_#171717]">
+          <div className="p-4 border-b-[3px] border-[#171717] bg-[#FDFFB6] sticky top-0 z-10">
+            <h3 className="font-black uppercase">Playlist ({episodes.length})</h3>
+          </div>
+          <ul className="divide-y-2 divide-[#171717]/10">
+            {episodes.map((ep: any, idx: number) => (
+              <li key={ep.id} className="p-3 hover:bg-gray-50 cursor-pointer flex justify-between items-center group transition-colors">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  <span className="text-xs font-black text-white bg-[#171717] w-6 h-6 flex items-center justify-center rounded-full flex-shrink-0">
+                    {idx + 1}
+                  </span>
+                  <span className="text-sm font-bold truncate group-hover:text-blue-600">
+                    {ep.name}
+                  </span>
+                </div>
+                {!ep.hasVideo && (
+                  <span className="text-[8px] bg-red-100 text-red-600 px-1.5 py-0.5 font-black border border-red-200 uppercase tracking-wider">
+                    NO SRC
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+
       </div>
     </main>
   );
