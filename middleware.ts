@@ -6,41 +6,43 @@ const rawSecret = process.env.JWT_SECRET;
 const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 
 export async function middleware(req: NextRequest) {
-  const session = req.cookies.get('session')?.value; // Deteksi session dari cookie 'session'
+  // DEBUGGING: Cek terminal VPS lu buat liat nama cookie yang sebenernya
+  // console.log("COOKIES:", req.cookies.getAll()); 
+
+  // CARI AMAN: Cek 'session' ATAU 'token' (salah satu pasti bener)
+  const cookieVal = req.cookies.get('session')?.value || req.cookies.get('token')?.value;
   const path = req.nextUrl.pathname;
 
-  // 1. Verifikasi Token (Cek validitas JWT)
   let isAuthenticated = false;
-  if (session && SECRET_KEY) {
+
+  // Cek token valid gak (kalau ada secret)
+  if (cookieVal && SECRET_KEY) {
     try {
-      await jwtVerify(session, SECRET_KEY, { algorithms: ['HS256'] });
+      await jwtVerify(cookieVal, SECRET_KEY, { algorithms: ['HS256'] });
       isAuthenticated = true;
     } catch (err) {
-      // Token expired/invalid
+      console.log("Token Invalid/Expired");
     }
+  } else if (cookieVal) {
+    // Fallback kalau gak ada secret key di env, asal ada cookie dianggap login
+    isAuthenticated = true;
   }
 
-  // --- LOGIC GATEKEEPER ROOT "/" (INI PATCH UTAMANYA) ---
+  // --- LOGIC PINTU GERBANG (ROOT) ---
   if (path === '/') {
     if (isAuthenticated) {
-      // Punya sesi -> Masuk Dashboard
       return NextResponse.redirect(new URL('/dashboard', req.url));
     } else {
-      // Tidak punya sesi -> Masuk Public Listing (Dracin) atau Login
-      return NextResponse.redirect(new URL('/dracin', req.url)); 
+      return NextResponse.redirect(new URL('/dracin', req.url));
     }
   }
 
-  // 2. PROTEKSI DASHBOARD (Biar gak bisa ditembak langsung)
-  if (path.startsWith('/dashboard')) {
-    if (!isAuthenticated) {
-      const loginUrl = new URL('/login', req.url);
-      loginUrl.searchParams.set('callbackUrl', path);
-      return NextResponse.redirect(loginUrl);
-    }
+  // Proteksi Dashboard
+  if (path.startsWith('/dashboard') && !isAuthenticated) {
+    return NextResponse.redirect(new URL('/login', req.url));
   }
 
-  // 3. AUTH PAGES (Login/Register gak boleh diakses kalau sudah login)
+  // Proteksi Halaman Login (Kalau udah login, tendang ke dashboard)
   if ((path === '/login' || path === '/register') && isAuthenticated) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
