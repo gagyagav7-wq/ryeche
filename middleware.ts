@@ -5,6 +5,7 @@ import { jwtVerify } from 'jose';
 const rawSecret = process.env.JWT_SECRET;
 const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 
+// Helper buat cek token valid/enggak
 async function checkAuth(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get('token')?.value;
   if (!token) return false;
@@ -22,29 +23,29 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isAuthed = await checkAuth(req);
 
-  // 1. ROOT GATE (PINTU GERBANG)
+  // 1. ROOT GATE (Landing Page)
+  // Kalau buka root '/', biarin aja masuk (karena sekarang udah jadi landing page bagus)
   if (path === '/') {
-    // Kalau Guest buka Home, biarkan dia lihat Landing Page (Tropical)
-    // Kalau Admin buka Home, biarkan juga (karena Landing Page lu sekarang bagus)
-    // Jadi Logic redirect ke dashboard kita HAPUS biar Landing Page selalu tampil.
     return NextResponse.next();
   }
 
   // 2. PROTEKSI AREA TERLARANG (VIP ONLY)
-  // TAMBAHAN BARU: path.startsWith('/downloader')
-  const protectedPaths = ['/dashboard', '/dracin', '/downloader'];
+  // --- DAFTAR RUANGAN YANG WAJIB LOGIN ---
+  const protectedPaths = ['/dashboard', '/dracin', '/downloader']; 
+  // ^^^ Pastikan '/downloader' ada di sini!
   
-  // Cek apakah user mau masuk ke salah satu path terlarang
   const isProtected = protectedPaths.some(p => path.startsWith(p));
 
   if (isProtected && !isAuthed) {
+    // Kalau mau masuk area VIP tapi gak punya tiket (token) -> LEMPAR KE LOGIN
     const loginUrl = new URL('/login', req.url);
-    // Simpan url tujuan biar habis login bisa balik lagi ke situ
+    // Kita kasih 'callbackUrl' biar abis login otomatis balik ke halaman yang dituju
     loginUrl.searchParams.set('callbackUrl', path);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. PROTEKSI HALAMAN LOGIN (Member gak perlu login lagi)
+  // 3. PROTEKSI HALAMAN LOGIN 
+  // Kalau udah login tapi mau buka /login lagi -> Lempar ke Dashboard
   if ((path === '/login' || path === '/register') && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
@@ -53,5 +54,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Matcher biar middleware jalan di semua halaman kecuali file statis/api
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json).*)'],
 };
