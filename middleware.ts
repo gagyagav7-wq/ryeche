@@ -9,7 +9,6 @@ const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 export async function middleware(req: NextRequest) {
   // FAIL-FAST: Kalau secret gak ada, matikan akses biar gak ada false sense of security
   if (!SECRET_KEY) {
-    // Cek environment biar di local dev masih "sedikit" longgar kalau lupa, tapi production mati total
     if (process.env.NODE_ENV === 'production') {
       return new NextResponse("Server Misconfiguration: JWT_SECRET missing", { status: 500 });
     }
@@ -20,7 +19,6 @@ export async function middleware(req: NextRequest) {
 
   // 1. Verifikasi Token
   let isAuthenticated = false;
-  // Pastikan SECRET_KEY ada sebelum verify (untuk local dev safety check)
   if (session && SECRET_KEY) {
     try {
       await jwtVerify(session, SECRET_KEY, { algorithms: ['HS256'] });
@@ -30,7 +28,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // 2. PROTECTED ROUTES
+  // --- TAMBAHAN BARU: ROOT ROUTE "/" HANDLING ---
+  // Ini solusi biar pas buka "/" langsung dilempar sesuai status login
+  if (path === '/') {
+    if (isAuthenticated) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    } else {
+      return NextResponse.redirect(new URL('/login', req.url));
+    }
+  }
+  // ---------------------------------------------
+
+  // 3. PROTECTED ROUTES (Logic Lama Tetap Ada)
   const protectedPaths = ['/dashboard', '/dracin', '/downloader', '/tools'];
   const isProtected = protectedPaths.some((p) => path.startsWith(p));
 
@@ -44,7 +53,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. AUTH ROUTES
+  // 4. AUTH ROUTES (Logic Lama Tetap Ada)
   const authPaths = ['/login', '/register'];
   const isAuthPage = authPaths.some((p) => path.startsWith(p));
 
