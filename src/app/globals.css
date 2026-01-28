@@ -7,22 +7,29 @@ html {
 }
 
 :root {
-  /* --- PALETTE: CREAMY LUXURY BRUTALISM --- */
-  --neo-bg: #F2F0E9;          /* Bone/Ivory - Base Background */
-  --neo-surface: #FFFFFF;     /* Pure White - Card Background */
-  --neo-stroke: #121212;      /* Ink Black - Borders & Text */
-  --neo-muted: #8A8A8A;       /* Technical Grey */
+  /* --- PALETTE: CREAMY MUSEUM --- */
+  --neo-bg: #F7F5F0;          /* Warm Ivory - Base canvas */
+  --neo-surface: #FFFFFF;     /* Pure White - Cards */
+  --neo-ink: #121212;         /* Almost Black - Text & Strokes */
+  --neo-muted: #888888;       /* Metadata text */
   
-  /* Accents */
-  --neo-pink: #FF9A9E;        /* ButterHub Pink signature */
-  --neo-pink-light: #FECFEF;  
-  --neo-yellow: #FDFFB6;      /* Highlight/Marker */
-  --neo-blue: #A8E6CF;        /* Secondary Accent */
+  /* --- ACCENTS (Restrained) --- */
+  --neo-accent-pink: #FF9A9E; /* Brand Signature */
+  --neo-accent-butter: #FDFFB6; /* Secondary Highlight */
+  --neo-accent-mint: #A8E6CF; /* Success/Safe status */
 
-  /* --- DIMENSIONS --- */
-  --neo-border: 3px;          /* Konsisten tebal */
-  --neo-shadow: 8px;          /* Deep shadow */
-  --neo-radius: 6px;          /* Tight radius */
+  /* --- DIMENSIONS (THE BRUTAL DNA) --- */
+  --neo-stroke: 3px;          /* Tebal & Tegas */
+  --neo-shadow-x: 8px;
+  --neo-shadow-y: 8px;
+  --neo-radius: 8px;          /* Sedikit lebih soft dari 0px, tapi tetap kotak */
+  
+  /* --- SPACING GRID (8px based) --- */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+  --space-6: 48px;
 }
 
 /* Base Styles Override */
