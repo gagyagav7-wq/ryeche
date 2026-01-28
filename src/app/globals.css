@@ -2,53 +2,68 @@
 @tailwind components;
 @tailwind utilities;
 
-/* --- DESIGN TOKENS: PREMIUM CREAMY BRUTALISM --- */
 :root {
-  /* Palette */
-  --neo-bg: #F7F5F0;          /* Creamy Ivory - Base */
-  --neo-surface: #FFFFFF;     /* Pure White - Card */
-  --neo-ink: #121212;         /* Off-Black - Text & Stroke */
-  --neo-muted: #888888;       /* Grey Text */
+  /* --- PALETTE: CREAMY ARCHIVE --- */
+  --neo-bg: #F6F1E8;          /* Creamy Ivory - Base Canvas */
+  --neo-surface: #FFFFFF;     /* Pure White - Cards */
+  --neo-ink: #121212;         /* Off-Black - Text & Borders */
+  --neo-muted: #888888;       /* Technical Text */
   
-  /* Micro Accents (Gunakan Hemat!) */
+  /* --- RESTRAINED ACCENTS (Hanya untuk highlight) --- */
   --neo-accent-butter: #FDFFB6; 
   --neo-accent-pink: #FF9A9E;
-  --neo-accent-mint: #A8E6CF;
+  --neo-accent-mint: #A8E6CF; /* Active status */
+  --neo-accent-gray: #E5E5E5; /* Locked status */
 
-  /* Dimensions */
+  /* --- DIMENSIONS (The Brutal DNA) --- */
   --neo-stroke: 3px;
-  --neo-shadow: 8px;
+  --neo-shadow-x: 8px;
+  --neo-shadow-y: 8px;
   --neo-radius: 8px;
 }
 
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  /* Noise Texture Halus */
+  /* Texture Noise Halus (Wajib untuk kesan premium paper) */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
 @layer components {
-  /* MASTER CARD STYLE */
-  .neo-master-card {
+  /* UTILITY: Neo-Brutal Card Base */
+  .neo-card {
     @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden;
-    box-shadow: var(--neo-shadow) var(--neo-shadow) 0px var(--neo-ink);
+    box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-ink);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
   }
-
-  /* SUB CARD STYLE (Interactive) */
-  .neo-sub-card {
-    @apply bg-white border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[6px] relative flex flex-col transition-all duration-200;
-    /* Shadow lebih tipis untuk sub-card */
+  
+  /* Interaction: Lift & Snap */
+  .neo-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 12px 12px 0px var(--neo-ink);
+  }
+  
+  .neo-card:active {
+    transform: translate(1px, 1px);
     box-shadow: 4px 4px 0px var(--neo-ink);
   }
 
-  .neo-sub-card:hover {
-    @apply -translate-y-1;
-    box-shadow: 6px 6px 0px var(--neo-ink);
+  /* UTILITY: Badges & Chips */
+  .neo-chip {
+    @apply inline-flex items-center px-2 py-1 text-[9px] font-black uppercase tracking-widest border border-[var(--neo-ink)] rounded-sm bg-white;
   }
   
-  /* Status Badges */
-  .badge-chip {
-    @apply inline-flex items-center px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border border-black rounded-sm;
+  /* UTILITY: Buttons */
+  .neo-btn {
+    @apply inline-flex items-center justify-center px-6 py-3 font-black uppercase tracking-wider text-xs border-[length:var(--neo-stroke)] border-[var(--neo-ink)] transition-all;
+    box-shadow: 4px 4px 0px var(--neo-ink);
+  }
+  .neo-btn:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 6px 0px var(--neo-ink);
+  }
+  .neo-btn:active {
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0px var(--neo-ink);
   }
 }
