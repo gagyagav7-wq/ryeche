@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getLatest, getForYou, getHotRank } from "@/lib/api";
+import SearchBar from "@/components/SearchBar";
 
 export const revalidate = 60;
 
@@ -167,7 +168,7 @@ export default async function DracinHomePage() {
             <form action="/dracin/search" className="w-full md:w-auto flex gap-2">
               <input 
                 name="q"
-                placeholder="Cari judul..." 
+                <SearchBar placeholder="Cari judul..." /> 
                 className="flex-1 md:w-64 bg-white border-[3px] border-[#171717] p-3 font-bold text-sm outline-none focus:ring-4 focus:ring-[#FDFFB6]/50 transition-all"
               />
               <button type="submit" className="bg-[#171717] text-white border-[3px] border-[#171717] px-4 font-black transition-colors active:translate-y-1">
