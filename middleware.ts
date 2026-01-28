@@ -5,45 +5,67 @@ import { jwtVerify } from 'jose';
 const rawSecret = process.env.JWT_SECRET;
 const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 
-export async function middleware(req: NextRequest) {
-  // DEBUGGING: Cek terminal VPS lu buat liat nama cookie yang sebenernya
-  // console.log("COOKIES:", req.cookies.getAll()); 
+// Helper: Cek status Auth
+async function checkAuth(req: NextRequest): Promise<boolean> {
+  const token = req.cookies.get('token')?.value;
 
-  // CARI AMAN: Cek 'session' ATAU 'token' (salah satu pasti bener)
-  const cookieVal = req.cookies.get('session')?.value || req.cookies.get('token')?.value;
-  const path = req.nextUrl.pathname;
+  if (!token) return false;
 
-  let isAuthenticated = false;
-
-  // Cek token valid gak (kalau ada secret)
-  if (cookieVal && SECRET_KEY) {
-    try {
-      await jwtVerify(cookieVal, SECRET_KEY, { algorithms: ['HS256'] });
-      isAuthenticated = true;
-    } catch (err) {
-      console.log("Token Invalid/Expired");
+  if (!SECRET_KEY) {
+    if (process.env.NODE_ENV !== 'production') {
+        console.warn("[WARN] JWT_SECRET missing! Auth treated as Guest.");
     }
-  } else if (cookieVal) {
-    // Fallback kalau gak ada secret key di env, asal ada cookie dianggap login
-    isAuthenticated = true;
+    return false;
   }
 
-  // --- LOGIC PINTU GERBANG (ROOT) ---
+  try {
+    await jwtVerify(token, SECRET_KEY, { algorithms: ['HS256'] });
+    return true; 
+  } catch (err) {
+    // LOG DEBUG (Dev Only) - Poin Kritik No. 6
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[AUTH FAIL] Token exists but verify failed (Expired/Invalid)');
+    }
+    return false;
+  }
+}
+
+export async function middleware(req: NextRequest) {
+  const path = req.nextUrl.pathname;
+  const isAuthed = await checkAuth(req);
+
+  // LOG DEBUGGER ROOT
   if (path === '/') {
-    if (isAuthenticated) {
+    // Poin Kritik No. 5: Kita cek apakah cookie kebaca di Root
+    const tokenCookie = req.cookies.get('token');
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[MIDDLEWARE ROOT] Cookie 'token' found? ${!!tokenCookie}`);
+      console.log(`[MIDDLEWARE ROOT] Is Authenticated? ${isAuthed}`);
+    }
+  }
+
+  // 1. ROOT GATE
+  if (path === '/') {
+    if (isAuthed) {
       return NextResponse.redirect(new URL('/dashboard', req.url));
     } else {
-      return NextResponse.redirect(new URL('/dracin', req.url));
+      // Poin Kritik No. 2: Redirect spesifik ke /dracin/latest
+      return NextResponse.redirect(new URL('/dracin/latest', req.url));
     }
   }
 
-  // Proteksi Dashboard
-  if (path.startsWith('/dashboard') && !isAuthenticated) {
-    return NextResponse.redirect(new URL('/login', req.url));
+  // 2. PROTEKSI DASHBOARD
+  if (path.startsWith('/dashboard')) {
+    if (!isAuthed) {
+      const loginUrl = new URL('/login', req.url);
+      // Poin Kritik No. 3: Simpan full path + query
+      loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
+      return NextResponse.redirect(loginUrl);
+    }
   }
 
-  // Proteksi Halaman Login (Kalau udah login, tendang ke dashboard)
-  if ((path === '/login' || path === '/register') && isAuthenticated) {
+  // 3. PROTEKSI LOGIN
+  if ((path === '/login' || path === '/register') && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
@@ -51,5 +73,8 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+  // Poin Kritik No. 4: Exclude manifest, opengraph, twitter-image, robots, sitemap
+  matcher: [
+    '/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\.png|.*\\.jpg|.*\\.svg).*)'
+  ],
 };
