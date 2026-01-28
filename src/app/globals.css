@@ -3,49 +3,88 @@
 @tailwind utilities;
 
 :root {
-  /* --- PALETTE: CINEMATIC CREAM --- */
-  --neo-bg: #F3F0E7;          /* Lebih earthy/warm dikit dari sebelumnya */
+  /* --- PALETTE: MATURE BRUTALISM --- */
+  --neo-bg: #F4F1EA;          /* Premium Bone/Ivory */
   --neo-surface: #FFFFFF;
-  --neo-ink: #0F0F0F;         /* Black almost black */
-  --neo-accent: #E5FD76;      /* Acid Lime/Yellow (Trend Brutalism 2024) */
-  --neo-accent-pink: #FF90E8; 
+  --neo-ink: #050505;         /* Deep Black */
+  
+  /* HIERARCHY ACCENTS */
+  --neo-lime: #CCFF00;        /* PRIMARY ACCENT (Interaction) */
+  --neo-pink: #FF90E8;        /* SECONDARY ACCENT (Badges Only) */
+  --neo-gray: #E5E5E5;        /* Inactive/Locked */
 
-  /* --- DIMENSIONS --- */
+  /* --- SYSTEM --- */
   --neo-stroke: 3px;
-  --neo-shadow: 6px;          /* Sedikit lebih tight */
-  --neo-radius: 0px;          /* KITA COBA KOTAK TAJAM (Sharp) buat kesan Brutal Fashion */
+  --neo-shadow: 6px;
 }
 
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  background-image: radial-gradient(#121212 0.5px, transparent 0.5px);
-  background-size: 24px 24px; /* Dot pattern halus */
+  /* Noise Texture yang lebih halus (Subtle) */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  overflow-x: hidden;
 }
 
 @layer components {
-  /* CARD SYSTEM: SHARP & BOLD */
+  /* CONTAINER */
+  .neo-container {
+    @apply max-w-[1400px] mx-auto px-6 md:px-12;
+  }
+
+  /* CARD SYSTEM: UNIFIED SHADOWS */
   .bento-card {
-    @apply border-[3px] border-black bg-white relative overflow-hidden transition-all duration-300;
-    box-shadow: 6px 6px 0px #000;
+    @apply border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white relative overflow-hidden transition-all duration-200;
+    box-shadow: var(--neo-shadow) var(--neo-shadow) 0px var(--neo-ink);
   }
   
-  .bento-card:hover {
-    box-shadow: 10px 10px 0px #000;
+  /* Hover state: Lift & Sharpen Shadow */
+  .bento-card-interactive:hover {
     transform: translate(-2px, -2px);
+    box-shadow: 10px 10px 0px var(--neo-ink);
+  }
+  
+  /* Active state: Press (Tactile feel) */
+  .bento-card-interactive:active {
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0px var(--neo-ink);
   }
 
   /* BUTTON SYSTEM */
-  .btn-brutal {
-    @apply px-6 py-3 font-black uppercase text-xs border-[3px] border-black bg-[#E5FD76] text-black transition-all hover:bg-black hover:text-[#E5FD76] hover:shadow-[4px_4px_0px_#000];
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-6 py-4 font-black uppercase text-xs tracking-wider border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-[var(--neo-lime)] text-[var(--neo-ink)] transition-transform;
+    box-shadow: 4px 4px 0px var(--neo-ink);
+  }
+  .btn-primary:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 6px 6px 0px var(--neo-ink);
+  }
+  .btn-primary:active {
+    transform: translate(1px, 1px);
+    box-shadow: 2px 2px 0px var(--neo-ink);
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-6 py-4 font-black uppercase text-xs tracking-wider border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white text-[var(--neo-ink)] transition-transform;
+  }
+  .btn-secondary:hover {
+    background-color: var(--neo-ink);
+    color: white;
   }
 }
 
-/* MARQUEE ANIMATION */
+/* MARQUEE: Respect Reduced Motion */
 @keyframes marquee {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-100%); }
 }
 .animate-marquee {
-  animation: marquee 20s linear infinite;
+  animation: marquee 40s linear infinite; /* Diperlambat biar elegan */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation: none;
+    transform: translateX(0);
+  }
 }
