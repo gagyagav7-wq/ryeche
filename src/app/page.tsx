@@ -9,9 +9,7 @@ const FALLBACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="ht
 
 const VIEW_ALL_STYLE = "inline-flex items-center gap-2 text-[11px] font-black uppercase bg-black text-white px-3 py-2 border-[3px] border-[#171717] shadow-[4px_4px_0px_#171717] md:hover:bg-[#FDFFB6] md:hover:text-[#171717] transition-all active:translate-y-1 active:shadow-none cursor-pointer";
 
-// --- KOMPONEN INTERNAL SECTON ---
 const DramaSection = ({ title, subtitle, items, href }: any) => {
-  // Safety check: pastiin items itu array
   const safeItems = Array.isArray(items) ? items : [];
 
   return (
@@ -62,7 +60,6 @@ const DramaSection = ({ title, subtitle, items, href }: any) => {
   );
 };
 
-// --- MAIN PAGE ---
 export default async function DracinHomePage() {
   const [latest, forYou, hotRank] = await Promise.all([
     getLatest().catch(() => []), 
@@ -78,14 +75,12 @@ export default async function DracinHomePage() {
 
   return (
     <main className="min-h-dvh bg-[#F4F4F0] text-[#171717] relative overflow-x-hidden pb-24">
-      {/* Decorative Backgrounds (Pointer events disabled) */}
       <div className="fixed inset-0 opacity-[0.02] pointer-events-none -z-20" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 relative z-10">
         
-        {/* --- HEADER --- */}
         <header className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717]">
             <div>
@@ -100,11 +95,9 @@ export default async function DracinHomePage() {
               <p className="text-xs font-bold opacity-50 mt-1 pl-1 hidden md:block">Premium Asian Drama Collection</p>
             </div>
 
-            {/* Client Component SearchBar */}
             <SearchBar placeholder="Cari judul drama..." />
           </div>
 
-          {/* Quick Chips */}
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {chips.map((chip, i) => (
               <Link key={i} href={chip.href} className="whitespace-nowrap px-4 py-2 bg-white border-[3px] border-[#171717] font-black text-[10px] uppercase shadow-[3px_3px_0px_#171717] hover:translate-y-[-2px] hover:shadow-[5px_5px_0px_#171717] transition-all active:translate-y-0 active:shadow-none">
@@ -114,7 +107,6 @@ export default async function DracinHomePage() {
           </div>
         </header>
 
-        {/* --- CONTENT --- */}
         <DramaSection 
           title="Hot Ranking 🔥" 
           subtitle="Top 10 Most Watched" 
