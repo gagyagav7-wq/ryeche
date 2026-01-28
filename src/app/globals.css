@@ -75,4 +75,51 @@ body {
   .neo-badge {
     @apply px-3 py-1 text-[10px] font-black uppercase tracking-widest border border-[#121212] bg-white;
   }
+
+  /* src/app/globals.css - Tambahkan di paling bawah */
+
+@layer components {
+  /* --- DASHBOARD SPECIFIC COMPONENTS --- */
+  
+  .dashboard-card {
+    @apply bg-white border-[length:var(--neo-border)] border-[#121212] rounded-[var(--neo-radius)] relative flex flex-col justify-between overflow-hidden;
+    box-shadow: var(--neo-shadow) var(--neo-shadow) 0px #121212;
+    transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.2s;
+  }
+
+  .dashboard-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 12px 12px 0px #121212;
+  }
+
+  /* Badge Chip di pojok card */
+  .card-badge {
+    @apply absolute top-0 right-0 border-l-[length:var(--neo-border)] border-b-[length:var(--neo-border)] border-[#121212] px-3 py-1 text-[10px] font-black uppercase tracking-widest;
+  }
+
+  /* Tombol Aksi di dalam Card */
+  .action-btn {
+    @apply w-full block text-center py-4 border-t-[length:var(--neo-border)] border-[#121212] font-black uppercase tracking-wider text-sm transition-colors;
+  }
+  
+  .action-btn-primary {
+    @apply bg-[#121212] text-[#F2F0E9] hover:bg-[#FF9A9E] hover:text-[#121212];
+  }
+
+  .action-btn-secondary {
+    @apply bg-[#FDFFB6] text-[#121212] hover:bg-white;
+  }
+
+  /* Tombol Logout Header */
+  .logout-btn-premium {
+    @apply px-6 py-2 bg-white border-[length:var(--neo-border)] border-[#121212] rounded-[var(--neo-radius)] font-bold text-xs uppercase tracking-widest shadow-[4px_4px_0px_#121212] transition-all;
+  }
+  
+  .logout-btn-premium:hover {
+    @apply bg-[#FF9A9E] translate-x-[-1px] translate-y-[-1px] shadow-[6px_6px_0px_#121212];
+  }
+  
+  .logout-btn-premium:active {
+    @apply translate-x-[2px] translate-y-[2px] shadow-none;
+  }
 }
