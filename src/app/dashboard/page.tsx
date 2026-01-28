@@ -1,141 +1,154 @@
+"use client";
+
 import Link from "next/link";
-import LogoutButton from "@/components/LogoutButton";
+import LogoutButton from "@/components/LogoutButton"; // Pastikan path ini benar
+
+// --- ICONS ---
+const IconPlay = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><path d="M8 5v14l11-7z"/></svg>;
+const IconBolt = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-8 h-8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+const IconSettings = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+const IconUser = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IconHistory = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const IconHeart = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-5 h-5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
 
 export default function DashboardPage() {
   return (
-    <main className="min-h-dvh flex flex-col font-sans">
+    <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans selection:bg-[#CBEF43]">
       
+      {/* BACKGROUND TEXTURE */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
+      </div>
+
       {/* =======================
-          1. HEADER (The Control Bar)
-          Clean, aligned, functional.
+          1. TOP BAR (HEADER)
          ======================= */}
-      <header className="pt-8 pb-6 border-b-[3px] border-[var(--neo-ink)] bg-[var(--neo-bg)] sticky top-0 z-50">
-        <div className="neo-container flex flex-col md:flex-row justify-between items-center gap-4">
+      <header className="relative z-10 px-6 py-6 md:px-12 border-b-[3px] border-[#0F172A] bg-white">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           
-          {/* Brand Block */}
+          {/* Brand */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[var(--neo-ink)] text-white flex items-center justify-center font-black text-xl border-[3px] border-[var(--neo-ink)]">
-              B
-            </div>
-            <div>
-              <h1 className="text-2xl font-black uppercase tracking-tighter leading-none">
-                BUTTER<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF9A9E] to-[#FDFFB6]">HUB</span>
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="w-2 h-2 rounded-full bg-[#A8E6CF] animate-pulse border border-black"></span>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-60">System Operational</p>
-              </div>
-            </div>
+             <div className="w-10 h-10 bg-[#FF99C8] border-[3px] border-[#0F172A] rounded-lg flex items-center justify-center font-black text-lg shadow-[3px_3px_0px_#0F172A]">
+                B
+             </div>
+             <div>
+                <h1 className="text-2xl font-black uppercase tracking-tight leading-none">
+                   Butter<span className="text-transparent" style={{ WebkitTextStroke: '1.5px #0F172A' }}>Hub</span>
+                </h1>
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">System Control Deck</p>
+             </div>
           </div>
 
-          {/* User/Session Block */}
-          <div className="flex items-center gap-6">
-            <div className="hidden md:block text-right">
-              <span className="text-[9px] font-bold uppercase opacity-40 block mb-0.5">Session ID</span>
-              <span className="text-xs font-mono font-bold bg-[#E5E5E5] px-2 py-1 rounded-sm border border-black/20">#BH-USER-01</span>
-            </div>
-            {/* Menggunakan styling baru untuk tombol logout */}
-            <div className="neo-btn-logout">
-              <LogoutButton />
-            </div>
+          {/* User Session & Logout */}
+          <div className="flex items-center gap-4 w-full md:w-auto">
+             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-[#E7E5D8]/30 border border-[#0F172A] rounded-full">
+                <span className="w-2 h-2 bg-[#CBEF43] rounded-full animate-pulse border border-[#0F172A]"></span>
+                <span className="text-[10px] font-mono font-bold uppercase">Session: Active</span>
+             </div>
+             
+             {/* LOGOUT BUTTON CONTAINER */}
+             <div className="w-full md:w-auto h-10 border-[3px] border-[#0F172A] rounded-lg bg-white shadow-[3px_3px_0px_#0F172A] hover:translate-y-[1px] hover:shadow-none transition-all active:translate-y-[2px]">
+                <LogoutButton />
+             </div>
           </div>
         </div>
       </header>
 
       {/* =======================
-          2. MAIN CANVAS (The Gallery)
+          2. MAIN DASHBOARD CONTENT
          ======================= */}
-      <div className="flex-grow py-12 neo-container">
-        
-        {/* SECTION HEADER */}
-        <div className="flex items-end gap-4 mb-8">
-          <h2 className="text-4xl font-black uppercase tracking-tight">Modules</h2>
-          <div className="h-[4px] flex-grow bg-[var(--neo-ink)] mb-3 opacity-10 rounded-full"></div>
-        </div>
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-16">
+         
+         {/* WELCOME BANNER */}
+         <div className="mb-12">
+            <h2 className="text-3xl md:text-5xl font-black uppercase mb-2">
+               Welcome back, <span className="text-[#2EC4B6]">Operator.</span>
+            </h2>
+            <p className="text-sm font-bold opacity-60 max-w-xl leading-relaxed">
+               Select a module to launch. All systems are running optimally. Enjoy your premium session.
+            </p>
+         </div>
 
-        {/* --- CARDS GRID --- */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          
-          {/* CARD 1: DRACIN */}
-          <div className="neo-card group min-h-[380px]">
-            {/* Header Content Area */}
-            <div className="p-8 flex-grow flex flex-col items-center text-center relative">
-              
-              {/* Floating Badge (Ganti strip warna norak) */}
-              <div className="absolute top-6 right-6">
-                <span className="neo-badge pink">Main App</span>
-              </div>
+         {/* --- MODULES GRID --- */}
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+            
+            {/* 1. DRACIN (Entertainment Module) */}
+            <Link href="/dracin" className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-10 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[10px_10px_0px_#0F172A] transition-all overflow-hidden">
+                {/* Decorative Blob */}
+                <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-[#FF9F1C] rounded-full blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity"></div>
+                
+                <div className="flex justify-between items-start mb-8">
+                   <div className="w-16 h-16 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_#0F172A] group-hover:rotate-6 transition-transform">
+                      <span className="text-white"><IconPlay /></span>
+                   </div>
+                   <span className="bg-[#0F172A] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Main App</span>
+                </div>
 
-              {/* Icon Monumental */}
-              <div className="mt-8 mb-6 text-7xl filter drop-shadow-[4px_4px_0_rgba(0,0,0,0.1)] group-hover:scale-110 transition-transform duration-300">
-                🍿
-              </div>
+                <h3 className="text-3xl font-black uppercase mb-3 group-hover:underline decoration-4 decoration-[#FF9F1C] underline-offset-4">Dracin Stream</h3>
+                <p className="font-medium text-sm opacity-60 mb-8 leading-relaxed">
+                   Access the Master Hub. Drama, Movies, and Variety Shows library.
+                </p>
 
-              {/* Typography Hierarchy */}
-              <h3 className="text-3xl font-black uppercase mb-3 underline decoration-[4px] decoration-[#FF9A9E] underline-offset-4">
-                Dracin Stream
-              </h3>
-              <p className="text-sm font-bold opacity-60 max-w-xs leading-relaxed">
-                Akses perpustakaan drama premium. Tanpa iklan, update harian.
-              </p>
+                <div className="inline-flex items-center gap-2 font-black uppercase text-xs border-b-[3px] border-[#0F172A] pb-1 group-hover:text-[#FF9F1C] group-hover:border-[#FF9F1C] transition-colors">
+                   Launch Application &rarr;
+                </div>
+            </Link>
+
+            {/* 2. DOWNLOADER (Utility Module) */}
+            <Link href="/downloader" className="group relative bg-[#2EC4B6] border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-10 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[10px_10px_0px_#0F172A] transition-all overflow-hidden text-white">
+                {/* Decorative Pattern */}
+                <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+
+                <div className="flex justify-between items-start mb-8 relative z-10">
+                   <div className="w-16 h-16 bg-white border-[3px] border-[#0F172A] rounded-2xl flex items-center justify-center shadow-[4px_4px_0px_#0F172A] group-hover:-rotate-6 transition-transform">
+                      <span className="text-[#0F172A]"><IconBolt /></span>
+                   </div>
+                   <span className="bg-white text-[#0F172A] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border border-[#0F172A]">Utility</span>
+                </div>
+
+                <h3 className="relative z-10 text-3xl font-black uppercase mb-3 text-white drop-shadow-md">Downloader</h3>
+                <p className="relative z-10 font-medium text-sm opacity-90 mb-8 leading-relaxed">
+                   Universal tool for TikTok, IG, & YouTube. No Watermark.
+                </p>
+
+                <div className="relative z-10 inline-flex items-center gap-2 font-black uppercase text-xs bg-white text-[#0F172A] px-4 py-3 rounded-lg border-[3px] border-[#0F172A] shadow-[3px_3px_0px_#0F172A] group-hover:translate-x-1 transition-transform">
+                   Open Tool &rarr;
+                </div>
+            </Link>
+
+         </div>
+
+         {/* --- QUICK ACCESS (SYSTEM KEYS) --- */}
+         <div>
+            <div className="flex items-center gap-4 mb-6 opacity-50">
+                <div className="h-[3px] w-6 bg-[#0F172A]"></div>
+                <h4 className="text-xs font-black uppercase tracking-widest">System Shortcuts</h4>
             </div>
 
-            {/* STRONG CTA (Full Width) */}
-            <Link href="/dracin" className="neo-btn group-hover:bg-[#FF9A9E] group-hover:text-black group-hover:border-t-[3px]">
-              BUKA APLIKASI
-            </Link>
-          </div>
-
-          {/* CARD 2: DOWNLOADER */}
-          <div className="neo-card group min-h-[380px]">
-            <div className="p-8 flex-grow flex flex-col items-center text-center relative">
-              
-              <div className="absolute top-6 right-6">
-                <span className="neo-badge butter">Utility</span>
-              </div>
-
-              <div className="mt-8 mb-6 text-7xl filter drop-shadow-[4px_4px_0_rgba(0,0,0,0.1)] group-hover:scale-110 transition-transform duration-300">
-                ⚡
-              </div>
-
-              <h3 className="text-3xl font-black uppercase mb-3 underline decoration-[4px] decoration-[#FDFFB6] underline-offset-4">
-                Downloader
-              </h3>
-              <p className="text-sm font-bold opacity-60 max-w-xs leading-relaxed">
-                Unduh video dari sosial media tanpa watermark. Cepat & gratis.
-              </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+               {[
+                  { label: "History", icon: <IconHistory />, status: "SOON" },
+                  { label: "Favorites", icon: <IconHeart />, status: "SOON" },
+                  { label: "Profile", icon: <IconUser />, status: "SOON" },
+                  { label: "Settings", icon: <IconSettings />, status: "SOON" },
+               ].map((item, idx) => (
+                  <div key={idx} className="bg-white border-[2px] border-[#0F172A] rounded-xl p-4 flex items-center justify-between opacity-60 hover:opacity-100 hover:border-[#FF99C8] cursor-not-allowed transition-all">
+                     <div className="flex items-center gap-3">
+                        {item.icon}
+                        <span className="font-bold text-xs uppercase">{item.label}</span>
+                     </div>
+                     <span className="text-[8px] font-black bg-[#E7E5D8] px-1.5 py-0.5 rounded text-[#0F172A]">{item.status}</span>
+                  </div>
+               ))}
             </div>
-
-            <Link href="/downloader" className="neo-btn group-hover:bg-[#FDFFB6] group-hover:text-black group-hover:border-t-[3px]">
-              BUKA TOOLS
-            </Link>
-          </div>
-
-        </div>
-
-        {/* --- QUICK ACCESS (Secondary Grid) --- */}
-        <div className="mb-4">
-           <h4 className="text-xs font-black uppercase tracking-widest opacity-40 mb-4">Quick Access Menus</h4>
-        </div>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Loop items dummy */}
-          {['History', 'Requests', 'Profile', 'Settings'].map((item) => (
-            <button key={item} disabled className="neo-quick-btn group">
-              <span className="text-xs font-black uppercase">{item}</span>
-              <span className="text-[8px] font-bold bg-black text-white px-1.5 py-0.5 rounded-sm group-hover:bg-red-500">SOON</span>
-            </button>
-          ))}
-        </div>
+         </div>
 
       </div>
 
-      {/* =======================
-          3. FOOTER (Anchored)
-         ======================= */}
-      <footer className="py-8 text-center border-t-[3px] border-[var(--neo-ink)] bg-white">
-        <p className="text-[10px] font-mono font-bold opacity-30 uppercase tracking-[0.2em]">
-          ButterHub Ecosystem &copy; 2026 • All Systems Normal
+      {/* FOOTER */}
+      <footer className="py-8 text-center border-t-[3px] border-[#0F172A] bg-white mt-12">
+        <p className="font-mono text-[10px] font-bold uppercase tracking-widest opacity-40">
+           Session Secure • ButterHub OS v2.0
         </p>
       </footer>
 
