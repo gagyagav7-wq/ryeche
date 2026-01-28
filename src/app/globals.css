@@ -4,66 +4,74 @@
 
 :root {
   /* --- PALETTE: CREAMY ARCHIVE --- */
-  --neo-bg: #F6F1E8;          /* Creamy Ivory - Base Canvas */
+  --neo-bg: #FDFBF7;          /* Warm Cream/Ivory - Base */
   --neo-surface: #FFFFFF;     /* Pure White - Cards */
-  --neo-ink: #121212;         /* Off-Black - Text & Borders */
-  --neo-muted: #888888;       /* Technical Text */
+  --neo-ink: #121212;         /* Off-Black - Stroke & Text */
+  --neo-muted: #9CA3AF;       /* Grey text */
   
-  /* --- RESTRAINED ACCENTS (Hanya untuk highlight) --- */
-  --neo-accent-butter: #FDFFB6; 
-  --neo-accent-pink: #FF9A9E;
-  --neo-accent-mint: #A8E6CF; /* Active status */
-  --neo-accent-gray: #E5E5E5; /* Locked status */
+  /* --- ACCENTS (Use Sparingly) --- */
+  --neo-butter: #FDFFB6;      /* Highlight */
+  --neo-pink: #FF9A9E;        /* Brand */
+  --neo-mint: #A8E6CF;        /* Active Status */
+  --neo-gray: #F3F4F6;        /* Locked/Inactive */
 
   /* --- DIMENSIONS (The Brutal DNA) --- */
-  --neo-stroke: 3px;
-  --neo-shadow-x: 8px;
+  --neo-stroke: 3px;          /* Tebal Konsisten */
+  --neo-shadow-x: 8px;        /* Deep Shadow */
   --neo-shadow-y: 8px;
-  --neo-radius: 8px;
+  --neo-radius: 8px;          /* Clean Radius */
 }
 
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  /* Texture Noise Halus (Wajib untuk kesan premium paper) */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+  /* Noise Texture: Kunci nuansa "Premium Paper" */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  -webkit-font-smoothing: antialiased;
 }
 
 @layer components {
-  /* UTILITY: Neo-Brutal Card Base */
+  /* CONTAINER */
+  .neo-container {
+    @apply max-w-7xl mx-auto px-6 md:px-12;
+  }
+
+  /* CARD SYSTEM */
   .neo-card {
-    @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden;
+    @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden transition-all duration-300;
     box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-ink);
-    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
   }
   
-  /* Interaction: Lift & Snap */
   .neo-card:hover {
     transform: translate(-2px, -2px);
     box-shadow: 12px 12px 0px var(--neo-ink);
   }
   
-  .neo-card:active {
-    transform: translate(1px, 1px);
-    box-shadow: 4px 4px 0px var(--neo-ink);
-  }
-
-  /* UTILITY: Badges & Chips */
-  .neo-chip {
-    @apply inline-flex items-center px-2 py-1 text-[9px] font-black uppercase tracking-widest border border-[var(--neo-ink)] rounded-sm bg-white;
+  /* BUTTON SYSTEM */
+  .neo-btn {
+    @apply inline-flex items-center justify-center px-8 py-4 font-black uppercase tracking-wider text-xs border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[6px] transition-all;
   }
   
-  /* UTILITY: Buttons */
-  .neo-btn {
-    @apply inline-flex items-center justify-center px-6 py-3 font-black uppercase tracking-wider text-xs border-[length:var(--neo-stroke)] border-[var(--neo-ink)] transition-all;
+  .neo-btn-primary {
+    @apply bg-[var(--neo-ink)] text-white hover:bg-white hover:text-[var(--neo-ink)];
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+  }
+  .neo-btn-primary:hover {
+    box-shadow: 6px 6px 0px var(--neo-ink);
+    transform: translate(-1px, -1px);
+  }
+
+  .neo-btn-secondary {
+    @apply bg-[var(--neo-butter)] text-[var(--neo-ink)] hover:bg-white;
     box-shadow: 4px 4px 0px var(--neo-ink);
   }
-  .neo-btn:hover {
-    transform: translate(-1px, -1px);
+  .neo-btn-secondary:hover {
     box-shadow: 6px 6px 0px var(--neo-ink);
+    transform: translate(-1px, -1px);
   }
-  .neo-btn:active {
-    transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0px var(--neo-ink);
+
+  /* BADGES */
+  .neo-chip {
+    @apply inline-flex items-center px-2 py-1 text-[9px] font-black uppercase tracking-widest border border-[var(--neo-ink)] rounded-sm bg-white;
   }
 }
