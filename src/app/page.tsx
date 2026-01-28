@@ -9,7 +9,7 @@ const FALLBACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="ht
 
 const VIEW_ALL_STYLE = "inline-flex items-center gap-2 text-[11px] font-black uppercase bg-black text-white px-3 py-2 border-[3px] border-[#171717] shadow-[4px_4px_0px_#171717] md:hover:bg-[#FDFFB6] md:hover:text-[#171717] transition-all active:translate-y-1 active:shadow-none cursor-pointer";
 
-// Komponen Internal untuk Section Drama
+// --- KOMPONEN INTERNAL SECTON ---
 const DramaSection = ({ title, subtitle, items, href }: any) => {
   // Safety check: pastiin items itu array
   const safeItems = Array.isArray(items) ? items : [];
@@ -62,8 +62,8 @@ const DramaSection = ({ title, subtitle, items, href }: any) => {
   );
 };
 
+// --- MAIN PAGE ---
 export default async function DracinHomePage() {
-  // Fetch data secara parallel biar cepet
   const [latest, forYou, hotRank] = await Promise.all([
     getLatest().catch(() => []), 
     getForYou().catch(() => []), 
@@ -85,7 +85,7 @@ export default async function DracinHomePage() {
 
       <div className="max-w-7xl mx-auto p-4 md:p-8 space-y-12 relative z-10">
         
-        {/* --- HEADER DENGAN SEARCH BAR --- */}
+        {/* --- HEADER --- */}
         <header className="space-y-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 border-[3px] border-[#171717] shadow-[8px_8px_0px_#171717]">
             <div>
@@ -100,7 +100,7 @@ export default async function DracinHomePage() {
               <p className="text-xs font-bold opacity-50 mt-1 pl-1 hidden md:block">Premium Asian Drama Collection</p>
             </div>
 
-            {/* INTEGRASI SEARCH BAR BARU */}
+            {/* Client Component SearchBar */}
             <SearchBar placeholder="Cari judul drama..." />
           </div>
 
@@ -114,7 +114,7 @@ export default async function DracinHomePage() {
           </div>
         </header>
 
-        {/* --- CONTENT SECTIONS --- */}
+        {/* --- CONTENT --- */}
         <DramaSection 
           title="Hot Ranking 🔥" 
           subtitle="Top 10 Most Watched" 
