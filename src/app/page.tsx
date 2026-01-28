@@ -1,252 +1,209 @@
 import Link from "next/link";
 
-// --- DATA: COLLECTIONS (PLATFORMS) ---
-const COLLECTIONS = [
-  {
-    id: "dracin",
-    name: "Dracin",
-    desc: "Koleksi Drama China premium. Ongoing & Completed.",
-    tag: "MAIN LIBRARY",
-    color: "bg-[#FECFEF]", // Pink
-  },
+// --- DATA STRUKTUR BARU ---
+const SUB_CHANNELS = [
   {
     id: "flickreels",
     name: "FlickReels",
-    desc: "Short movies & cinematic reels eksklusif.",
-    tag: "SHORT MOVIE",
-    color: "bg-[#A8E6CF]", // Mint
+    desc: "Short cinematic universe.",
+    initial: "F",
+    status: "ACTIVE",
+    color: "bg-[#A8E6CF]", // Mint subtle
   },
   {
     id: "netshort",
     name: "NetShort",
-    desc: "Series pendek vertikal kualitas HD.",
-    tag: "VERTICAL",
-    color: "bg-[#FDFFB6]", // Yellow
+    desc: "Vertical series HD.",
+    initial: "N",
+    status: "ACTIVE",
+    color: "bg-[#FDFFB6]", // Butter subtle
   },
   {
     id: "dramabox",
     name: "DramaBox",
-    desc: "Kotak drama pilihan editor. Curated daily.",
-    tag: "CURATED",
-    color: "bg-[#FFD6A5]", // Orange
+    desc: "Daily curated picks.",
+    initial: "D",
+    status: "LOCKED", // Contoh status
+    color: "bg-[#FFD6A5]", 
   },
   {
     id: "reelshort",
     name: "ReelShort",
-    desc: "Snack-sized drama untuk jeda istirahat.",
-    tag: "QUICK WATCH",
-    color: "bg-[#CAFFBF]", // Green
+    desc: "Snack-sized drama.",
+    initial: "R",
+    status: "LOCKED",
+    color: "bg-[#FF9A9E]",
+  },
+  {
+    id: "melolo",
+    name: "Melolo",
+    desc: "Asian variety shows.",
+    initial: "M",
+    status: "SOON",
+    color: "bg-[#E5E5E5]",
   },
 ];
 
-// --- DATA: FEATURES ---
+// --- FEATURES DATA ---
 const FEATURES = [
-  { 
-    title: "Universal Downloader", 
-    desc: "Simpan video favorit ke device. Tanpa watermark.", 
-    icon: "⬇️" 
-  },
-  { 
-    title: "Smart Search", 
-    desc: "Cari judul, aktor, atau genre dalam hitungan detik.", 
-    icon: "🔍" 
-  },
-  { 
-    title: "Auto Playlist", 
-    desc: "Nonton maraton tanpa putus. Next episode otomatis.", 
-    icon: "▶️" 
-  },
-  { 
-    title: "Watch History", 
-    desc: "Lanjutkan tontonan dari detik terakhir. (Coming Soon)", 
-    icon: "🕒" 
-  },
+  { title: "Downloader", icon: "⚡", desc: "Save content offline." },
+  { title: "Smart Search", icon: "🔍", desc: "Instant find." },
+  { title: "Playlist", icon: "▶️", desc: "Auto-play next." },
 ];
 
 export default function LandingPage() {
   return (
-    <main className="min-h-dvh flex flex-col relative overflow-x-hidden">
+    <main className="min-h-dvh flex flex-col relative overflow-x-hidden pb-24">
       
-      {/* DECORATION: Background gradient blob (Subtle) */}
-      <div className="fixed top-[-20%] right-[-10%] w-[600px] h-[600px] bg-[#FECFEF] rounded-full blur-[120px] opacity-40 pointer-events-none -z-10" />
-      <div className="fixed bottom-[-20%] left-[-10%] w-[500px] h-[500px] bg-[#FDFFB6] rounded-full blur-[100px] opacity-40 pointer-events-none -z-10" />
+      {/* BACKGROUND DECORATION */}
+      <div className="fixed top-0 left-0 w-full h-full opacity-50 pointer-events-none -z-10"
+           style={{ background: 'radial-gradient(circle at 50% 30%, rgba(255,255,255,0.8) 0%, rgba(247,245,240,0) 70%)' }}>
+      </div>
 
       {/* =======================
-          1. HERO SECTION
+          1. HERO SECTION (Simplified for Context)
          ======================= */}
-      <section className="relative pt-20 pb-20 px-6 md:px-12 border-b-[3px] border-[#121212] bg-[#F2F0E9]/80 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          <div className="space-y-8 relative z-10">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#121212] text-white border-[2px] border-[#121212] shadow-[4px_4px_0px_rgba(0,0,0,0.2)]">
-              <span className="w-2 h-2 bg-[#FF9A9E] rounded-full animate-pulse" />
-              <span className="text-xs font-black uppercase tracking-widest">Private Access Only</span>
-            </div>
-
-            {/* Headline */}
-            <div className="space-y-2">
-              <h1 className="text-6xl md:text-8xl font-black uppercase tracking-tighter leading-[0.9] text-[#121212]">
-                BUTTER<br/>
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF9A9E] to-[#FECFEF]" style={{ WebkitTextStroke: '3px #121212' }}>HUB</span>
-              </h1>
-              <p className="text-lg md:text-xl font-bold opacity-60 max-w-lg leading-relaxed pt-4">
-                Platform streaming drama asia paling brutal. Tanpa iklan. Kualitas premium. Akses eksklusif.
-              </p>
-            </div>
-
-            {/* CTA */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
-              <Link href="/login" className="neo-btn-primary text-center">
-                Masuk Sekarang
-              </Link>
-              <Link href="/register" className="neo-btn-secondary text-center">
-                Daftar Akun
-              </Link>
-            </div>
-          </div>
-
-          {/* Hero Visual / Decoration (Abstract) */}
-          <div className="relative hidden lg:block h-full min-h-[400px]">
-             {/* Simple brutalist composition using divs */}
-             <div className="absolute top-10 right-10 w-64 h-80 bg-white border-[3px] border-[#121212] shadow-[12px_12px_0px_#121212] z-10 flex items-center justify-center p-8 rotate-3">
-                <div className="text-center">
-                    <div className="text-6xl mb-4">🍿</div>
-                    <h3 className="font-black uppercase text-2xl">Premium<br/>Cinema</h3>
-                </div>
-             </div>
-             <div className="absolute top-20 right-40 w-64 h-80 bg-[#FDFFB6] border-[3px] border-[#121212] shadow-[12px_12px_0px_#121212] -z-0 -rotate-6 flex items-center justify-center">
-                <div className="text-center opacity-50">
-                    <h3 className="font-black uppercase text-4xl rotate-90">NO ADS</h3>
-                </div>
-             </div>
-          </div>
+      <section className="pt-24 pb-16 px-6 text-center">
+        <div className="inline-block bg-[#121212] text-white px-3 py-1 text-[10px] font-black uppercase tracking-widest mb-4">
+          Private Access Only
+        </div>
+        <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-none text-[#121212] mb-6">
+          BUTTER<span className="text-transparent bg-clip-text bg-gradient-to-r from-[#FF9A9E] to-[#FDFFB6]" style={{ WebkitTextStroke: '2px #121212' }}>HUB</span>
+        </h1>
+        <div className="flex justify-center gap-4">
+            <Link href="/login" className="px-8 py-3 bg-[#121212] text-white font-black uppercase tracking-wider border-[3px] border-[#121212] shadow-[4px_4px_0px_rgba(0,0,0,0.2)] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#121212] transition-all">
+                Masuk
+            </Link>
+            <Link href="/register" className="px-8 py-3 bg-[#FDFFB6] text-[#121212] font-black uppercase tracking-wider border-[3px] border-[#121212] shadow-[4px_4px_0px_#121212] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#121212] transition-all">
+                Daftar
+            </Link>
         </div>
       </section>
 
       {/* =======================
-          2. COLLECTIONS (THE VAULT)
+          2. KOLEKSI ARSIP (HIERARCHY FIXED)
          ======================= */}
-      <section className="py-24 px-6 md:px-12 max-w-7xl mx-auto w-full">
-        <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4 border-b-[3px] border-[#121212] pb-6">
-          <div>
-            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">
-              Koleksi Arsip
-            </h2>
-            <p className="text-sm font-bold opacity-50 uppercase tracking-widest mt-2">
-              Platform yang tersedia di dalam Hub
-            </p>
-          </div>
-          <div className="font-mono text-xs border border-[#121212] px-2 py-1 bg-white">
-            TOTAL: {COLLECTIONS.length} PLATFORMS
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {COLLECTIONS.map((item) => (
-            <div key={item.id} className="neo-card flex flex-col h-full relative overflow-hidden group">
-              {/* Header Color Strip */}
-              <div className={`h-24 ${item.color} border-b-[3px] border-[#121212] flex items-center justify-center`}>
-                <span className="text-4xl opacity-80 mix-blend-multiply font-black">
-                    {item.name[0]}
-                </span>
-              </div>
-              
-              <div className="p-6 flex flex-col flex-grow">
-                <div className="mb-4">
-                  <span className="neo-badge">{item.tag}</span>
-                </div>
-                <h3 className="text-xl font-black uppercase mb-2">{item.name}</h3>
-                <p className="text-xs font-bold opacity-60 leading-relaxed mb-6 flex-grow">
-                  {item.desc}
-                </p>
-                
-                {/* Fake Button (Visual Only) */}
-                <div className="mt-auto pt-4 border-t-2 border-dashed border-[#121212]/20">
-                    <span className="text-[10px] font-black uppercase flex items-center gap-2 group-hover:gap-4 transition-all">
-                        Locked Access 🔒
-                    </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* =======================
-          3. FEATURES (UTILITIES)
-         ======================= */}
-      <section className="py-20 px-6 bg-[#121212] text-[#F2F0E9] border-y-[3px] border-[#F2F0E9]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-5xl font-black uppercase text-[#F2F0E9]">
-              Fitur & Utilitas
-            </h2>
-            <div className="w-24 h-2 bg-[#FDFFB6] mx-auto mt-4" />
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {FEATURES.map((feat, idx) => (
-              <div key={idx} className="bg-[#121212] border-[3px] border-[#F2F0E9] p-6 shadow-[8px_8px_0px_#F2F0E9] hover:shadow-[4px_4px_0px_#F2F0E9] hover:translate-x-1 hover:translate-y-1 transition-all">
-                <div className="text-4xl mb-4 grayscale">{feat.icon}</div>
-                <h4 className="text-lg font-black uppercase mb-2 text-[#FDFFB6]">{feat.title}</h4>
-                <p className="text-sm opacity-70 font-mono leading-relaxed">
-                  {feat.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* =======================
-          4. WHY US (MANIFESTO)
-         ======================= */}
-      <section className="py-24 px-6 md:px-12 max-w-4xl mx-auto text-center">
-        <h2 className="text-2xl font-black uppercase tracking-widest mb-12 opacity-40">
-          THE MANIFESTO
-        </h2>
+      <section className="px-4 md:px-8 max-w-6xl mx-auto w-full">
         
-        <div className="space-y-8 text-xl md:text-3xl font-black uppercase leading-tight">
-          <p>
-            <span className="bg-[#FDFFB6] px-2 text-[#121212]">0% IKLAN.</span> Murni Konten.
-          </p>
-          <p>
-            Desain Brutal. <span className="bg-[#FECFEF] px-2 text-[#121212]">Navigasi Cepat.</span>
-          </p>
-          <p>
-            Server Pribadi. <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#A8E6CF] to-[#FDFFB6]" style={{ WebkitTextStroke: '1px #121212' }}>Koneksi Stabil.</span>
-          </p>
+        {/* Section Header */}
+        <div className="flex items-end justify-between border-b-[3px] border-[#121212] pb-4 mb-8">
+            <div>
+                <h2 className="text-3xl font-black uppercase tracking-tight">Koleksi Arsip</h2>
+                <p className="text-xs font-bold opacity-50 uppercase tracking-widest mt-1">Ekosistem Konten & Platform</p>
+            </div>
+            <div className="hidden md:block">
+                <span className="badge-chip bg-white">TOTAL: {SUB_CHANNELS.length + 1} PLATFORMS</span>
+            </div>
         </div>
+
+        {/* --- PARENT CARD: DRACIN --- */}
+        <div className="neo-master-card p-0 flex flex-col">
+            
+            {/* A. HEADER DRACIN (MASTER) */}
+            <div className="p-8 md:p-10 border-b-[3px] border-[#121212] bg-white relative">
+                <div className="absolute top-0 right-0 bg-[#121212] text-white px-4 py-2 text-xs font-black uppercase tracking-widest border-l-[3px] border-b-[3px] border-[#121212]">
+                    Master Hub
+                </div>
+                
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-6">
+                    {/* Icon Box */}
+                    <div className="w-20 h-20 bg-[#FF9A9E] border-[3px] border-[#121212] flex items-center justify-center text-4xl shadow-[4px_4px_0px_#121212]">
+                        🍿
+                    </div>
+                    
+                    <div className="flex-grow space-y-2">
+                        <h3 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+                            DRACIN STREAM
+                        </h3>
+                        <p className="text-sm font-bold opacity-60 max-w-lg leading-relaxed">
+                            Rumah utama hiburan Asia. Koleksi drama premium, update harian, player brutal tanpa iklan.
+                        </p>
+                    </div>
+
+                    <div className="w-full md:w-auto mt-4 md:mt-0">
+                         {/* Button: Dummy Link karena guest mode */}
+                         <button disabled className="w-full px-8 py-3 bg-[#121212] text-white font-black uppercase border-[3px] border-[#121212] opacity-80 cursor-not-allowed">
+                            Login Untuk Akses
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* B. SUB-CHANNELS GRID (INSIDE PARENT) */}
+            <div className="bg-[#F2F0E9] p-6 md:p-8 border-t-[3px] border-[#121212] hidden"> 
+                 {/* Hack: hidden border-t biar rapi kalau kosong, tapi kita isi konten */}
+            </div>
+            
+            <div className="bg-[#FAFAFA] p-6 md:p-10">
+                <div className="flex items-center gap-3 mb-6 opacity-60">
+                    <div className="h-[2px] w-8 bg-[#121212]"></div>
+                    <span className="text-xs font-black uppercase tracking-widest">Channels di dalam Dracin</span>
+                    <div className="h-[2px] flex-grow bg-[#121212] opacity-20"></div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                    {SUB_CHANNELS.map((sub) => (
+                        <div key={sub.id} className="neo-sub-card p-5 group">
+                            
+                            <div className="flex justify-between items-start mb-3">
+                                {/* Initials Box (Ganti strip warna norak) */}
+                                <div className={`w-10 h-10 ${sub.color} border-[3px] border-[#121212] flex items-center justify-center font-black text-lg`}>
+                                    {sub.initial}
+                                </div>
+                                
+                                {/* Status Badge */}
+                                <span className={`badge-chip ${sub.status === 'ACTIVE' ? 'bg-[#A8E6CF]' : 'bg-[#E5E5E5] opacity-50'}`}>
+                                    {sub.status}
+                                </span>
+                            </div>
+
+                            <h4 className="text-xl font-black uppercase mb-1 group-hover:underline decoration-2 underline-offset-2">
+                                {sub.name}
+                            </h4>
+                            <p className="text-[10px] font-bold opacity-50 uppercase tracking-wide mb-4">
+                                {sub.desc}
+                            </p>
+
+                            <div className="mt-auto pt-3 border-t-2 border-dashed border-gray-200 flex justify-between items-center">
+                                <span className="text-[10px] font-black uppercase opacity-40">Channel {sub.initial}01</span>
+                                <span className="text-[10px] font-black uppercase hover:bg-black hover:text-white px-2 py-1 transition-colors cursor-pointer">
+                                    Open →
+                                </span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+        </div>
+
       </section>
 
       {/* =======================
-          5. LOGIN GATE (FINAL CTA)
+          3. UTILITIES & TOOLS (SEPARATED)
          ======================= */}
-      <section id="gate" className="py-20 px-4 md:px-12 bg-white border-t-[3px] border-[#121212]">
-        <div className="max-w-xl mx-auto neo-card p-8 md:p-12 text-center transform rotate-1 hover:rotate-0 transition-transform duration-500">
-            <div className="text-6xl mb-6">🚪</div>
-            <h2 className="text-3xl md:text-4xl font-black uppercase mb-4">
-              Siap Masuk?
-            </h2>
-            <p className="font-bold opacity-60 mb-8 max-w-md mx-auto">
-              Pintu ButterHub tertutup untuk umum. Pastikan kamu memiliki kredensial yang valid untuk mengakses arsip.
-            </p>
-            
-            <div className="flex flex-col gap-3">
-              <Link href="/login" className="w-full neo-btn-primary text-center py-4 text-lg">
-                BUKA PINTU (LOGIN)
-              </Link>
-              <div className="text-xs font-bold opacity-40 uppercase pt-2">
-                Belum punya kunci? <Link href="/register" className="underline hover:text-[#FF9A9E]">Daftar di sini</Link>
-              </div>
-            </div>
-        </div>
+      <section className="px-4 md:px-8 max-w-6xl mx-auto w-full mt-16 mb-16">
+         <div className="flex items-end gap-4 mb-6">
+            <h2 className="text-xl font-black uppercase tracking-tight opacity-40">Fitur & Utilitas</h2>
+            <div className="h-[2px] flex-grow bg-[#121212] mb-2 opacity-10"></div>
+         </div>
+
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {FEATURES.map((feat, idx) => (
+                <div key={idx} className="bg-white border-[3px] border-[#121212] p-5 shadow-[4px_4px_0px_#121212] flex items-center gap-4">
+                    <div className="text-2xl grayscale">{feat.icon}</div>
+                    <div>
+                        <h4 className="font-black uppercase text-sm">{feat.title}</h4>
+                        <p className="text-[10px] font-bold opacity-50 uppercase">{feat.desc}</p>
+                    </div>
+                </div>
+            ))}
+         </div>
       </section>
 
-      {/* FOOTER SIMPLE */}
-      <footer className="py-8 text-center text-[10px] font-black uppercase tracking-widest opacity-30 border-t-[3px] border-[#121212] bg-[#F2F0E9]">
-        &copy; 2026 ButterHub Ecosystem. All Systems Operational.
+      {/* FOOTER */}
+      <footer className="text-center text-[10px] font-black uppercase tracking-widest opacity-30">
+        &copy; 2026 ButterHub Ecosystem.
       </footer>
 
     </main>
