@@ -3,34 +3,41 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansek
 
 // 1. Helper: Gali array drama dari struktur JSON yang aneh-aneh
 const extractArray = (raw: any): any[] => {
-  // KASUS 1: Raw adalah Array langsung
   if (Array.isArray(raw)) {
-    // Cek kasus /latest: [ { title: "Baru", list: [...] } ]
+    // KASUS /latest: [ { list: [...] } ]
     if (raw.length > 0 && raw[0] && Array.isArray(raw[0].list)) {
       return raw[0].list;
+    }
+    // KASUS /hotrank: [ { name: "Serial Hot", data: [...] }, ... ]
+    // Kita ambil SEMUA data dari semua kategori dan gabungin jadi satu list panjang
+    if (raw.length > 0 && raw[0] && Array.isArray(raw[0].data)) {
+        return raw.flatMap((category: any) => category.data || []);
     }
     return raw;
   }
 
-  // KASUS 2: Raw adalah Object
   if (!raw || typeof raw !== 'object') return [];
 
-  // Cek kasus /foryou: { list: [...] }
+  // KASUS /foryou: { list: [...] }
   if (Array.isArray(raw.list)) return raw.list;
   
-  // Cek kasus umum: { items: [...] }
+  // KASUS UMUM: { items: [...] }
   if (Array.isArray(raw.items)) return raw.items;
 
-  // Cek kasus nested data: { data: [...] } atau { data: { list: [...] } }
+  // KASUS NESTED: { data: [...] }
   if (raw.data) {
      if (Array.isArray(raw.data)) {
-        // Ulangi logika cek array column (Recursive lite)
+        // Recursive check untuk data di dalam data
         if (raw.data.length > 0 && raw.data[0] && Array.isArray(raw.data[0].list)) {
             return raw.data[0].list;
         }
+        // Handle Hotrank (data -> data -> data)
+        if (raw.data.length > 0 && raw.data[0] && Array.isArray(raw.data[0].data)) {
+            return raw.data.flatMap((cat: any) => cat.data || []);
+        }
         return raw.data;
      }
-     // data: { list: [] } <-- INI YANG /foryou PAKE!
+     // data: { list: [] }
      if (Array.isArray(raw.data.list)) return raw.data.list;
   }
 
@@ -39,13 +46,9 @@ const extractArray = (raw: any): any[] => {
 
 // 2. Helper: Normalisasi Item (Mapping field API ke UI ButterHub)
 const normalizeDrama = (d: any) => {
-  // Kalau item kosong/iklan, skip aja (return null nanti difilter)
   if (!d || (!d.playlet_id && !d.id && !d.title)) return null;
 
-  // Mapping field API Flickreels
   const rawCover = d.cover || d.cover_url || d.thumbnail || d.poster || "";
-  
-  // Proxy image hotlink (Set true jika gambar pecah)
   const useProxy = true; 
   const coverUrl = useProxy && rawCover && rawCover.startsWith("http")
     ? `/api/proxy?url=${encodeURIComponent(rawCover)}` 
@@ -74,8 +77,6 @@ async function fetchAPI(path: string) {
     if (!res.ok) throw new Error(`API Error: ${res.status}`);
     
     const json = await res.json();
-    // PENTING: Kembalikan json.data jika ada, kalau tidak json utuh.
-    // Helper extractArray akan handle sisanya.
     return json.data || json; 
   } catch (error: any) {
     console.error(`[FETCH FAIL] ${url}: ${error.message}`);
@@ -95,7 +96,7 @@ export async function getDramaDetail(id: string) {
       name: ep.title || ep.name || `Episode ${ep.id}`,
       video_url: ep.video_url || ep.videoUrl || "",
     }))
-    .filter(Boolean); // Hapus yang null
+    .filter(Boolean);
 
   return {
     info: {
