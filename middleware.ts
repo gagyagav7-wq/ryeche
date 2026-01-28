@@ -22,19 +22,22 @@ export async function middleware(req: NextRequest) {
 
   // 1. ROOT GATE
   if (path === '/') {
-    // Member -> Dashboard
-    if (isAuthed) return NextResponse.redirect(new URL('/dashboard', req.url));
-    // Guest -> Landing Page (Tropical)
+    // Kalau Member iseng buka root, kita oper ke dashboard
+    if (isAuthed) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+    // Kalau Guest, biarkan lihat Landing Page Tropical
     return NextResponse.next();
   }
 
-  // 2. PROTEKSI AREA VIP (CUMA DASHBOARD YANG DIKUNCI)
-  // Downloader kita hapus dari sini biar jadi PUBLIC
-  const protectedPrefixes = ['/dashboard']; 
+  // 2. PROTEKSI AREA VIP (WAJIB LOGIN)
+  // --- KITA TAMBAHKAN LAGI '/downloader' DI SINI ---
+  const protectedPrefixes = ['/dashboard', '/downloader']; 
   const isProtected = protectedPrefixes.some(p => path.startsWith(p));
 
   if (isProtected && !isAuthed) {
     const loginUrl = new URL('/login', req.url);
+    // Kita simpan jejak "dia tadi mau ke downloader loh"
     loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
