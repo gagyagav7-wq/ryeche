@@ -55,205 +55,215 @@ body {
   background: #FF6B6B; /* accent color pas dihover */
 }
 
-/* --- BUTTERHUB PREMIUM THEME OVERRIDES --- */
-/* Paste ini di paling bawah src/app/globals.css */
+/* ==========================================================================
+   BUTTERHUB PREMIUM-BRUTAL THEME (GLOBAL OVERRIDE)
+   Integrasi Gaya Library & Detail Page agar Konsisten Mewah tapi Tetap Brutal
+   ========================================================================== */
 
 :root {
-  /* Palette Mewah */
-  --lux-bg: #F9F9F7;          /* Warm elegant grey/white */
-  --lux-surface: #FFFFFF;     /* Pure white for cards */
-  --lux-border: #E2E2E2;      /* Subtle dividers */
-  --lux-border-strong: #171717; /* Keep the brand identity but refined */
-  --lux-accent: #C5A059;      /* Champagne Gold */
-  --lux-text: #171717;
-  --lux-text-muted: #6B7280;
+  /* --- IDENTITY TOKENS --- */
+  --neo-bg: #F4F4F0;         /* Ivory/Premium Paper - Base background */
+  --neo-surface: #FFFFFF;    /* Clean White - Cards */
+  --neo-stroke: #171717;     /* Charcoal Black - Borders & Text */
+  --neo-accent: #FDFFB6;     /* Pastel Yellow - Highlights (matches Home) */
+  --neo-accent-hover: #E6E8A0;
   
-  /* Spacing & Effects */
-  --lux-tracking: 0.08em;     /* Jarak antar huruf untuk kesan mahal */
-  --lux-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08); /* Soft shadow */
-  --lux-shadow-hover: 0 20px 40px -4px rgba(0, 0, 0, 0.12);
+  /* --- DIMENSIONS --- */
+  --neo-border-width: 3px;   /* Konsisten tebal (Brutal Identity) */
+  --neo-shadow-x: 6px;       /* Hard offset X */
+  --neo-shadow-y: 6px;       /* Hard offset Y */
+  --neo-radius: 0px;         /* HARD SQUARE - No rounded corners */
+  
+  /* --- SPACING & TYPO --- */
+  --neo-pad-card: 1.5rem;    /* Lega */
+  --neo-pad-item: 0.75rem;   /* Compact */
+  --neo-tracking: -0.02em;   /* Tight tracking for bold headers */
 }
 
-/* 1. GLOBAL RESET: Menipiskan semua border tebal (Core Change) */
-/* Kita menarget class tailwind yang sudah ada */
-[class*="border-[3px]"] {
-  border-width: 1px !important;
-  border-color: var(--lux-border-strong) !important;
-}
-
-/* 2. BACKGROUND & TEXTURE */
+/* 1. GLOBAL TEXTURE & TYPOGRAPHY */
 body {
-  background-color: var(--lux-bg) !important;
-  color: var(--lux-text);
-  /* Optional: Noise texture halus untuk kesan kertas mahal */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  background-color: var(--neo-bg);
+  color: var(--neo-stroke);
+  /* Subtle Noise Texture: Memberikan kesan kertas mahal */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
-/* 3. TYPOGRAPHY: Editorial Look */
-h1, h2, h3, .uppercase {
-  letter-spacing: var(--lux-tracking) !important;
-  font-weight: 700 !important; /* Kurangi ketebalan extra bold */
+/* Mempertegas semua heading agar seperti poster */
+h1, h2, h3, .font-black, .uppercase {
+  letter-spacing: var(--neo-tracking);
+  text-transform: uppercase;
 }
 
-/* 4. HEADER & NAVIGATION */
-/* Header container */
-header {
-  background: rgba(255, 255, 255, 0.8) !important;
-  backdrop-filter: blur(12px); /* Glassmorphism effect */
-  border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-  box-shadow: none !important; /* Hapus hard shadow di header */
+/* 2. BUTTONS (BACK & ACTIONS - HOME & DETAIL) */
+/* Target link BACK di header detail page */
+header a[href*="dracin"] { 
+  border: var(--neo-border-width) solid var(--neo-stroke) !important;
+  background: var(--neo-surface);
+  box-shadow: 4px 4px 0px var(--neo-stroke); /* Sedikit lebih kecil dari card */
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 1.25rem;
+  color: var(--neo-stroke) !important;
 }
 
-/* Tombol HUB / Chips Navigasi */
-a[href*="/dashboard"], 
+header a[href*="dracin"]:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px var(--neo-stroke);
+  background: var(--neo-accent);
+}
+
+header a[href*="dracin"]:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px var(--neo-stroke);
+}
+
+/* Target Chip Navigasi di Home (Hot Rank, dll) agar konsisten */
 a[href*="/dracin/hotrank"], 
 a[href*="/dracin/foryou"], 
 a[href*="/dracin/latest"] {
-  background: white !important;
-  border: 1px solid #E5E5E5 !important;
-  box-shadow: none !important;
-  color: #555 !important;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  font-weight: 600 !important;
+  border: var(--neo-border-width) solid var(--neo-stroke) !important;
+  box-shadow: 3px 3px 0px var(--neo-stroke) !important;
+  font-weight: 800 !important;
+  background: var(--neo-surface) !important;
+  transition: all 0.2s ease !important;
 }
 
 a:hover[href*="/dracin/hotrank"], 
 a:hover[href*="/dracin/foryou"], 
 a:hover[href*="/dracin/latest"] {
-  border-color: var(--lux-accent) !important;
-  color: var(--lux-text) !important;
-  background: #FFF !important;
   transform: translateY(-2px) !important;
-  box-shadow: 0 4px 12px rgba(197, 160, 89, 0.2) !important; /* Gold Glow */
+  box-shadow: 5px 5px 0px var(--neo-stroke) !important;
+  background: var(--neo-accent) !important;
 }
 
-/* 5. SEARCH BAR: Minimalist */
-input[type="text"] {
-  border: 1px solid #DDD !important;
-  background: #FAFAFA !important;
-  box-shadow: none !important;
-  border-radius: 0 !important; /* Sharp is luxury */
-  padding-left: 1.5rem !important;
-  transition: all 0.3s ease;
+/* 3. PLAYER CONTAINER ("GALLERY FRAME") - DETAIL PAGE */
+/* Target container video player */
+.aspect-video {
+  border: var(--neo-border-width) solid var(--neo-stroke) !important;
+  box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-stroke) !important;
+  background: #000; /* Frame hitam untuk video */
+  margin-bottom: 2rem; /* Memberi nafas ke judul */
 }
 
-input[type="text"]:focus {
-  background: #FFF !important;
-  border-color: var(--lux-text) !important;
-  box-shadow: 0 0 0 1px var(--lux-text) !important;
-  ring: 0 !important;
+/* 4. TITLE & SYNOPSIS CARD - DETAIL PAGE */
+/* Target card putih di bawah video */
+.bg-white.border-\[3px\] {
+  box-shadow: 4px 4px 0px var(--neo-stroke) !important;
+  padding: var(--neo-pad-card) !important;
+  border: var(--neo-border-width) solid var(--neo-stroke) !important;
 }
 
-button:has(input) { /* Tombol search kaca pembesar */
-  background: var(--lux-text) !important;
-  border: none !important;
+/* Judul Drama (Detail Page) */
+.bg-white h2.text-2xl {
+  font-size: 2rem !important; /* Lebih besar */
+  line-height: 1;
+  margin-bottom: 1rem;
+  border-bottom: 2px solid #E5E5E5; /* Separator subtle */
+  padding-bottom: 1rem;
 }
 
-/* 6. DRAMA CARDS: Elevated Luxury */
-/* Mengubah container card */
+/* Sinopsis (Detail Page) */
+.bg-white p.leading-relaxed {
+  font-size: 0.95rem;
+  line-height: 1.6; /* Lebih mudah dibaca */
+  max-width: 65ch; /* Optimal reading length */
+  opacity: 0.9;
+  font-weight: 500;
+  color: #333;
+}
+
+/* 5. PLAYLIST PANEL ("INDEX CARD") - DETAIL PAGE */
+/* Container Playlist (Kolom Kanan) */
+.max-h-\[80vh\] {
+  border: var(--neo-border-width) solid var(--neo-stroke) !important;
+  box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-stroke) !important;
+  background: var(--neo-surface);
+}
+
+/* Header Playlist (Sticky Yellow Top) */
+.sticky.top-0 {
+  border-bottom: var(--neo-border-width) solid var(--neo-stroke) !important;
+  background-color: var(--neo-accent) !important; /* Pastikan kuning */
+  padding: 1rem 1.5rem !important;
+}
+
+.sticky.top-0 h3 {
+  font-size: 1.1rem;
+  letter-spacing: 0.05em;
+}
+
+/* List Items (Episode) */
+ul.divide-y-2 > li {
+  border-bottom: 2px solid #EEE;
+  transition: background 0.1s ease;
+  padding: 0.85rem 1.25rem !important; /* Lebih lega vertikal */
+}
+
+ul.divide-y-2 > li:hover {
+  background-color: #FAFAFA;
+  padding-left: 1.5rem !important; /* Micro interaction: geser kanan dikit */
+  border-left: 4px solid var(--neo-accent); /* Penanda hover */
+}
+
+/* Nomor Episode (Chip) */
+ul.divide-y-2 > li span.bg-\[\#171717\] {
+  border: 1px solid var(--neo-stroke);
+  width: 28px;
+  height: 28px;
+  /* Pastikan angka di tengah */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: monospace;
+}
+
+/* Nama Episode */
+ul.divide-y-2 > li span.text-sm {
+  font-family: monospace, sans-serif; /* Kesan teknikal/arsip */
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  color: #444;
+}
+ul.divide-y-2 > li:hover span.text-sm {
+  color: var(--neo-stroke);
+}
+
+/* 6. DRAMA CARDS (HOME PAGE) - Memastikan konsistensi */
 .group.block .h-full {
-  border: none !important; /* Hapus border kotak hitam */
-  box-shadow: var(--lux-shadow) !important; /* Ganti hard shadow jadi soft */
-  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
-  background: var(--lux-surface);
+  border: var(--neo-border-width) solid var(--neo-stroke) !important; /* Balikin border tebal */
+  box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-stroke) !important; /* Balikin shadow hard offset */
+  background: var(--neo-surface);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .group.block:hover .h-full {
-  transform: translateY(-6px) !important; /* Lift effect halus */
-  box-shadow: var(--lux-shadow-hover) !important;
+  transform: translate(-4px, -4px) !important; /* Lift effect lebih tegas */
+  box-shadow: 8px 8px 0px var(--neo-stroke) !important; /* Shadow makin panjang */
 }
 
-/* Gambar Cover */
+/* Gambar Cover Home */
 .aspect-\[3\/4\] {
-  border-bottom: none !important;
+  border-bottom: var(--neo-border-width) solid var(--neo-stroke) !important;
 }
 
-/* Efek Zoom gambar saat hover */
-.aspect-\[3\/4\] img {
-  transform: scale(1.0) !important;
-  transition: transform 0.7s ease !important;
-}
-.group.block:hover img {
-  transform: scale(1.05) !important;
+/* 7. CUSTOM SCROLLBAR (BRUTAL STYLE) */
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 14px; /* Lebih tebal */
 }
 
-/* Card Content Area */
-.bg-white.p-3 {
-  padding: 1.25rem !important; /* Lebih lega */
+::-webkit-scrollbar-track {
+  background: var(--neo-surface);
+  border-left: 2px solid var(--neo-stroke);
 }
 
-/* Judul Drama */
-h3[title] {
-  font-size: 0.85rem !important;
-  color: var(--lux-text) !important;
-  margin-bottom: 0.5rem;
-  font-weight: 700 !important;
+::-webkit-scrollbar-thumb {
+  background-color: var(--neo-stroke);
+  border: 3px solid var(--neo-surface); /* Gap effect */
 }
 
-/* Badge EP (Pojok Kanan Atas Gambar) */
-.absolute.top-2.right-2 {
-  background: rgba(0, 0, 0, 0.6) !important;
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(255,255,255,0.2) !important;
-  color: white !important;
-  font-weight: 500 !important;
-  letter-spacing: 0.05em;
-  padding: 4px 8px !important;
-}
-
-/* Footer Card (DRAMA | WATCH) */
-.flex.justify-between.items-center.mt-2 {
-  border-top: 1px solid #F0F0F0 !important;
-  padding-top: 0.75rem !important;
-}
-
-.flex.justify-between span:first-child { /* Label DRAMA */
-  color: #999 !important;
-  font-weight: 500 !important;
-}
-
-.flex.justify-between span:last-child { /* Tombol WATCH */
-  color: var(--lux-text) !important;
-  position: relative;
-}
-
-/* Underline effect untuk WATCH */
-.flex.justify-between span:last-child::after {
-  content: '';
-  position: absolute;
-  width: 0%;
-  height: 1px;
-  bottom: -2px;
-  left: 0;
-  background-color: var(--lux-accent);
-  transition: width 0.3s ease;
-}
-
-.group.block:hover .flex.justify-between span:last-child::after {
-  width: 100%;
-}
-
-/* 7. SECTION TITLES */
-/* Garis kuning di sebelah judul */
-.bg-\[\#FDFFB6\] {
-  background-color: var(--lux-accent) !important; /* Ganti kuning neon jadi Gold */
-  border: none !important;
-  width: 4px !important; /* Lebih tipis */
-}
-
-/* Tombol VIEW ALL */
-a[href*="view all"], .text-\[11px\].font-black {
-  background: transparent !important;
-  color: var(--lux-text) !important;
-  border: 1px solid var(--lux-text) !important;
-  box-shadow: none !important;
-  padding: 8px 16px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.1em !important;
-}
-
-a[href*="view all"]:hover {
-  background: var(--lux-text) !important;
-  color: white !important;
-  transform: none !important;
+::-webkit-scrollbar-thumb:hover {
+  background-color: #333;
 }
