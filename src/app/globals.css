@@ -40,43 +40,62 @@ body {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
-/* Utility Classes untuk Neo-Brutal Effect */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ... (Keep your existing reset/base styles) ... */
+
 @layer components {
-  .neo-card {
-    @apply bg-white border-[length:var(--neo-border)] border-[#121212] rounded-[var(--neo-radius)];
-    box-shadow: var(--neo-shadow) var(--neo-shadow) 0px #121212;
-    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  /* CONTAINER SYSTEM */
+  .neo-container {
+    @apply max-w-6xl mx-auto px-6 md:px-12;
   }
-  
+
+  /* CARD SYSTEM (The Gallery Frame) */
+  .neo-card {
+    @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative flex flex-col overflow-hidden;
+    box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-ink);
+    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
+  }
+
   .neo-card:hover {
     transform: translate(-2px, -2px);
-    box-shadow: 12px 12px 0px #121212;
+    box-shadow: 12px 12px 0px var(--neo-ink);
   }
 
-  .neo-btn-primary {
-    @apply bg-[#121212] text-white border-[length:var(--neo-border)] border-[#121212] font-black uppercase tracking-wider py-4 px-8 inline-block transition-all;
-    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
-  }
-  
-  .neo-btn-primary:hover {
-    @apply bg-white text-[#121212];
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px #121212;
-  }
-
-  .neo-btn-secondary {
-    @apply bg-[#FDFFB6] text-[#121212] border-[length:var(--neo-border)] border-[#121212] font-black uppercase tracking-wider py-4 px-8 inline-block transition-all;
-    box-shadow: 4px 4px 0px #121212;
-  }
-  
-  .neo-btn-secondary:hover {
-    @apply bg-[#FFF];
-    transform: translate(-2px, -2px);
-    box-shadow: 6px 6px 0px #121212;
-  }
-
+  /* BADGE SYSTEM (Micro Accents) */
   .neo-badge {
-    @apply px-3 py-1 text-[10px] font-black uppercase tracking-widest border border-[#121212] bg-white;
+    @apply inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-full bg-white text-[var(--neo-ink)];
   }
-} 
-/* ^^^ INI KURUNG KURAWAL YANG TADI HILANG */
+  .neo-badge.pink { @apply bg-[var(--neo-accent-pink)]; }
+  .neo-badge.butter { @apply bg-[var(--neo-accent-butter)]; }
+  .neo-badge.mint { @apply bg-[var(--neo-accent-mint)]; }
+
+  /* BUTTON SYSTEM */
+  .neo-btn {
+    @apply w-full flex items-center justify-center py-4 px-6 font-black uppercase tracking-wider text-sm border-t-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white hover:bg-[var(--neo-ink)] hover:text-white transition-colors;
+  }
+  
+  /* HEADER LOGOUT BUTTON (Special Case) */
+  .neo-btn-logout {
+    @apply px-5 py-2 text-xs font-bold uppercase tracking-widest border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white hover:bg-[var(--neo-accent-pink)] transition-all shadow-[4px_4px_0px_#121212] hover:shadow-[2px_2px_0px_#121212] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none;
+  }
+
+  /* QUICK ACTION BUTTONS */
+  .neo-quick-btn {
+    @apply w-full text-left p-4 border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white opacity-60 flex justify-between items-center transition-all;
+  }
+  /* Disabled look but still styled */
+  .neo-quick-btn:disabled {
+    @apply cursor-not-allowed bg-[#E5E5E5] opacity-50;
+  }
+}
+
+/* GLOBAL TEXTURE OVERRIDE */
+body {
+  background-color: var(--neo-bg);
+  color: var(--neo-ink);
+  /* Noise Texture Halus (Optional, hapus jika ingin flat) */
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
