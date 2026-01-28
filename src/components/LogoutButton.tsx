@@ -1,34 +1,47 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import BrutButton from "@/components/BrutButton"; 
+import { useState } from "react";
 
 export default function LogoutButton() {
   const router = useRouter();
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
-    setIsLoggingOut(true);
+    setLoading(true);
+    
     try {
-      // Pastikan route ini sesuai dengan folder api lu
-      await fetch("/api/auth/logout", { method: "POST" });
-      router.replace("/login");
+      // 1. Panggil API Penghancur Token
+      await fetch("/api/auth/logout", { 
+        method: "POST" 
+      });
+
+      // 2. Refresh router biar Next.js sadar cookie udah ilang
       router.refresh();
+
+      // 3. Kabur ke halaman Login
+      router.push("/login");
+      
     } catch (error) {
-      console.error("Logout error", error);
-      setIsLoggingOut(false);
+      console.error("Gagal logout:", error);
+      setLoading(false);
     }
   };
 
   return (
-    <BrutButton
-      onClick={handleLogout}
-      disabled={isLoggingOut}
-      variant="secondary"
-      className="text-sm py-2 px-6 bg-white border-2 border-black font-bold uppercase hover:bg-red-100 transition-colors"
+    <button 
+      onClick={handleLogout} 
+      disabled={loading}
+      className="w-full h-full flex items-center justify-center gap-2 text-red-600 hover:text-red-700 transition-colors"
     >
-      {isLoggingOut ? "Keluar..." : "Logout 🚪"}
-    </BrutButton>
+      {loading ? (
+        <span className="text-xs font-black uppercase">EXITING...</span>
+      ) : (
+        <>
+          <span className="font-black uppercase text-xs tracking-wider">LOGOUT</span>
+          <span className="text-sm">🚪</span>
+        </>
+      )}
+    </button>
   );
 }
