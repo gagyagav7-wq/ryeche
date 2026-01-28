@@ -24,19 +24,23 @@ export async function middleware(req: NextRequest) {
 
   // 1. ROOT GATE (PINTU GERBANG)
   if (path === '/') {
-    if (isAuthed) {
-      // Kalau Member -> Langsung masuk Dashboard
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    } 
-    // Kalau Guest -> Biarin di sini (Nanti kita kasih tampilan Gerbang doang di page.tsx)
+    // Kalau Guest buka Home, biarkan dia lihat Landing Page (Tropical)
+    // Kalau Admin buka Home, biarkan juga (karena Landing Page lu sekarang bagus)
+    // Jadi Logic redirect ke dashboard kita HAPUS biar Landing Page selalu tampil.
     return NextResponse.next();
   }
 
-  // 2. PROTEKSI AREA TERLARANG (Dracin & Dashboard)
-  // Tamu gak boleh ngintip /dracin atau /dashboard
-  if ((path.startsWith('/dashboard') || path.startsWith('/dracin')) && !isAuthed) {
+  // 2. PROTEKSI AREA TERLARANG (VIP ONLY)
+  // TAMBAHAN BARU: path.startsWith('/downloader')
+  const protectedPaths = ['/dashboard', '/dracin', '/downloader'];
+  
+  // Cek apakah user mau masuk ke salah satu path terlarang
+  const isProtected = protectedPaths.some(p => path.startsWith(p));
+
+  if (isProtected && !isAuthed) {
     const loginUrl = new URL('/login', req.url);
-    loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
+    // Simpan url tujuan biar habis login bisa balik lagi ke situ
+    loginUrl.searchParams.set('callbackUrl', path);
     return NextResponse.redirect(loginUrl);
   }
 
