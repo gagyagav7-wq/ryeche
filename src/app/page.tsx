@@ -4,13 +4,14 @@ import { cookies } from 'next/headers';
 export default function RootPage() {
   const cookieStore = cookies();
   
-  // Cek dua-duanya juga biar sinkron sama middleware
-  const session = cookieStore.get('session') || cookieStore.get('token');
+  // PATCH 6: Konsisten cek 'token' saja (sesuai middleware)
+  const token = cookieStore.get('token'); 
 
-  if (session) {
+  if (token) {
     redirect('/dashboard');
   } else {
-    redirect('/dracin');
+    // PATCH 6: Target redirect disamakan dengan Middleware
+    redirect('/dracin/latest');
   }
 
   return null;
