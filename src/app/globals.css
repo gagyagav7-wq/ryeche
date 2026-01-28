@@ -3,88 +3,76 @@
 @tailwind utilities;
 
 :root {
-  /* --- PALETTE: MATURE BRUTALISM --- */
-  --neo-bg: #F4F1EA;          /* Premium Bone/Ivory */
-  --neo-surface: #FFFFFF;
-  --neo-ink: #050505;         /* Deep Black */
+  /* --- PALETTE: WARM CREAMY --- */
+  --neo-bg: #FDFBF7;          /* Warm Ivory Base */
+  --neo-surface: #FFFFFF;     /* Pure White Cards */
+  --neo-ink: #18181B;         /* Soft Black (Zinc-900) */
   
-  /* HIERARCHY ACCENTS */
-  --neo-lime: #CCFF00;        /* PRIMARY ACCENT (Interaction) */
-  --neo-pink: #FF90E8;        /* SECONDARY ACCENT (Badges Only) */
-  --neo-gray: #E5E5E5;        /* Inactive/Locked */
+  /* ACCENTS (Warm & Friendly) */
+  --neo-butter: #FFD23F;      /* Warm Yellow */
+  --neo-pink: #FF9A9E;        /* Soft Pink */
+  --neo-mint: #96E6B3;        /* Soft Mint */
+  --neo-gray: #E4E4E7;        /* Zinc-200 */
 
   /* --- SYSTEM --- */
-  --neo-stroke: 3px;
-  --neo-shadow: 6px;
+  --neo-stroke: 3px;          /* Stroke Tebal Konsisten */
+  --neo-shadow: 6px;          /* Shadow Soft tapi Tegas */
+  --neo-radius: 12px;         /* Radius Agak Bulat (Friendly Premium) */
 }
 
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  /* Noise Texture yang lebih halus (Subtle) */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+  /* Dot Pattern Halus (Technical but Clean) */
+  background-image: radial-gradient(#18181B 0.8px, transparent 0.8px);
+  background-size: 20px 20px;
   overflow-x: hidden;
 }
 
 @layer components {
   /* CONTAINER */
   .neo-container {
-    @apply max-w-[1400px] mx-auto px-6 md:px-12;
+    @apply max-w-6xl mx-auto px-6 md:px-8;
   }
 
-  /* CARD SYSTEM: UNIFIED SHADOWS */
-  .bento-card {
-    @apply border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white relative overflow-hidden transition-all duration-200;
+  /* CARD SYSTEM: UNIFORM & CLEAN */
+  .deck-card {
+    @apply bg-white border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden transition-all duration-200;
     box-shadow: var(--neo-shadow) var(--neo-shadow) 0px var(--neo-ink);
   }
   
-  /* Hover state: Lift & Sharpen Shadow */
-  .bento-card-interactive:hover {
-    transform: translate(-2px, -2px);
+  /* Hover Effect: Lift Up */
+  .deck-card:hover {
+    transform: translate(-3px, -3px);
     box-shadow: 10px 10px 0px var(--neo-ink);
   }
   
-  /* Active state: Press (Tactile feel) */
-  .bento-card-interactive:active {
-    transform: translate(1px, 1px);
+  /* Active Effect: Click Down */
+  .deck-card:active {
+    transform: translate(2px, 2px);
     box-shadow: 2px 2px 0px var(--neo-ink);
   }
 
   /* BUTTON SYSTEM */
-  .btn-primary {
-    @apply inline-flex items-center justify-center px-6 py-4 font-black uppercase text-xs tracking-wider border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-[var(--neo-lime)] text-[var(--neo-ink)] transition-transform;
+  .btn-main {
+    @apply inline-flex items-center justify-center px-8 py-4 font-black uppercase text-sm tracking-wider border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-full bg-[var(--neo-butter)] text-[var(--neo-ink)] transition-transform;
     box-shadow: 4px 4px 0px var(--neo-ink);
   }
-  .btn-primary:hover {
-    transform: translate(-1px, -1px);
+  .btn-main:hover {
+    transform: translate(-2px, -2px);
     box-shadow: 6px 6px 0px var(--neo-ink);
   }
-  .btn-primary:active {
+  .btn-main:active {
     transform: translate(1px, 1px);
-    box-shadow: 2px 2px 0px var(--neo-ink);
+    box-shadow: 0px 0px 0px var(--neo-ink);
   }
 
-  .btn-secondary {
-    @apply inline-flex items-center justify-center px-6 py-4 font-black uppercase text-xs tracking-wider border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white text-[var(--neo-ink)] transition-transform;
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-8 py-4 font-black uppercase text-sm tracking-wider border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-full bg-white text-[var(--neo-ink)] transition-transform;
+    box-shadow: 4px 4px 0px var(--neo-ink);
   }
-  .btn-secondary:hover {
+  .btn-ghost:hover {
     background-color: var(--neo-ink);
     color: white;
-  }
-}
-
-/* MARQUEE: Respect Reduced Motion */
-@keyframes marquee {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-100%); }
-}
-.animate-marquee {
-  animation: marquee 40s linear infinite; /* Diperlambat biar elegan */
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-marquee {
-    animation: none;
-    transform: translateX(0);
   }
 }
