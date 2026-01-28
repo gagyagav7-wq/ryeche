@@ -1,89 +1,59 @@
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { searchDrama } from "@/lib/api";
+import SearchBar from "@/components/SearchBar"; // Import komponen baru
 
-// Caching: Biar fetch API yang nentuin (no-store), page gak usah maksa SSR berat
-// Hapus 'export const dynamic = "force-dynamic";'
+export const dynamic = 'force-dynamic'; // WAJIB biar search selalu fresh
+
+const FALLBACK = 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800"><rect width="100%" height="100%" fill="#e5e5e5"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="32" font-weight="800" fill="#171717">BUTTERHUB</text></svg>`);
 
 export default async function SearchPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams?: { q?: string };
 }) {
-  // FIX: Normalize searchParams (Handle array/undefined)
-  const qRaw = searchParams?.q;
-  const query = Array.isArray(qRaw) ? qRaw[0] : (qRaw || "");
-  
+  const query = searchParams?.q || "";
   const results = query ? await searchDrama(query) : [];
 
   return (
-    <main className="min-h-dvh bg-bg text-main p-4 md:p-8 relative overflow-hidden">
-      {/* Decorative BG (FIX: pointer-events-none WAJIB) */}
-      <div className="absolute top-[-5%] right-[-5%] w-64 h-64 md:w-96 md:h-96 bg-[#A8E6CF] rounded-full border-[3px] border-main opacity-40 -z-10 pointer-events-none" />
-      <div className="absolute top-[20%] left-[-10%] w-72 h-72 bg-[#FDFFB6] border-[3px] border-main rotate-12 opacity-40 -z-10 pointer-events-none" />
+    <main className="min-h-dvh bg-[#F4F4F0] p-4 md:p-8">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header dengan Search Bar Aktif */}
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 border-[3px] border-[#171717] shadow-[6px_6px_0px_#171717]">
+          <div className="flex items-center gap-4">
+            <Link href="/dracin" className="font-black text-sm border-2 border-[#171717] px-2 py-1 bg-white hover:bg-[#171717] hover:text-white transition-all">← BACK</Link>
+            <h1 className="text-xl md:text-3xl font-black uppercase italic">
+              {query ? `Search: "${query}"` : "Search Drama"}
+            </h1>
+          </div>
+          
+          {/* Komponen Client Side Search */}
+          <SearchBar placeholder="Ketik judul drama..." />
+        </header>
 
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row gap-4 items-center justify-between relative z-10">
-        <div className="flex items-center gap-4">
-          <Link href="/dracin">
-            {/* FIX: md:hover biar gak nyangkut di iOS */}
-            <span className="inline-block px-3 py-1 text-xs font-black border-[3px] border-main bg-white md:hover:bg-main md:hover:text-white transition-colors cursor-pointer">
-              &larr; BACK
-            </span>
-          </Link>
-          <h1 className="text-2xl md:text-3xl font-black uppercase">
-            SEARCH: <span className="text-accent">"{query}"</span>
-          </h1>
-        </div>
-        
-        <form action="/dracin/search" className="flex gap-2 w-full md:w-auto">
-          <input
-            name="q"
-            defaultValue={query}
-            placeholder="Cari lagi..."
-            className="bg-white border-[3px] border-main p-2 font-bold text-sm w-full md:w-64 focus:ring-4 focus:ring-accent/20 outline-none"
-          />
-          <button type="submit" className="bg-accent text-white border-[3px] border-main px-4 font-black shadow-sm active:translate-y-1">
-            🔍
-          </button>
-        </form>
-      </div>
-
-      <div className="max-w-7xl mx-auto relative z-10">
-        {results.length > 0 ? (
+        {/* Hasil Pencarian */}
+        {query && results.length === 0 ? (
+          <div className="text-center py-20 opacity-50 font-bold text-xl uppercase">
+            NO RESULTS FOUND FOR "{query}" 💀
+          </div>
+        ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
             {results.map((d: any) => (
-              <Link
-                key={d.id}
-                href={`/dracin/${d.id}`}
-                className="group block outline-none focus-visible:ring-4 focus-visible:ring-accent"
-              >
-                <div className="h-full bg-white border-[3px] border-main shadow-brut transition-all md:hover:-translate-y-1 md:hover:shadow-[6px_6px_0px_0px_#171717]">
-                  <div className="aspect-[3/4] bg-gray-200 relative border-b-[3px] border-main">
-                    <Image
-                      src={d.cover_url || "/placeholder.jpg"}
-                      alt={d.title}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
+              <Link key={d.id} href={`/dracin/${d.id}`} className="group block">
+                <div className="bg-white border-[3px] border-[#171717] shadow-[5px_5px_0px_#171717] group-hover:-translate-y-1 transition-all overflow-hidden">
+                  <div className="aspect-[3/4] relative border-b-2 border-[#171717]">
+                    <Image src={d.cover_url || FALLBACK} alt={d.title} fill className="object-cover" unoptimized />
                   </div>
                   <div className="p-3">
-                    <h3 className="font-bold text-xs md:text-sm truncate uppercase text-main">
-                      {d.title}
-                    </h3>
-                    <div className="mt-2 flex justify-between items-center border-t-2 border-main/10 pt-2">
-                       <span className="text-[10px] font-bold opacity-60">{d.total_ep ? `${d.total_ep} EPS` : "ONGOING"}</span>
-                       <span className="text-[10px] font-black text-accent">WATCH</span>
+                    <h3 className="font-black text-xs truncate uppercase">{d.title}</h3>
+                    <div className="flex justify-between items-center mt-2 border-t-2 border-[#171717]/10 pt-2">
+                        <span className="text-[10px] font-bold opacity-60">{d.total_ep} EP</span>
+                        <span className="text-[10px] font-black text-[#171717] uppercase">WATCH</span>
                     </div>
                   </div>
                 </div>
               </Link>
             ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 opacity-50">
-            <h2 className="text-2xl font-black uppercase">Tidak Ditemukan</h2>
-            <p className="font-bold">Coba kata kunci lain, Commander.</p>
           </div>
         )}
       </div>
