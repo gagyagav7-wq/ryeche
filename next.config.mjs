@@ -4,10 +4,18 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'via.placeholder.com', // Izinkan domain ini
+        hostname: 'via.placeholder.com', 
+      },
+      {
+        protocol: 'https',
+        hostname: 'zshipubcdn.farsunpteltd.com', // Domain Cover API
         pathname: '/**',
       },
-      // Kalau nanti lu pake gambar dari hosting sendiri/cloudinary, tambah disini juga
+      {
+        protocol: 'https',
+        hostname: 'zshipricf.farsunpteltd.com', // Domain Episode Cover
+        pathname: '/**',
+      },
     ],
   },
 };
