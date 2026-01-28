@@ -1,11 +1,70 @@
 import Link from "next/link";
 
-// DATA
+// --- LOGO COMPONENTS (SVG) ---
+const LogoFlickReels = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 md:w-10 md:h-10 text-black">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
+    <path d="M10 8L16 12L10 16V8Z" fill="currentColor" />
+  </svg>
+);
+
+const LogoNetShort = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 md:w-10 md:h-10 text-black">
+    <path d="M13 3L4 14H12L11 21L20 10H12L13 3Z" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/>
+  </svg>
+);
+
+const LogoDramaBox = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 md:w-10 md:h-10 text-black">
+    <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" strokeWidth="3" />
+    <path d="M8 12H16" stroke="currentColor" strokeWidth="3" />
+    <path d="M12 8V16" stroke="currentColor" strokeWidth="3" />
+  </svg>
+);
+
+const LogoReelShort = () => (
+  <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8 md:w-10 md:h-10 text-black">
+    <path d="M2 12H22" stroke="currentColor" strokeWidth="3" />
+    <rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" strokeWidth="3" />
+    <path d="M7 6V18" stroke="currentColor" strokeWidth="2" />
+    <path d="M17 6V18" stroke="currentColor" strokeWidth="2" />
+  </svg>
+);
+
+// --- DATA ---
 const SUB_CHANNELS = [
-  { id: "flickreels", name: "FlickReels", code: "SHORT", status: "ACTIVE", bg: "bg-[#FFFFFF]" },
-  { id: "netshort", name: "NetShort", code: "V-SERIES", status: "ACTIVE", bg: "bg-[#FFFFFF]" },
-  { id: "dramabox", name: "DramaBox", code: "CURATED", status: "LOCKED", bg: "bg-[#F3F0E7]" },
-  { id: "reelshort", name: "ReelShort", code: "SNACK", status: "LOCKED", bg: "bg-[#F3F0E7]" },
+  { 
+    id: "flickreels", 
+    name: "FlickReels", 
+    code: "SHORT MOVIE", 
+    status: "ACTIVE", 
+    bg: "bg-[#FFFFFF]",
+    logo: <LogoFlickReels />
+  },
+  { 
+    id: "netshort", 
+    name: "NetShort", 
+    code: "V-SERIES HD", 
+    status: "ACTIVE", 
+    bg: "bg-[#FFFFFF]",
+    logo: <LogoNetShort />
+  },
+  { 
+    id: "dramabox", 
+    name: "DramaBox", 
+    code: "DAILY PICKS", 
+    status: "LOCKED", 
+    bg: "bg-[#F3F0E7]",
+    logo: <LogoDramaBox />
+  },
+  { 
+    id: "reelshort", 
+    name: "ReelShort", 
+    code: "SNACK DRAMA", 
+    status: "LOCKED", 
+    bg: "bg-[#F3F0E7]",
+    logo: <LogoReelShort />
+  },
 ];
 
 export default function LandingPage() {
@@ -24,8 +83,11 @@ export default function LandingPage() {
            </div>
         </div>
 
-        <h1 className="text-[12vw] md:text-[8rem] font-black leading-[0.8] tracking-tighter mb-6 mix-blend-darken">
-          BUTTER<span className="text-white text-stroke-3">HUB</span>
+        {/* --- JUDUL DIPERBAIKI (HUB JADI OUTLINE) --- */}
+        <h1 className="text-[12vw] md:text-[8rem] font-black leading-[0.8] tracking-tighter mb-6">
+          <span className="text-black">BUTTER</span>
+          {/* Pakai WebkitTextStroke biar outline-nya garansi muncul */}
+          <span className="text-transparent" style={{ WebkitTextStroke: '3px black' }}>HUB</span>
         </h1>
 
         <p className="max-w-md mx-auto font-bold text-sm md:text-base uppercase tracking-widest opacity-60 mb-10">
@@ -101,19 +163,23 @@ export default function LandingPage() {
                 </div>
             </div>
 
-            {/* B. SUB-CHANNELS GRID - Takes 5/12 columns */}
+            {/* B. SUB-CHANNELS GRID (LOGOS ADDED) - Takes 5/12 columns */}
             <div className="md:col-span-5 grid grid-cols-2 gap-4">
                 {SUB_CHANNELS.map((ch) => (
                     <div key={ch.id} className={`bento-card ${ch.bg} p-4 flex flex-col justify-between aspect-square group`}>
                         <div className="flex justify-between items-start">
-                            <span className="font-black text-xl">{ch.name.charAt(0)}</span>
-                            <span className={`text-[8px] font-bold border border-black px-1 ${ch.status === 'ACTIVE' ? 'bg-[#E5FD76]' : 'bg-gray-200'}`}>
+                            {/* LOGO RENDERED HERE */}
+                            <div className="opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                                {ch.logo}
+                            </div>
+                            
+                            <span className={`text-[8px] font-bold border border-black px-1 h-fit ${ch.status === 'ACTIVE' ? 'bg-[#E5FD76]' : 'bg-gray-200'}`}>
                                 {ch.status}
                             </span>
                         </div>
 
                         <div>
-                            <h4 className="font-black uppercase text-lg leading-none mb-1 group-hover:underline">{ch.name}</h4>
+                            <h4 className="font-black uppercase text-lg leading-none mb-1 group-hover:underline decoration-2">{ch.name}</h4>
                             <p className="text-[9px] font-mono font-bold opacity-50">{ch.code}</p>
                         </div>
                     </div>
