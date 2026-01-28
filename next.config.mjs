@@ -1,9 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Kita kosongin remotePatterns buat keamanan.
-  // Nanti di <Image> kita pake prop unoptimized={true}
   images: {
-    remotePatterns: [],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com', // Izinkan domain ini
+        pathname: '/**',
+      },
+      // Kalau nanti lu pake gambar dari hosting sendiri/cloudinary, tambah disini juga
+    ],
   },
 };
 
