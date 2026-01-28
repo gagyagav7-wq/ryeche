@@ -7,13 +7,12 @@ const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 
 async function checkAuth(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get('token')?.value;
-  if (!token) return false;
-  if (!SECRET_KEY) return false;
+  if (!token || !SECRET_KEY) return false;
 
   try {
     await jwtVerify(token, SECRET_KEY, { algorithms: ['HS256'] });
-    return true; 
-  } catch (err) {
+    return true;
+  } catch {
     return false;
   }
 }
@@ -22,27 +21,35 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isAuthed = await checkAuth(req);
 
-  // 1. ROOT GATE (Landing Page Bebas Akses)
+  // 1. ROOT GATE (PINTU UTAMA)
+  // Logic: Kalau Member -> Lempar ke Dashboard. 
+  //        Kalau Guest  -> Lempar ke Landing Page Publik (bisa /dracin/latest atau tetap di /)
   if (path === '/') {
-    return NextResponse.next();
+    if (isAuthed) {
+      return NextResponse.redirect(new URL('/dashboard', req.url));
+    }
+    // CATATAN PENTING: 
+    // Kalau lu mau Guest ngeliat Landing Page Tropical yang udah kita buat di src/app/page.tsx,
+    // biarkan 'NextResponse.next()'.
+    // Tapi kalau lu mau Guest dipaksa masuk ke '/dracin/latest', ganti jadi redirect.
+    
+    return NextResponse.next(); 
+    // ^ Ganti baris ini dengan redirect('/dracin/latest', req.url) kalau mau skip landing page tropical.
   }
 
-  // 2. PROTEKSI AREA TERLARANG (VIP ONLY)
-  // --- PASTIKAN '/downloader' ADA DI SINI ---
-  const protectedPaths = ['/dashboard', '/dracin', '/downloader'];
-  
-  const isProtected = protectedPaths.some(p => path.startsWith(p));
+  // 2. PROTEKSI AREA VIP (Dashboard & Downloader)
+  // Hapus '/dracin' dari sini biar jadi Public Area
+  const protectedPrefixes = ['/dashboard', '/downloader'];
+  const isProtected = protectedPrefixes.some(p => path.startsWith(p));
 
-  // LOGIC: Kalau mau masuk VIP tapi GAK PUNYA TIKET (isAuthed = false)
   if (isProtected && !isAuthed) {
     const loginUrl = new URL('/login', req.url);
-    // Simpan alamat tujuan biar nanti dibalikin lagi ke sana
-    loginUrl.searchParams.set('callbackUrl', path);
+    // Simpan Full Path + Query Params (biar gak ilang data pas redirect)
+    loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. PROTEKSI HALAMAN LOGIN 
-  // Kalau udah login, gak boleh masuk halaman login lagi (langsung ke dashboard)
+  // 3. CEGAH MEMBER MASUK HALAMAN LOGIN/REGISTER
   if ((path === '/login' || path === '/register') && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
@@ -51,5 +58,6 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
+  // Matcher untuk skip file statis & API
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json).*)'],
 };
