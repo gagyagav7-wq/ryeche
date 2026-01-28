@@ -1,298 +1,76 @@
+/* src/app/globals.css */
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ==========================================================================
-   1. DESIGN TOKENS (PREMIUM NEO-BRUTALISM)
-   ========================================================================== */
-:root {
-  /* --- PALETTE: LUXURY INDUSTRIAL --- */
-  --neo-bg: #F2F0E9;          /* Ivory/Bone White */
-  --neo-surface: #FFFFFF;     /* Pure White */
-  --neo-stroke: #121212;      /* Off-Black */
-  --neo-muted: #6B6B6B;       /* Dark Grey */
-  --neo-accent-primary: #121212; 
-  --neo-accent-secondary: #E0E7FF; /* Ice Blue */
-  
-  /* --- DIMENSIONS --- */
-  --neo-border-width: 3px;
-  --neo-shadow-offset: 8px;
-  --neo-radius: 6px;
-  --neo-pad-card: 24px;
-  
-  /* --- SPACING SYSTEM --- */
-  --space-sm: 12px;
-  --space-md: 24px;
-  --space-lg: 32px;
-  --space-xl: 48px;
-}
-
-/* ==========================================================================
-   2. BASE STYLES & RESETS
-   ========================================================================== */
 html {
   scroll-behavior: smooth;
 }
 
-@layer base {
-  /* Fix Input Zoom iPhone */
-  input, textarea, select {
-    @apply text-base;
-  }
+:root {
+  /* --- PALETTE: CREAMY LUXURY BRUTALISM --- */
+  --neo-bg: #F2F0E9;          /* Bone/Ivory - Base Background */
+  --neo-surface: #FFFFFF;     /* Pure White - Card Background */
+  --neo-stroke: #121212;      /* Ink Black - Borders & Text */
+  --neo-muted: #8A8A8A;       /* Technical Grey */
+  
+  /* Accents */
+  --neo-pink: #FF9A9E;        /* ButterHub Pink signature */
+  --neo-pink-light: #FECFEF;  
+  --neo-yellow: #FDFFB6;      /* Highlight/Marker */
+  --neo-blue: #A8E6CF;        /* Secondary Accent */
+
+  /* --- DIMENSIONS --- */
+  --neo-border: 3px;          /* Konsisten tebal */
+  --neo-shadow: 8px;          /* Deep shadow */
+  --neo-radius: 6px;          /* Tight radius */
 }
 
+/* Base Styles Override */
 body {
-  @apply bg-bg text-main antialiased;
-  overscroll-behavior-y: contain;
-  -webkit-tap-highlight-color: transparent;
-  
-  /* Global Variables Apply */
   background-color: var(--neo-bg);
   color: var(--neo-stroke);
-  
-  /* Subtle Noise Texture (Global) */
+  /* Noise Texture Halus untuk kesan kertas premium */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
 }
 
-/* Global Typography Override */
-h1, h2, h3, .font-black, .uppercase {
-  letter-spacing: -0.02em; /* Sedikit rapat biar modern */
-  text-transform: uppercase;
-}
+/* Utility Classes untuk Neo-Brutal Effect (Biar HTML lebih bersih) */
+@layer components {
+  .neo-card {
+    @apply bg-white border-[length:var(--neo-border)] border-[#121212] rounded-[var(--neo-radius)];
+    box-shadow: var(--neo-shadow) var(--neo-shadow) 0px #121212;
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  
+  .neo-card:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 12px 12px 0px #121212;
+  }
 
-/* ==========================================================================
-   3. SECTION: LANDING PAGE / LOGIN GATE (The "Premium" Look)
-   ========================================================================== */
+  .neo-btn-primary {
+    @apply bg-[#121212] text-white border-[length:var(--neo-border)] border-[#121212] font-black uppercase tracking-wider py-4 px-8 inline-block transition-all;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+  }
+  
+  .neo-btn-primary:hover {
+    @apply bg-white text-[#121212];
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #121212;
+  }
 
-/* Hero Backdrop khusus Landing Page */
-/* Note: Selector ini menarget 'main' di root page agar dapet gradient */
-main:not(:has(.aspect-video)) { 
-  /* Trik CSS: Apply gradient cuma kalau BUKAN halaman nonton (yg ada video) */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E"),
-  radial-gradient(circle at 50% 50%, rgba(255,255,255,0.8) 0%, rgba(242,240,233,0) 60%) !important;
-  background-blend-mode: overlay, normal;
-}
+  .neo-btn-secondary {
+    @apply bg-[#FDFFB6] text-[#121212] border-[length:var(--neo-border)] border-[#121212] font-black uppercase tracking-wider py-4 px-8 inline-block transition-all;
+    box-shadow: 4px 4px 0px #121212;
+  }
+  
+  .neo-btn-secondary:hover {
+    @apply bg-[#FFF];
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #121212;
+  }
 
-/* BRAND "BUTTERHUB" MONUMENTAL */
-h1 {
-  font-size: clamp(3rem, 8vw, 6rem) !important;
-  line-height: 0.9 !important;
-  color: var(--neo-stroke) !important;
-  text-shadow: 4px 4px 0px rgba(0,0,0,0.1);
-}
-
-/* Span "HUB" (Outline Effect) */
-h1 span {
-  -webkit-text-stroke: 2px var(--neo-stroke);
-  color: transparent !important;
-  background: none !important;
-  font-style: italic;
-  margin-left: 8px;
-}
-
-/* CARD CONTAINER ("MUSEUM PLAQUE") */
-/* Target spesifik card putih di landing page */
-main > div > div.bg-white {
-  background: var(--neo-surface) !important;
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-  box-shadow: var(--neo-shadow-offset) var(--neo-shadow-offset) 0px var(--neo-stroke) !important;
-  border-radius: var(--neo-radius) !important;
-  padding: var(--space-xl) !important;
-  max-width: 600px !important;
-  margin: 0 auto;
-}
-
-/* Icon Gembok Landing Page */
-.animate-bounce {
-  font-size: 4rem !important;
-  margin-bottom: var(--space-md);
-  filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.2));
-}
-
-/* Judul "STOP!" */
-main h2 {
-  font-size: 2rem !important;
-  border-bottom: 2px solid #E5E5E5;
-  padding-bottom: var(--space-sm);
-  margin-bottom: var(--space-md) !important;
-}
-
-/* Deskripsi Landing Page */
-p.opacity-60 {
-  font-family: monospace, sans-serif;
-  font-size: 0.95rem !important;
-  line-height: 1.6 !important;
-  color: var(--neo-muted) !important;
-  opacity: 1 !important;
-  max-width: 45ch;
-  margin: 0 auto var(--space-lg) auto;
-}
-
-/* TOMBOL LOGIN & REGISTER (Snappy Interactive) */
-a[href="/login"] > div,
-a[href="/register"] > div {
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-  border-radius: var(--neo-radius) !important;
-  box-shadow: 4px 4px 0px var(--neo-stroke) !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.05em !important;
-  text-transform: uppercase;
-  transition: all 0.15s cubic-bezier(0.25, 1, 0.5, 1) !important;
-  padding: 18px 32px !important;
-  font-size: 1rem !important;
-}
-
-/* Hover: Lift Up */
-a[href="/login"]:hover > div,
-a[href="/register"]:hover > div {
-  transform: translate(-2px, -2px) !important;
-  box-shadow: 8px 8px 0px var(--neo-stroke) !important;
-}
-
-/* Active: Press Down */
-a[href="/login"]:active > div,
-a[href="/register"]:active > div {
-  transform: translate(2px, 2px) !important;
-  box-shadow: 0px 0px 0px var(--neo-stroke) !important;
-}
-
-/* Warna Tombol */
-a[href="/login"] > div {
-  background-color: var(--neo-accent-primary) !important;
-  color: var(--neo-surface) !important;
-}
-a[href="/register"] > div {
-  background-color: var(--neo-accent-secondary) !important;
-  color: var(--neo-stroke) !important;
-}
-
-/* Label "Private Access Only" */
-.inline-block.bg-\[\#171717\] {
-  background: transparent !important;
-  color: var(--neo-stroke) !important;
-  border: 1px solid var(--neo-stroke);
-  padding: 6px 12px !important;
-  font-family: monospace;
-  font-size: 0.7rem !important;
-  letter-spacing: 0.15em;
-  box-shadow: 3px 3px 0px rgba(0,0,0,0.1);
-}
-
-/* Footer Landing Page */
-.pt-8 p {
-  font-family: monospace;
-  color: var(--neo-stroke);
-  opacity: 0.4 !important;
-  border-top: 1px dashed var(--neo-stroke);
-  display: inline-block;
-  padding-top: var(--space-sm);
-}
-
-/* ==========================================================================
-   4. SECTION: INNER APP (DASHBOARD & DETAIL PAGE)
-   ========================================================================== */
-
-/* TOMBOL BACK & NAVIGASI CHIP */
-header a[href*="dracin"], 
-a[href*="/dracin/hotrank"], 
-a[href*="/dracin/foryou"], 
-a[href*="/dracin/latest"] { 
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-  background: var(--neo-surface) !important;
-  box-shadow: 3px 3px 0px var(--neo-stroke) !important;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  font-weight: 800 !important;
-  color: var(--neo-stroke) !important;
-}
-
-header a[href*="dracin"]:hover,
-a:hover[href*="/dracin/hotrank"], 
-a:hover[href*="/dracin/foryou"], 
-a:hover[href*="/dracin/latest"] {
-  transform: translate(-2px, -2px) !important;
-  box-shadow: 5px 5px 0px var(--neo-stroke) !important;
-  background: var(--neo-accent-secondary) !important;
-}
-
-/* VIDEO PLAYER FRAME */
-.aspect-video {
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-  box-shadow: var(--neo-shadow-offset) var(--neo-shadow-offset) 0px var(--neo-stroke) !important;
-  background: #000;
-  margin-bottom: 2rem;
-}
-
-/* SINOPSIS CARD (DETAIL) */
-.bg-white.border-\[3px\] {
-  box-shadow: 4px 4px 0px var(--neo-stroke) !important;
-  padding: var(--neo-pad-card) !important;
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-}
-
-/* PLAYLIST PANEL (KANAN) */
-.max-h-\[80vh\] {
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-  box-shadow: var(--neo-shadow-offset) var(--neo-shadow-offset) 0px var(--neo-stroke) !important;
-  background: var(--neo-surface);
-}
-
-.sticky.top-0 {
-  border-bottom: var(--neo-border-width) solid var(--neo-stroke) !important;
-  background-color: var(--neo-accent-secondary) !important; /* Biru muda */
-  padding: 1rem 1.5rem !important;
-}
-
-/* List Episode */
-ul.divide-y-2 > li {
-  border-bottom: 2px solid #EEE;
-  padding: 0.85rem 1.25rem !important;
-}
-ul.divide-y-2 > li:hover {
-  background-color: #FAFAFA;
-  border-left: 4px solid var(--neo-stroke);
-}
-
-/* GRID CARD (HOME PAGE) */
-.group.block .h-full {
-  border: var(--neo-border-width) solid var(--neo-stroke) !important;
-  box-shadow: 6px 6px 0px var(--neo-stroke) !important;
-  background: var(--neo-surface);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
-}
-
-.group.block:hover .h-full {
-  transform: translate(-4px, -4px) !important;
-  box-shadow: 10px 10px 0px var(--neo-stroke) !important;
-}
-
-/* ==========================================================================
-   5. UTILITIES (SCROLLBAR & HOVER)
-   ========================================================================== */
-
-/* Custom Scrollbar Brutal */
-::-webkit-scrollbar {
-  width: 14px;
-}
-::-webkit-scrollbar-track {
-  background: var(--neo-bg);
-  border-left: 2px solid var(--neo-stroke);
-}
-::-webkit-scrollbar-thumb {
-  background-color: var(--neo-stroke);
-  border: 3px solid var(--neo-bg);
-}
-::-webkit-scrollbar-thumb:hover {
-  background-color: #333;
-}
-
-/* Hover Effect Utilities */
-@layer utilities {
-  @media (hover: hover) and (pointer: fine) {
-    .brut-hover-effect {
-      @apply transition-transform duration-200 hover:-translate-y-1 hover:-translate-x-1 hover:shadow-brut-lg;
-    }
-    .brut-active-effect:active {
-      @apply translate-y-[2px] translate-x-[2px] shadow-none;
-    }
+  .neo-badge {
+    @apply px-3 py-1 text-[10px] font-black uppercase tracking-widest border border-[#121212] bg-white;
   }
 }
