@@ -2,100 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-  scroll-behavior: smooth;
-}
-
+/* --- DESIGN TOKENS: PREMIUM CREAMY BRUTALISM --- */
 :root {
-  /* --- PALETTE: CREAMY MUSEUM --- */
-  --neo-bg: #F7F5F0;          /* Warm Ivory - Base canvas */
-  --neo-surface: #FFFFFF;     /* Pure White - Cards */
-  --neo-ink: #121212;         /* Almost Black - Text & Strokes */
-  --neo-muted: #888888;       /* Metadata text */
+  /* Palette */
+  --neo-bg: #F7F5F0;          /* Creamy Ivory - Base */
+  --neo-surface: #FFFFFF;     /* Pure White - Card */
+  --neo-ink: #121212;         /* Off-Black - Text & Stroke */
+  --neo-muted: #888888;       /* Grey Text */
   
-  /* --- ACCENTS (Restrained) --- */
-  --neo-accent-pink: #FF9A9E; /* Brand Signature */
-  --neo-accent-butter: #FDFFB6; /* Secondary Highlight */
-  --neo-accent-mint: #A8E6CF; /* Success/Safe status */
+  /* Micro Accents (Gunakan Hemat!) */
+  --neo-accent-butter: #FDFFB6; 
+  --neo-accent-pink: #FF9A9E;
+  --neo-accent-mint: #A8E6CF;
 
-  /* --- DIMENSIONS (THE BRUTAL DNA) --- */
-  --neo-stroke: 3px;          /* Tebal & Tegas */
-  --neo-shadow-x: 8px;
-  --neo-shadow-y: 8px;
-  --neo-radius: 8px;          /* Sedikit lebih soft dari 0px, tapi tetap kotak */
-  
-  /* --- SPACING GRID (8px based) --- */
-  --space-1: 8px;
-  --space-2: 16px;
-  --space-3: 24px;
-  --space-4: 32px;
-  --space-6: 48px;
+  /* Dimensions */
+  --neo-stroke: 3px;
+  --neo-shadow: 8px;
+  --neo-radius: 8px;
 }
 
-/* Base Styles Override */
-body {
-  background-color: var(--neo-bg);
-  color: var(--neo-stroke);
-  /* Noise Texture Halus untuk kesan kertas premium */
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
-}
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-/* ... (Keep your existing reset/base styles) ... */
-
-@layer components {
-  /* CONTAINER SYSTEM */
-  .neo-container {
-    @apply max-w-6xl mx-auto px-6 md:px-12;
-  }
-
-  /* CARD SYSTEM (The Gallery Frame) */
-  .neo-card {
-    @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative flex flex-col overflow-hidden;
-    box-shadow: var(--neo-shadow-x) var(--neo-shadow-y) 0px var(--neo-ink);
-    transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.2s;
-  }
-
-  .neo-card:hover {
-    transform: translate(-2px, -2px);
-    box-shadow: 12px 12px 0px var(--neo-ink);
-  }
-
-  /* BADGE SYSTEM (Micro Accents) */
-  .neo-badge {
-    @apply inline-flex items-center px-3 py-1 text-[10px] font-black uppercase tracking-widest border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-full bg-white text-[var(--neo-ink)];
-  }
-  .neo-badge.pink { @apply bg-[var(--neo-accent-pink)]; }
-  .neo-badge.butter { @apply bg-[var(--neo-accent-butter)]; }
-  .neo-badge.mint { @apply bg-[var(--neo-accent-mint)]; }
-
-  /* BUTTON SYSTEM */
-  .neo-btn {
-    @apply w-full flex items-center justify-center py-4 px-6 font-black uppercase tracking-wider text-sm border-t-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white hover:bg-[var(--neo-ink)] hover:text-white transition-colors;
-  }
-  
-  /* HEADER LOGOUT BUTTON (Special Case) */
-  .neo-btn-logout {
-    @apply px-5 py-2 text-xs font-bold uppercase tracking-widest border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white hover:bg-[var(--neo-accent-pink)] transition-all shadow-[4px_4px_0px_#121212] hover:shadow-[2px_2px_0px_#121212] hover:translate-x-[2px] hover:translate-y-[2px] active:shadow-none;
-  }
-
-  /* QUICK ACTION BUTTONS */
-  .neo-quick-btn {
-    @apply w-full text-left p-4 border-[length:var(--neo-stroke)] border-[var(--neo-ink)] bg-white opacity-60 flex justify-between items-center transition-all;
-  }
-  /* Disabled look but still styled */
-  .neo-quick-btn:disabled {
-    @apply cursor-not-allowed bg-[#E5E5E5] opacity-50;
-  }
-}
-
-/* GLOBAL TEXTURE OVERRIDE */
 body {
   background-color: var(--neo-bg);
   color: var(--neo-ink);
-  /* Noise Texture Halus (Optional, hapus jika ingin flat) */
+  /* Noise Texture Halus */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+}
+
+@layer components {
+  /* MASTER CARD STYLE */
+  .neo-master-card {
+    @apply bg-[var(--neo-surface)] border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[var(--neo-radius)] relative overflow-hidden;
+    box-shadow: var(--neo-shadow) var(--neo-shadow) 0px var(--neo-ink);
+  }
+
+  /* SUB CARD STYLE (Interactive) */
+  .neo-sub-card {
+    @apply bg-white border-[length:var(--neo-stroke)] border-[var(--neo-ink)] rounded-[6px] relative flex flex-col transition-all duration-200;
+    /* Shadow lebih tipis untuk sub-card */
+    box-shadow: 4px 4px 0px var(--neo-ink);
+  }
+
+  .neo-sub-card:hover {
+    @apply -translate-y-1;
+    box-shadow: 6px 6px 0px var(--neo-ink);
+  }
+  
+  /* Status Badges */
+  .badge-chip {
+    @apply inline-flex items-center px-2 py-0.5 text-[9px] font-black uppercase tracking-widest border border-black rounded-sm;
+  }
 }
