@@ -18,31 +18,34 @@ async function checkAuth(req: NextRequest): Promise<boolean> {
 
 export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  
+  // --- CCTV LOG (Cek Terminal Server Lu Pas Buka Website) ---
+  console.log(`[MIDDLEWARE] Checking path: ${path}`); 
+  // --------------------------------------------------------
+
   const isAuthed = await checkAuth(req);
 
   // 1. ROOT GATE
   if (path === '/') {
-    // Kalau Member iseng buka root, kita oper ke dashboard
-    if (isAuthed) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-    // Kalau Guest, biarkan lihat Landing Page Tropical
+    if (isAuthed) return NextResponse.redirect(new URL('/dashboard', req.url));
     return NextResponse.next();
   }
 
-  // 2. PROTEKSI AREA VIP (WAJIB LOGIN)
-  // --- KITA TAMBAHKAN LAGI '/downloader' DI SINI ---
+  // 2. PROTEKSI AREA VIP
   const protectedPrefixes = ['/dashboard', '/downloader']; 
   const isProtected = protectedPrefixes.some(p => path.startsWith(p));
 
-  if (isProtected && !isAuthed) {
-    const loginUrl = new URL('/login', req.url);
-    // Kita simpan jejak "dia tadi mau ke downloader loh"
-    loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
-    return NextResponse.redirect(loginUrl);
+  if (isProtected) {
+      console.log(`[MIDDLEWARE] Protected Area Detected: ${path}`); // Log Proteksi
+      if (!isAuthed) {
+        console.log(`[MIDDLEWARE] User NOT Auth -> KICK to Login`); // Log Tendang
+        const loginUrl = new URL('/login', req.url);
+        loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
+        return NextResponse.redirect(loginUrl);
+      }
   }
 
-  // 3. MEMBER GAK BOLEH KE HALAMAN LOGIN
+  // 3. MEMBER GAK BOLEH KE LOGIN
   if ((path === '/login' || path === '/register') && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
