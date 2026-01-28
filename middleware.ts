@@ -8,8 +8,7 @@ const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 async function checkAuth(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get('token')?.value;
   if (!token) return false;
-
-  if (!SECRET_KEY) return false; // Fail-safe
+  if (!SECRET_KEY) return false;
 
   try {
     await jwtVerify(token, SECRET_KEY, { algorithms: ['HS256'] });
@@ -23,25 +22,25 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isAuthed = await checkAuth(req);
 
-  // 1. ROOT GATE (PINTU UTAMA)
+  // 1. ROOT GATE (PINTU GERBANG)
   if (path === '/') {
     if (isAuthed) {
-      // KALAU ADMIN: Lempar ke Dashboard
+      // Kalau Member -> Langsung masuk Dashboard
       return NextResponse.redirect(new URL('/dashboard', req.url));
     } 
-    // KALAU GUEST: JANGAN DI-REDIRECT!
-    // Biarkan dia masuk ke '/' (page.tsx) biar bisa liat halaman depan.
+    // Kalau Guest -> Biarin di sini (Nanti kita kasih tampilan Gerbang doang di page.tsx)
     return NextResponse.next();
   }
 
-  // 2. PROTEKSI DASHBOARD
-  if (path.startsWith('/dashboard') && !isAuthed) {
+  // 2. PROTEKSI AREA TERLARANG (Dracin & Dashboard)
+  // Tamu gak boleh ngintip /dracin atau /dashboard
+  if ((path.startsWith('/dashboard') || path.startsWith('/dracin')) && !isAuthed) {
     const loginUrl = new URL('/login', req.url);
     loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
 
-  // 3. PROTEKSI LOGIN
+  // 3. PROTEKSI HALAMAN LOGIN (Member gak perlu login lagi)
   if ((path === '/login' || path === '/register') && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
