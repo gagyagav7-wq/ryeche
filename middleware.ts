@@ -5,7 +5,6 @@ import { jwtVerify } from 'jose';
 const rawSecret = process.env.JWT_SECRET;
 const SECRET_KEY = rawSecret ? new TextEncoder().encode(rawSecret) : null;
 
-// Helper buat cek token valid/enggak
 async function checkAuth(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get('token')?.value;
   if (!token) return false;
@@ -23,29 +22,27 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isAuthed = await checkAuth(req);
 
-  // 1. ROOT GATE (Landing Page)
-  // Kalau buka root '/', biarin aja masuk (karena sekarang udah jadi landing page bagus)
+  // 1. ROOT GATE (Landing Page Bebas Akses)
   if (path === '/') {
     return NextResponse.next();
   }
 
   // 2. PROTEKSI AREA TERLARANG (VIP ONLY)
-  // --- DAFTAR RUANGAN YANG WAJIB LOGIN ---
-  const protectedPaths = ['/dashboard', '/dracin', '/downloader']; 
-  // ^^^ Pastikan '/downloader' ada di sini!
+  // --- PASTIKAN '/downloader' ADA DI SINI ---
+  const protectedPaths = ['/dashboard', '/dracin', '/downloader'];
   
   const isProtected = protectedPaths.some(p => path.startsWith(p));
 
+  // LOGIC: Kalau mau masuk VIP tapi GAK PUNYA TIKET (isAuthed = false)
   if (isProtected && !isAuthed) {
-    // Kalau mau masuk area VIP tapi gak punya tiket (token) -> LEMPAR KE LOGIN
     const loginUrl = new URL('/login', req.url);
-    // Kita kasih 'callbackUrl' biar abis login otomatis balik ke halaman yang dituju
+    // Simpan alamat tujuan biar nanti dibalikin lagi ke sana
     loginUrl.searchParams.set('callbackUrl', path);
     return NextResponse.redirect(loginUrl);
   }
 
   // 3. PROTEKSI HALAMAN LOGIN 
-  // Kalau udah login tapi mau buka /login lagi -> Lempar ke Dashboard
+  // Kalau udah login, gak boleh masuk halaman login lagi (langsung ke dashboard)
   if ((path === '/login' || path === '/register') && isAuthed) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
@@ -54,6 +51,5 @@ export async function middleware(req: NextRequest) {
 }
 
 export const config = {
-  // Matcher biar middleware jalan di semua halaman kecuali file statis/api
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|manifest.json).*)'],
 };
