@@ -10,7 +10,7 @@ async function checkAuth(req: NextRequest): Promise<boolean> {
   if (!token || !SECRET_KEY) return false;
   try {
     await jwtVerify(token, SECRET_KEY, { algorithms: ['HS256'] });
-    return true;
+    return true; 
   } catch {
     return false;
   }
@@ -20,25 +20,21 @@ export async function middleware(req: NextRequest) {
   const path = req.nextUrl.pathname;
   const isAuthed = await checkAuth(req);
 
-  // 1. ROOT GATE (MODE A: Tropical Landing Tetap Tampil)
+  // 1. ROOT GATE
   if (path === '/') {
-    // Kalau Member iseng buka root, kita oper ke dashboard biar produktif
-    if (isAuthed) {
-      return NextResponse.redirect(new URL('/dashboard', req.url));
-    }
-    // Kalau Guest, silakan nikmati landing page tropical
+    // Member -> Dashboard
+    if (isAuthed) return NextResponse.redirect(new URL('/dashboard', req.url));
+    // Guest -> Landing Page (Tropical)
     return NextResponse.next();
   }
 
-  // 2. PROTEKSI AREA VIP
-  // Pastikan '/downloader' ada di sini!
-  const protectedPrefixes = ['/dashboard', '/downloader'];
+  // 2. PROTEKSI AREA VIP (CUMA DASHBOARD YANG DIKUNCI)
+  // Downloader kita hapus dari sini biar jadi PUBLIC
+  const protectedPrefixes = ['/dashboard']; 
   const isProtected = protectedPrefixes.some(p => path.startsWith(p));
 
   if (isProtected && !isAuthed) {
     const loginUrl = new URL('/login', req.url);
-    // TANGKAP PATH + QUERY (Misal: /downloader?video=abc)
-    // Biar pas login balik lagi ke video itu
     loginUrl.searchParams.set('callbackUrl', req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(loginUrl);
   }
