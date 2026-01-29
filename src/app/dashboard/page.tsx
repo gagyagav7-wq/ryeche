@@ -66,35 +66,32 @@ export default function DashboardPage() {
 
       <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-16">
          
-         {/* PATCH: POLISHED WELCOME BANNER */}
-         <div className="mb-14">
-            {/* micro header */}
-            <div className="flex items-center gap-3 mb-4">
-               <span className="h-[3px] w-10 bg-[#0F172A]" />
-               <span className="text-[10px] font-black uppercase tracking-[0.35em] text-[#0F172A] opacity-45">
-                  System Access Granted
-               </span>
-               <span className="hidden md:block h-[3px] w-10 bg-[#0F172A]/25" />
-            </div>
+         {/* POLISHED WELCOME BANNER — DAWG VERSION */}
+         <div className="mb-14 group">
+           {/* Micro header / System Status */}
+           <div className="flex items-center gap-3 mb-5">
+             <span className="h-[4px] w-12 bg-[#0F172A]" />
+             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#0F172A] opacity-50">
+               System Status: Nominal
+             </span>
+           </div>
 
-            {/* headline */}
-            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-[-0.06em] leading-[0.88] text-[#0F172A]">
-               <span className="relative inline-block">
-                  Welcome back,
-                  <span className="absolute -bottom-2 left-0 h-[8px] w-[62%] bg-[#CBEF43] border-[2px] border-[#0F172A] -z-10" />
-               </span>{" "}
-               <span className="relative inline-block">
-                  <span className="text-[#FF9F1C] drop-shadow-[2px_2px_0px_#0F172A]">Creamy</span>
-                  <span className="text-[#FF9F1C]">.</span>
-                  <span className="absolute -inset-x-2 -inset-y-1 bg-[#FF9F1C]/15 -z-10 rotate-[-1deg] rounded-lg" />
+           {/* Headline with DAWG Persona Sticker */}
+           <h2 className="text-5xl md:text-7xl font-black uppercase tracking-[-0.05em] leading-[0.85] text-[#0F172A]">
+             <span className="relative inline-block mr-2 md:mr-4">
+               <span className="relative z-10 bg-[#FF9F1C] px-4 py-1 border-[3px] border-[#0F172A] shadow-[5px_5px_0px_#0F172A] -rotate-2 inline-block">
+                 DAWG
                </span>
-            </h2>
+             </span>
+             <span className="block md:inline mt-4 md:mt-0">
+               MODE <span className="text-[#FF9F1C]">——</span> ACCESS GRANTED
+             </span>
+           </h2>
 
-            {/* subcopy */}
-            <p className="mt-6 max-w-xl border-l-[4px] border-[#0F172A] pl-4 text-sm md:text-base font-bold text-[#0F172A] opacity-70 leading-relaxed">
-               <span className="text-[#FF9F1C] font-black mr-2">●</span>
-               Semua sistem berjalan optimal. Selamat menikmati sesi premium Anda hari ini.
-            </p>
+           {/* Subcopy with Editorial Style */}
+           <p className="mt-8 max-w-xl border-l-[6px] border-[#CBEF43] pl-5 text-sm md:text-base font-bold text-[#0F172A] opacity-75 leading-relaxed italic">
+             Sesi premium disinkronkan. Selamat datang kembali di inti ruang kontrol utama DAWGHub. Nikmati akses penuh ke seluruh modul sistem.
+           </p>
          </div>
 
          {/* --- MODULES GRID --- */}
