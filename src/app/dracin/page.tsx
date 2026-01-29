@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 // --- ICONS ---
 const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
@@ -10,7 +10,7 @@ const IconFire = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w
 const IconStar = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#FF99C8]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 const IconPlay = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M5 3l14 9-14 9V3z"/></svg>;
-const IconLoading = () => <svg className="animate-spin h-8 w-8 text-[#0F172A]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>;
+const IconLoading = () => <svg className="animate-spin h-5 w-5 text-current" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>;
 
 interface Movie {
   id: string | number;
@@ -26,10 +26,9 @@ export default function DracinPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
   
-  // --- STATE INFINITE SCROLL ---
+  // --- STATE PAGINATION ---
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const observerLoader = useRef<HTMLDivElement | null>(null);
 
   // --- FUNGSI FETCH API ---
   const fetchMovies = useCallback(async (pageNum: number, isNewTab: boolean = false) => {
@@ -37,11 +36,11 @@ export default function DracinPage() {
     setLoading(true);
 
     let url = "";
-    // Note: Kita asumsikan API Sansekai mendukung parameter 'page' atau 'page_num'
+    const base = "https://api.sansekai.my.id/api/flickreels";
+    
     if (query) {
-      url = `https://api.sansekai.my.id/api/flickreels/search?query=${query}&page=${pageNum}`;
+      url = `${base}/search?query=${query}&page=${pageNum}`;
     } else {
-      const base = "https://api.sansekai.my.id/api/flickreels";
       switch (activeTab) {
         case "HOT": url = `${base}/hotrank?page=${pageNum}`; break;
         case "FORYOU": url = `${base}/foryou?page=${pageNum}`; break;
@@ -60,7 +59,6 @@ export default function DracinPage() {
       else if (activeTab === "LATEST") rawData = json.data?.[0]?.list || [];
       else if (activeTab === "FORYOU") rawData = json.data?.list || [];
 
-      // Mapping data
       const normalized: Movie[] = rawData.map((item: any) => ({
         id: item.playlet_id || item.id || item.book_id,
         title: item.title || "Untitled",
@@ -69,12 +67,21 @@ export default function DracinPage() {
         tag: item.playlet_tag_name?.[0] || item.tag_list?.[0]?.tag_name || item.tag_name?.[0] || "Drama"
       })).filter(m => m.id);
 
-      // Kalau data yang balik kosong, berarti udah abis
       if (normalized.length === 0) {
         setHasMore(false);
       } else {
-        setMovies(prev => isNewTab ? normalized : [...prev, ...normalized]);
-        setHasMore(true);
+        setMovies(prev => {
+          if (isNewTab) return normalized;
+          // Filter Duplikat ID biar gak ada film sama yang nongol dua kali
+          const existingIds = new Set(prev.map(m => String(m.id)));
+          const uniqueNew = normalized.filter(m => !existingIds.has(String(m.id)));
+          
+          if (uniqueNew.length === 0) {
+            setHasMore(false);
+            return prev;
+          }
+          return [...prev, ...uniqueNew];
+        });
       }
     } catch (err) {
       console.error("Fetch Error:", err);
@@ -84,7 +91,7 @@ export default function DracinPage() {
     }
   }, [activeTab, query, loading]);
 
-  // --- RESET SAAT GANTI TAB / SEARCH ---
+  // RESET SAAT GANTI TAB / SEARCH
   useEffect(() => {
     setMovies([]);
     setPage(1);
@@ -92,27 +99,11 @@ export default function DracinPage() {
     fetchMovies(1, true);
   }, [activeTab, query]);
 
-  // --- INTERSECTION OBSERVER LOGIC ---
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          setPage((prev) => {
-            const nextPage = prev + 1;
-            fetchMovies(nextPage);
-            return nextPage;
-          });
-        }
-      },
-      { threshold: 0.5 } // Trigger pas 50% element kelihatan
-    );
-
-    if (observerLoader.current) {
-      observer.observe(observerLoader.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasMore, loading, fetchMovies]);
+  const handleLoadMore = () => {
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchMovies(nextPage);
+  };
 
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans selection:bg-[#FF9F1C] pb-24">
@@ -187,61 +178,84 @@ export default function DracinPage() {
             <h2 className="text-3xl font-black uppercase italic tracking-tighter">
                 {query ? `Search: "${query}"` : activeTab === 'HOT' ? "Trending Now 🔥" : activeTab === 'FORYOU' ? "Curated Picks ✨" : "Fresh Drops 🕒"}
             </h2>
-            <p className="text-xs font-bold opacity-50 mb-1">
-                {loading && page === 1 ? "INITIALIZING..." : `PAGE ${page} • ${movies.length} TITLES`}
+            <p className="text-xs font-bold opacity-50 mb-1 uppercase">
+                Showing {movies.length} TITLES
             </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {movies.map((movie, index) => (
-              <div key={`${movie.id}-${index}`} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[16px] overflow-hidden shadow-[4px_4px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300">
-                  <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-[#0F172A]">
-                      <Image 
-                          src={movie.cover}
-                          alt={movie.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                          unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                          <Link href={`/dracin/${movie.id}`} className="w-full">
-                              <button className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-xs shadow-[2px_2px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                  <IconPlay /> Watch Now
-                              </button>
-                          </Link>
+        {/* LOADING AWAL */}
+        {loading && page === 1 ? (
+           <div className="flex flex-col items-center justify-center py-20 opacity-50">
+              <IconLoading />
+              <p className="mt-4 font-black uppercase text-xs tracking-widest">Waking up the projectionist...</p>
+           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {movies.map((movie, index) => (
+                  <div key={`${movie.id}-${index}`} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[16px] overflow-hidden shadow-[4px_4px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300">
+                      <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-[#0F172A]">
+                          <Image 
+                              src={movie.cover}
+                              alt={movie.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                              unoptimized
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                              <Link href={`/dracin/${movie.id}`} className="w-full">
+                                  <button className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-xs shadow-[2px_2px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                                      <IconPlay /> Watch Now
+                                  </button>
+                              </Link>
+                          </div>
+                          <div className="absolute top-3 right-3 bg-[#CBEF43] border-[2px] border-[#0F172A] px-2 py-1 rounded-md text-[10px] font-black text-[#0F172A] shadow-sm">
+                              {movie.ep} EP
+                          </div>
                       </div>
-                      <div className="absolute top-3 right-3 bg-[#CBEF43] border-[2px] border-[#0F172A] px-2 py-1 rounded-md text-[10px] font-black text-[#0F172A] shadow-sm">
-                          {movie.ep} EP
+                      <div className="p-4 bg-white">
+                          <div className="flex items-center gap-2 mb-2">
+                                <span className="text-[8px] font-bold uppercase bg-[#E7E5D8] px-1.5 py-0.5 rounded text-[#0F172A] border border-[#0F172A]/20 line-clamp-1">
+                                  {movie.tag}
+                                </span>
+                          </div>
+                          <h3 className="font-black text-sm md:text-base leading-tight uppercase line-clamp-2 group-hover:text-[#FF9F1C] transition-colors">
+                              {movie.title}
+                          </h3>
                       </div>
                   </div>
-                  <div className="p-4 bg-white">
-                      <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[8px] font-bold uppercase bg-[#E7E5D8] px-1.5 py-0.5 rounded text-[#0F172A] border border-[#0F172A]/20 line-clamp-1">
-                              {movie.tag}
-                            </span>
-                      </div>
-                      <h3 className="font-black text-sm md:text-base leading-tight uppercase line-clamp-2 group-hover:text-[#FF9F1C] transition-colors">
-                          {movie.title}
-                      </h3>
-                  </div>
-              </div>
-          ))}
-        </div>
+              ))}
+            </div>
 
-        {/* --- INFINITE SCROLL SENTINEL --- */}
-        <div ref={observerLoader} className="w-full flex justify-center py-12">
-            {hasMore ? (
-                <div className="flex flex-col items-center gap-2 opacity-50">
-                    <IconLoading />
-                    <p className="text-[10px] font-black uppercase tracking-widest">Scanning next reef...</p>
-                </div>
-            ) : (
-                <div className="bg-white border-[3px] border-[#0F172A] px-8 py-4 shadow-[4px_4px_0px_#0F172A]">
-                    <p className="text-xs font-black uppercase tracking-widest">🏝️ You've reached the end of the island</p>
-                </div>
-            )}
-        </div>
+            {/* --- LOAD MORE BUTTON AREA --- */}
+            <div className="mt-16 flex flex-col items-center gap-6">
+                {hasMore ? (
+                    <button 
+                        onClick={handleLoadMore}
+                        disabled={loading}
+                        className="group relative flex items-center gap-3 px-10 py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-sm shadow-[6px_6px_0px_#0F172A] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_#0F172A] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {loading ? <IconLoading /> : "See More Dramas"}
+                        {!loading && <span className="group-hover:translate-x-1 transition-transform">🌴</span>}
+                    </button>
+                ) : (
+                    <div className="bg-white border-[3px] border-[#0F172A] px-8 py-4 shadow-[4px_4px_0px_#0F172A]">
+                        <p className="text-xs font-black uppercase tracking-widest italic">You've reached the end of the collection 🏝️</p>
+                    </div>
+                )}
+            </div>
+          </>
+        )}
+
+        {/* EMPTY STATE */}
+        {!loading && movies.length === 0 && (
+            <div className="mt-10 bg-white border-[3px] border-[#0F172A] rounded-[16px] p-8 md:p-12 shadow-[6px_6px_0px_#0F172A] text-center max-w-lg mx-auto">
+                <div className="w-16 h-16 bg-[#E7E5D8] border-[3px] border-[#0F172A] rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">🤔</div>
+                <h3 className="text-2xl font-black uppercase mb-2">No Titles Found</h3>
+                <p className="text-sm font-bold opacity-60">Try adjusting your category or search term, Bre.</p>
+            </div>
+        )}
 
       </section>
     </main>
