@@ -3,36 +3,31 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://remote-concentration-streaming-models.trycloudflare.com"; 
 
 /**
- * HELPER: Bersihkan URL Rusia dan lewatkan ke Proxy Internal Next.js Lu
- * Mengarahkan gambar dari zeldvorik.ru langsung ke /api/proxy lu sendiri.
+ * HELPER: Redirect Proxy Gambar Internal
+ * Biar gak lewat Rusia lagi tapi lewat Proxy sakti lu yang tadi sudah dites OK.
  */
 const fixThumbnail = (rawUrl: string): string => {
   if (!rawUrl) return "";
   
-  // Jika URL berasal dari proxy Rusia (zeldvorik.ru)
   if (rawUrl.includes("zeldvorik.ru")) {
     try {
       const urlParams = new URLSearchParams(rawUrl.split('?')[1]);
       const filePath = urlParams.get('url');
-      
-      // Kita susun URL asli Rebahin (Tanpa lewat server Rusia)
+      // Ambil file path-nya, kita tembak aslinya lewat proxy internal lu
       const originalImageUrl = `https://rebahin21.art/wp-content/uploads/${filePath}`;
-      
-      // Bungkus dengan Proxy Internal lu (/api/proxy)
       return `/api/proxy?url=${encodeURIComponent(originalImageUrl)}`;
-    } catch (e) {
-      return rawUrl;
+    } catch {
+      return `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
     }
   }
-  
-  // Jika URL lain, tetep lewatkan ke proxy agar aman dari blokir CORS
   return `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
 };
 
 export const movieHubApi = {
-  // Ambil Data Home (Latest)
+  // Ambil List (home, trending, movies, series)
   async getHome(action: string = 'home', page: number = 1) {
-    const res = await fetch(`${API_BASE}/api/rebahin/${action}?page=${page}`, { 
+    // FIX: Gunakan format api.php?action=...
+    const res = await fetch(`${API_BASE}/api.php?action=${action}&page=${page}`, { 
       next: { revalidate: 3600 } 
     });
     const json = await res.json();
@@ -46,9 +41,9 @@ export const movieHubApi = {
     return json;
   },
 
-  // Ambil Detail Film (Lengkap dengan Cast & Synopsis)
+  // Detail Film
   async getDetail(slug: string) {
-    const res = await fetch(`${API_BASE}/api/rebahin/detail/${slug}`, { 
+    const res = await fetch(`${API_BASE}/api.php?action=detail&slug=${slug}`, { 
       next: { revalidate: 3600 } 
     });
     const json = await res.json();
@@ -59,9 +54,9 @@ export const movieHubApi = {
     return json;
   },
 
-  // Fitur Pencarian Movie Hub
+  // Fitur Search
   async search(q: string) {
-    const res = await fetch(`${API_BASE}/api/rebahin/search?q=${encodeURIComponent(q)}`, { 
+    const res = await fetch(`${API_BASE}/api.php?action=search&q=${encodeURIComponent(q)}`, { 
       cache: 'no-store' 
     });
     const json = await res.json();
@@ -73,13 +68,5 @@ export const movieHubApi = {
       }));
     }
     return json;
-  },
-
-  // Ambil Data Streaming (Server & Episode)
-  async getPlay(slug: string, ep: number = 1) {
-    const res = await fetch(`${API_BASE}/api/rebahin/play/${slug}?ep=${ep}`, { 
-      cache: 'no-store' 
-    });
-    return res.json();
   }
 };
