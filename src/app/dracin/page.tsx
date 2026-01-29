@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 // --- CONSTANTS & ICONS ---
-const GENRES = ["Semua", "CEO", "Romance", "Action", "Drama", "Miliarder", "Fantasy", "Comedy"];
 const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iNDAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRTdFNUQ4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IiMwRjE3MkEiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+QlVUVEVSSEVCPC90ZXh0Pjwvc3ZnPg==";
 
 const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
@@ -21,6 +20,7 @@ interface Movie {
   cover: string;
   ep: string | number;
   tag: string;
+  tags: string[]; // NEW: Simpan semua tag dari API
 }
 
 export default function DracinPage() {
@@ -31,17 +31,33 @@ export default function DracinPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- FETCH LOGIC WITH ABORT CONTROLLER ---
+  // --- 1. DYNAMIC GENRES LOGIC (MODE A) ---
+  // Ekstrak semua tag unik yang beneran ada di list movies saat ini
+  const GENRES_DYNAMIC = useMemo(() => {
+    const genreSet = new Set<string>();
+    movies.forEach((movie) => {
+      movie.tags?.forEach((tag) => genreSet.add(tag));
+    });
+    return ["Semua", ...Array.from(genreSet).sort()];
+  }, [movies]);
+
+  // Filter movies secara lokal berdasarkan genre yang dipilih
+  const visibleMovies = useMemo(() => {
+    if (selectedGenre === "Semua") return movies;
+    return movies.filter((movie) => movie.tags?.includes(selectedGenre));
+  }, [movies, selectedGenre]);
+
+  // --- 2. FETCH LOGIC ---
   const fetchMovies = useCallback(async (signal: AbortSignal) => {
     setLoading(true);
     setError(null);
     let url = "";
 
-    const searchTerm = selectedGenre !== "Semua" ? selectedGenre : query;
     const base = "https://api.sansekai.my.id/api/flickreels";
 
-    if (searchTerm) {
-      url = `${base}/search?query=${encodeURIComponent(searchTerm)}`;
+    // Genre sekarang murni filter lokal, klik genre gak akan refetch ke API
+    if (query) {
+      url = `${base}/search?query=${encodeURIComponent(query)}`;
     } else {
       switch (activeTab) {
         case "HOT": url = `${base}/hotrank`; break;
@@ -57,8 +73,7 @@ export default function DracinPage() {
       const json = await res.json();
       let rawData: any[] = [];
 
-      // PERBEDAAN SHAPE RESPONSE API (Handling cases: search, hotrank, latest, foryou)
-      if (searchTerm) {
+      if (query) {
         rawData = json.data || [];
       } else {
         if (activeTab === "HOT") rawData = json.data?.[0]?.data || [];
@@ -68,27 +83,37 @@ export default function DracinPage() {
 
       if (!Array.isArray(rawData)) throw new Error("Format data tidak sesuai");
 
-      const normalized: Movie[] = rawData.map((item: any) => ({
-        id: item.playlet_id || item.id || item.book_id,
-        title: item.title || "Tanpa Judul",
-        cover: item.cover || "",
-        ep: item.upload_num || item.episodes || "Ongoing",
-        tag: item.playlet_tag_name?.[0] || item.tag_list?.[0]?.tag_name || "Drama"
-      })).filter(m => m.id);
+      const normalized: Movie[] = rawData.map((item: any) => {
+        // Normalisasi tags dari berbagai kemungkinan shape API
+        const tags: string[] = 
+          Array.isArray(item.playlet_tag_name) ? item.playlet_tag_name
+          : Array.isArray(item.tag_name) ? item.tag_name
+          : Array.isArray(item.tag_list) ? item.tag_list.map((t: any) => t?.tag_name).filter(Boolean)
+          : Array.isArray(item.tag_list_with_id) ? item.tag_list_with_id.map((t: any) => t?.name).filter(Boolean)
+          : [];
+
+        return {
+          id: item.playlet_id || item.id || item.book_id,
+          title: item.title || "Tanpa Judul",
+          cover: item.cover || "",
+          ep: item.upload_num || item.episodes || "Ongoing",
+          tag: tags[0] || "Drama",
+          tags: tags,
+        };
+      }).filter(m => m.id);
 
       setMovies(normalized);
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error("Fetch failure:", err);
-        setError("Gagal memuat koleksi. Coba lagi nanti, Bre.");
+        setError("Gagal memuat koleksi, Bre.");
         setMovies([]);
       }
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [activeTab, query, selectedGenre]);
+  }, [activeTab, query]); // Hapus selectedGenre dari deps
 
-  // DEBOUNCING & CLEANUP
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -109,8 +134,8 @@ export default function DracinPage() {
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
-      {/* HEADER WITH A11Y FOCUS */}
-      <header className="relative z-20 sticky top-0 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-4 md:px-8">
+      {/* HEADER */}
+      <header className="relative z-20 sticky top-0 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-4 md:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full md:w-auto">
                 <Link href="/dashboard" className="w-12 h-12 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform shadow-[3px_3px_0px_#0F172A] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9F1C]/50">
@@ -143,7 +168,7 @@ export default function DracinPage() {
         </div>
       </header>
 
-      {/* MAIN TABS WITH ROLE TABLIST */}
+      {/* MAIN TABS */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 mt-8 mb-4" role="tablist">
         <div className="flex flex-wrap gap-3">
             {[
@@ -154,10 +179,10 @@ export default function DracinPage() {
                 <button 
                     key={tab.id}
                     role="tab"
-                    aria-selected={activeTab === tab.id && !query && selectedGenre === "Semua"}
+                    aria-selected={activeTab === tab.id && !query}
                     onClick={() => { setActiveTab(tab.id); setQuery(""); setSelectedGenre("Semua"); }}
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-[3px] border-[#0F172A] font-black uppercase text-xs tracking-wide transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2EC4B6] ${
-                        activeTab === tab.id && !query && selectedGenre === "Semua"
+                        activeTab === tab.id && !query
                         ? `${tab.color} shadow-[4px_4px_0px_#0F172A] -translate-y-[2px]` 
                         : "bg-white text-[#0F172A] hover:bg-gray-50"
                     }`}
@@ -169,16 +194,16 @@ export default function DracinPage() {
         </div>
       </section>
 
-      {/* GENRE BAR */}
+      {/* DYNAMIC GENRE BAR (MODE A) */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 mb-8">
         <div className="flex items-center gap-3 overflow-x-auto pb-4 no-scrollbar" role="tablist" aria-label="Genre Selection">
             <span className="text-[10px] font-black uppercase opacity-40 shrink-0">Genre:</span>
-            {GENRES.map((genre) => (
+            {GENRES_DYNAMIC.map((genre) => (
                 <button
                     key={genre}
                     role="tab"
                     aria-selected={selectedGenre === genre}
-                    onClick={() => { setSelectedGenre(genre); setQuery(""); }}
+                    onClick={() => setSelectedGenre(genre)}
                     className={`shrink-0 px-4 py-1.5 rounded-lg border-[2px] border-[#0F172A] text-[10px] font-black uppercase transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#CBEF43] ${
                         selectedGenre === genre 
                         ? "bg-[#CBEF43] shadow-[3px_3px_0px_#0F172A] -translate-y-[1px]" 
@@ -198,7 +223,7 @@ export default function DracinPage() {
                 {selectedGenre !== "Semua" ? `Genre: ${selectedGenre}` : query ? `Search: "${query}"` : activeTab === 'HOT' ? "Trending Now 🔥" : activeTab === 'FORYOU' ? "Curated Picks ✨" : "Fresh Drops 🕒"}
             </h2>
             <p className="text-xs font-bold opacity-50 mb-1 uppercase tracking-widest">
-                {loading ? "FETCHING..." : `${movies.length} TITLES`}
+                {loading ? "FETCHING..." : `${visibleMovies.length} TITLES`}
             </p>
         </div>
 
@@ -213,7 +238,7 @@ export default function DracinPage() {
            </div>
         ) : (
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
-            {movies.map((movie) => (
+            {visibleMovies.map((movie) => (
                 <div key={movie.id} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[10px_10px_0px_#FF9F1C] transition-all duration-300">
                     <div className="aspect-[3/4] bg-[#E7E5D8] relative overflow-hidden border-b-[3px] border-[#0F172A]">
                         <Image 
@@ -225,11 +250,10 @@ export default function DracinPage() {
                             unoptimized
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                            {/* FIXED: No nested interactive elements. Link styled as button. */}
                             <Link 
                                 href={`/dracin/${movie.id}`} 
                                 prefetch={false}
-                                className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-[10px] shadow-[3px_3px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white"
+                                className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-[10px] shadow-[3px_3px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white text-center"
                             >
                                 <IconPlay /> Watch Now
                             </Link>
@@ -251,12 +275,12 @@ export default function DracinPage() {
            </div>
         )}
 
-        {!loading && !error && movies.length === 0 && (
+        {!loading && !error && visibleMovies.length === 0 && (
             <div className="mt-10 bg-white border-[3px] border-[#0F172A] rounded-[20px] p-12 shadow-[10px_10px_0px_#FF99C8] text-center max-w-lg mx-auto">
                 <div className="text-4xl mb-4">🏝️</div>
                 <h3 className="text-2xl font-black uppercase mb-2">The beach is empty</h3>
                 <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                    Coba judul drama atau genre lain, Bre.
+                    Genre "{selectedGenre}" gak nemu di list ini, Bre.
                 </p>
             </div>
         )}
