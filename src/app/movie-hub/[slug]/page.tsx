@@ -1,55 +1,78 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
-import Link from "next/link"; // <--- TAMBAHKAN BARIS INI, BRE!
+import Link from "next/link";
 import { movieApi } from "@/lib/movie-hub-api";
 
 export default function MovieDetailPage() {
   const { slug } = useParams();
   const [data, setData] = useState<any>(null);
+  const [servers, setServers] = useState<any[]>([]);
+  const [activeEp, setActiveEp] = useState(1);
   const [currentUrl, setCurrentUrl] = useState("");
 
+  // Load Detail
   useEffect(() => {
-    movieApi.getDetail(slug as string).then(res => {
-      setData(res.data);
-      setCurrentUrl(res.data.player_url);
-    });
+    movieApi.getDetail(slug as string).then(res => setData(res.data));
   }, [slug]);
 
-  if (!data) return <div className="min-h-screen flex items-center justify-center font-black">ACCESSING CORE...</div>;
+  // Load Player when Episode changes
+  useEffect(() => {
+    movieApi.getPlay(slug as string, activeEp).then(res => {
+      setServers(res.data || []);
+      // Set server pertama sebagai default
+      if (res.data?.[0]?.url) setCurrentUrl(res.data[0].url);
+    });
+  }, [slug, activeEp]);
+
+  if (!data) return <div className="min-h-screen flex items-center justify-center font-black animate-bounce">SYNCING CORE...</div>;
 
   return (
-    <main className="min-h-screen bg-[#FFFDF7] p-4 md:p-8">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <Link href="/movie-hub" className="inline-block border-[3px] border-[#0F172A] p-2 bg-white shadow-[3px_3px_0px_#0F172A] font-black uppercase text-xs">← Back</Link>
+    <main className="min-h-screen bg-[#FFFDF7] p-6 md:p-12">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <Link href="/movie-hub" className="inline-flex items-center gap-2 border-[3px] border-[#0F172A] px-4 py-2 bg-white shadow-[4px_4px_0px_#0F172A] font-black uppercase text-xs hover:translate-x-1 transition-all">← Back to Gallery</Link>
         
-        {/* PLAYER BOX */}
-        <div className="aspect-video bg-[#0F172A] border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF708D] overflow-hidden rounded-xl">
-          <iframe src={currentUrl} className="w-full h-full" allowFullScreen />
+        {/* BIG PLAYER */}
+        <div className="aspect-video bg-[#0F172A] border-[4px] border-[#0F172A] shadow-[12px_12px_0px_#FF708D] overflow-hidden rounded-[24px]">
+          {currentUrl ? (
+            <iframe src={currentUrl} className="w-full h-full" allowFullScreen />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-white font-black opacity-20">ESTABLISHING UPLINK...</div>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* INFO */}
-          <div className="md:col-span-2 bg-white border-[3px] border-[#0F172A] p-6 shadow-[5px_5px_0px_#0F172A] rounded-xl">
-            <h2 className="text-3xl font-black uppercase leading-none mb-4">{data.title}</h2>
-            <div className="flex flex-wrap gap-2 mb-4">
-              {data.genres.map((g: string) => <span key={g} className="bg-[#FF708D] text-white text-[10px] font-black px-2 py-1 rounded border border-[#0F172A] shadow-[2px_2px_0px_#0F172A]">{g}</span>)}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white border-[3px] border-[#0F172A] p-8 shadow-[6px_6px_0px_#0F172A] rounded-[24px]">
+              <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">{data.title}</h2>
+              <p className="text-sm font-bold opacity-70 leading-relaxed italic border-l-4 border-[#FF708D] pl-4">{data.synopsis}</p>
             </div>
-            <p className="text-sm font-bold opacity-70 leading-relaxed">{data.synopsis}</p>
+            
+            {/* SERVER PICKER */}
+            <div className="flex flex-wrap gap-3">
+              {servers.map((srv, idx) => (
+                <button 
+                  key={idx}
+                  onClick={() => setCurrentUrl(srv.url)}
+                  className={`px-4 py-2 border-[3px] border-[#0F172A] rounded-lg font-black text-[10px] uppercase transition-all ${currentUrl === srv.url ? 'bg-[#CBEF43] shadow-[3px_3px_0px_#0F172A]' : 'bg-white opacity-60'}`}
+                >
+                  Server {idx + 1}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* EPISODE DECK */}
-          <div className="bg-[#0F172A] text-white border-[3px] border-[#0F172A] p-4 shadow-[5px_5px_0px_#0F172A] rounded-xl">
-            <h3 className="font-black uppercase text-xs mb-4 border-b border-white/20 pb-2 tracking-widest">Episode Deck</h3>
-            <div className="grid grid-cols-4 gap-2 max-h-60 overflow-y-auto pr-2">
-              {data.episodes?.map((ep: any) => (
+          {/* SIDEBAR: EPISODES */}
+          <div className="bg-[#0F172A] text-white border-[3px] border-[#0F172A] p-6 shadow-[8px_8px_0px_#0F172A] rounded-[24px]">
+            <h3 className="font-black uppercase text-sm mb-6 border-b border-white/10 pb-4 tracking-widest">Episode Deck</h3>
+            <div className="grid grid-cols-4 gap-3 max-h-[400px] overflow-y-auto no-scrollbar">
+              {[...Array(data.episodes_count || 1)].map((_, i) => (
                 <button 
-                  key={ep.episode} 
-                  onClick={() => setCurrentUrl(ep.player_url)}
-                  className={`aspect-square border-2 font-black text-xs flex items-center justify-center rounded-lg transition-all ${currentUrl === ep.player_url ? 'bg-[#CBEF43] border-white text-[#0F172A] scale-105' : 'bg-white/10 border-white/20 hover:border-[#FF708D]'}`}
+                  key={i} 
+                  onClick={() => setActiveEp(i + 1)}
+                  className={`aspect-square border-2 font-black text-xs flex items-center justify-center rounded-xl transition-all ${activeEp === i + 1 ? 'bg-[#FF708D] border-white text-white scale-110 shadow-lg' : 'bg-white/5 border-white/10 hover:border-white/40'}`}
                 >
-                  {ep.episode}
+                  {i + 1}
                 </button>
               ))}
             </div>
