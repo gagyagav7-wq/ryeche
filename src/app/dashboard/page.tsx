@@ -86,7 +86,7 @@ export default function DashboardPage() {
                    <span className="bg-[#0F172A] text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest">Main App</span>
                 </div>
 
-                <h3 className="text-3xl font-black uppercase mb-3 group-hover:underline decoration-4 decoration-[#FF9F1C] underline-offset-4 leading-tight">Dracin Stream</h3>
+                <h3 className="text-3xl font-black uppercase mb-3 group-hover:underline decoration-4 decoration-[#FF9F1C] underline-offset-4 leading-tight">Drama Cina</h3>
                 {/* Polish: Increased opacity to 80 for better outdoor readability */}
                 <p className="font-medium text-sm opacity-80 mb-8 leading-relaxed">
                    Access the Master Hub. Drama, Movies, and Variety Shows library.
