@@ -2,26 +2,28 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { movieHubApi } from "@/lib/movie-hub-api";
+import { movieHubApi } from "@/lib/movie-hub-api"; 
 
-export default function MovieHubPage() {
-  const [items, setItems] = useState([]);
-  const [tab, setTab] = useState<'home' | 'trending' | 'movies' | 'series'>('home');
-  const [q, setQ] = useState("");
-  const [loading, setLoading] = useState(true);
+export default function MovieDetailPage() {
+  const { slug } = useParams();
+  const [data, setData] = useState<any>(null);
+  const [servers, setServers] = useState<any[]>([]);
+  const [activeEp, setActiveEp] = useState(1);
+  const [currentUrl, setCurrentUrl] = useState("");
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    const data = q ? await movieHubApi.search(q) : await movieHubApi.getList(tab);
-    setItems(data || []);
-    setLoading(false);
-  }, [tab, q]);
-
+  // 1. Load Detail (Ganti movieApi jadi movieHubApi)
   useEffect(() => {
-    const timer = setTimeout(fetchData, 300); // Debounce search 300ms
-    return () => clearTimeout(timer);
-  }, [fetchData]);
+    movieHubApi.getDetail(slug as string).then(res => setData(res.data));
+  }, [slug]);
 
+  // 2. Load Player (Ganti movieApi jadi movieHubApi)
+  useEffect(() => {
+    movieHubApi.getPlay(slug as string, activeEp).then(res => {
+      setServers(res.data || []);
+      if (res.data?.[0]?.url) setCurrentUrl(res.data[0].url);
+    });
+  }, [slug, activeEp]);
+  
   return (
     <main className="min-h-screen bg-[#FFFDF7] text-[#0F172A] pb-24">
       {/* STICKY TOPBAR */}
