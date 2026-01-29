@@ -4,7 +4,7 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://remote-concentratio
 
 /**
  * HELPER: Redirect Proxy Gambar Internal
- * Biar gak lewat Rusia lagi tapi lewat Proxy sakti lu yang tadi sudah dites OK.
+ * Mengarahkan gambar dari zeldvorik.ru langsung ke /api/proxy lu sendiri.
  */
 const fixThumbnail = (rawUrl: string): string => {
   if (!rawUrl) return "";
@@ -13,7 +13,6 @@ const fixThumbnail = (rawUrl: string): string => {
     try {
       const urlParams = new URLSearchParams(rawUrl.split('?')[1]);
       const filePath = urlParams.get('url');
-      // Ambil file path-nya, kita tembak aslinya lewat proxy internal lu
       const originalImageUrl = `https://rebahin21.art/wp-content/uploads/${filePath}`;
       return `/api/proxy?url=${encodeURIComponent(originalImageUrl)}`;
     } catch {
@@ -24,9 +23,8 @@ const fixThumbnail = (rawUrl: string): string => {
 };
 
 export const movieHubApi = {
-  // Ambil List (home, trending, movies, series)
+  // 1. Ambil List (home, trending, movies, series)
   async getHome(action: string = 'home', page: number = 1) {
-    // FIX: Gunakan format api.php?action=...
     const res = await fetch(`${API_BASE}/api.php?action=${action}&page=${page}`, { 
       next: { revalidate: 3600 } 
     });
@@ -41,7 +39,7 @@ export const movieHubApi = {
     return json;
   },
 
-  // Detail Film
+  // 2. Detail Film
   async getDetail(slug: string) {
     const res = await fetch(`${API_BASE}/api.php?action=detail&slug=${slug}`, { 
       next: { revalidate: 3600 } 
@@ -54,7 +52,7 @@ export const movieHubApi = {
     return json;
   },
 
-  // Fitur Search
+  // 3. Fitur Search
   async search(q: string) {
     const res = await fetch(`${API_BASE}/api.php?action=search&q=${encodeURIComponent(q)}`, { 
       cache: 'no-store' 
@@ -68,5 +66,13 @@ export const movieHubApi = {
       }));
     }
     return json;
+  },
+
+  // 4. Ambil Data Player (INI YANG HILANG TADI)
+  async getPlay(slug: string, ep: number = 1) {
+    const res = await fetch(`${API_BASE}/api.php?action=play&slug=${slug}&ep=${ep}`, { 
+      cache: 'no-store' 
+    });
+    return res.json();
   }
 };
