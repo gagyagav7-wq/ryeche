@@ -63,4 +63,13 @@ body {
   .btn-outline:hover {
     background-color: var(--trop-lime);
   }
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
