@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { movieHubApi } from "@/lib/movie-hub-api"; // <--- Pastikan namanya 'movieHubApi'
+import { movieHubApi } from "@/lib/movie-hub-api"; // Nama yang di-import
 
 export default function MovieDetailPage() {
   const { slug } = useParams();
@@ -11,16 +11,19 @@ export default function MovieDetailPage() {
   const [activeEp, setActiveEp] = useState(1);
   const [currentUrl, setCurrentUrl] = useState("");
 
+  // --- FIX: GANTI movieApi MENJADI movieHubApi ---
+
   // Load Detail
   useEffect(() => {
-    movieApi.getDetail(slug as string).then(res => setData(res.data));
+    // Gunakan nama movieHubApi sesuai import di atas
+    movieHubApi.getDetail(slug as string).then(res => setData(res.data));
   }, [slug]);
 
   // Load Player when Episode changes
   useEffect(() => {
-    movieApi.getPlay(slug as string, activeEp).then(res => {
+    // Gunakan nama movieHubApi sesuai import di atas
+    movieHubApi.getPlay(slug as string, activeEp).then(res => {
       setServers(res.data || []);
-      // Set server pertama sebagai default
       if (res.data?.[0]?.url) setCurrentUrl(res.data[0].url);
     });
   }, [slug, activeEp]);
