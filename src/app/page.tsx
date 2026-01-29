@@ -69,7 +69,7 @@ export default function LandingPage() {
         {/* Title: Stacked & Bold */}
         <div className="flex flex-col items-center leading-[0.85] mb-8">
            <h1 className="text-[16vw] md:text-[9rem] font-black text-[#0F172A] tracking-tighter">
-             BUTTER
+             DAWG
            </h1>
            {/* FIX HUB VISIBILITY: Text Putih + Stroke Hitam */}
            <h1 className="text-[16vw] md:text-[9rem] font-black text-white tracking-tighter relative"
