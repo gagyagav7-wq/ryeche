@@ -7,7 +7,7 @@ import LogoutButton from "@/components/LogoutButton";
 const IconPlay = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-8 h-8"><path d="M8 5v14l11-7z"/></svg>;
 const IconFilm = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>;
 const IconBolt = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
-const IconSettings = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
+const IconSettings = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1-2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>;
 const IconUser = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 const IconHistory = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
 const IconHeart = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>;
@@ -16,7 +16,6 @@ export default function DashboardPage() {
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans selection:bg-[#CBEF43]">
       
-      {/* BACKGROUND TEXTURE */}
       <div className="fixed inset-0 opacity-[0.02] pointer-events-none z-0" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
@@ -42,51 +41,67 @@ export default function DashboardPage() {
                 <span className="text-[10px] font-mono font-bold uppercase opacity-80">Session: Active</span>
              </div>
              
-             {/* POLISHED LOGOUT BUTTON WRAPPER */}
-             <div className="w-full md:w-auto h-11 border-[3px] border-[#0F172A] rounded-xl bg-white shadow-[4px_4px_0px_#0F172A] 
-                transition-all duration-75 ease-in-out
-                hover:-translate-y-[2px] hover:-translate-x-[1px] hover:shadow-[6px_6px_0px_#0F172A] 
-                active:translate-y-[2px] active:translate-x-[1px] active:shadow-none
-                focus-within:ring-4 focus-within:ring-[#FF99C8]/30 
-                flex items-center justify-center overflow-hidden">
-                <LogoutButton />
+             {/* PATCH: POLISHED LOGOUT BUTTON WRAPPER */}
+             <div
+               className="w-full md:w-auto h-11 border-[3px] border-[#0F172A] rounded-xl bg-white shadow-[4px_4px_0px_#0F172A]
+               transition-all duration-75 ease-in-out
+               hover:-translate-y-[2px] hover:shadow-[6px_6px_0px_#0F172A]
+               active:translate-y-[2px] active:shadow-none
+               focus-within:ring-4 focus-within:ring-[#CBEF43]/40
+               overflow-hidden
+
+               [&>button]:w-full [&>button]:h-full
+               [&>button]:px-4
+               [&>button]:flex [&>button]:items-center [&>button]:justify-center [&>button]:gap-2
+               [&>button]:font-black [&>button]:uppercase [&>button]:text-xs [&>button]:tracking-widest
+               [&>button]:focus-visible:outline-none
+               [&>button]:active:translate-y-[1px]
+               "
+             >
+               <LogoutButton />
              </div>
           </div>
         </div>
       </header>
 
-      {/* =======================
-          2. MAIN DASHBOARD CONTENT
-         ======================= */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-16">
+      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-16">
          
-         {/* POLISHED WELCOME BANNER */}
-         <div className="mb-14 group">
-            <div className="flex items-center gap-2 mb-3">
-               <span className="h-[3px] w-6 bg-[#0F172A]"></span>
-               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#0F172A] opacity-40">System Access Granted</span>
+         {/* PATCH: POLISHED WELCOME BANNER */}
+         <div className="mb-14">
+            {/* micro header */}
+            <div className="flex items-center gap-3 mb-4">
+               <span className="h-[3px] w-10 bg-[#0F172A]" />
+               <span className="text-[10px] font-black uppercase tracking-[0.35em] text-[#0F172A] opacity-45">
+                  System Access Granted
+               </span>
+               <span className="hidden md:block h-[3px] w-10 bg-[#0F172A]/25" />
             </div>
-            
-            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.85] text-[#0F172A]">
-               Welcome back, <br className="md:hidden" />
+
+            {/* headline */}
+            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-[-0.06em] leading-[0.88] text-[#0F172A]">
                <span className="relative inline-block">
-                  <span className="relative z-10 text-[#FF9F1C]">Creamy.</span>
-                  <span className="absolute bottom-2 left-0 w-full h-[20%] bg-[#FF9F1C]/20 -z-0 transition-all group-hover:h-[40%]"></span>
+                  Welcome back,
+                  <span className="absolute -bottom-2 left-0 h-[8px] w-[62%] bg-[#CBEF43] border-[2px] border-[#0F172A] -z-10" />
+               </span>{" "}
+               <span className="relative inline-block">
+                  <span className="text-[#FF9F1C] drop-shadow-[2px_2px_0px_#0F172A]">Creamy</span>
+                  <span className="text-[#FF9F1C]">.</span>
+                  <span className="absolute -inset-x-2 -inset-y-1 bg-[#FF9F1C]/15 -z-10 rotate-[-1deg] rounded-lg" />
                </span>
             </h2>
-            
-            <p className="text-sm md:text-base font-bold text-[#0F172A] opacity-60 max-w-xl leading-relaxed mt-6 flex items-start gap-2">
-               <span className="text-[#FF9F1C] shrink-0">●</span>
+
+            {/* subcopy */}
+            <p className="mt-6 max-w-xl border-l-[4px] border-[#0F172A] pl-4 text-sm md:text-base font-bold text-[#0F172A] opacity-70 leading-relaxed">
+               <span className="text-[#FF9F1C] font-black mr-2">●</span>
                Semua sistem berjalan optimal. Selamat menikmati sesi premium Anda hari ini.
             </p>
          </div>
 
-         {/* --- MODULES GRID (Opsi B: Movie Hub Hero Layout) --- */}
+         {/* --- MODULES GRID --- */}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             
-            {/* 1. MOVIE HUB (HERO - SUNSET CORAL) */}
+            {/* 1. MOVIE HUB (HERO) */}
             <Link href="/movie-hub" className="md:col-span-2 group relative bg-[#FF708D] border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-12 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300 overflow-hidden text-white">
-                {/* Subtle Tropical Pattern (Palm Leaves) */}
                 <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/leaf.png')]"></div>
                 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
@@ -97,7 +112,7 @@ export default function DashboardPage() {
                       <div>
                          <span className="bg-white text-[#0F172A] border-[2px] border-[#0F172A] px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-[2px_2px_0px_#0F172A] inline-block mb-3">Main App</span>
                          <h3 className="text-4xl font-black uppercase tracking-tight leading-none mb-2">Movie Hub</h3>
-                         <p className="font-bold text-sm opacity-90 max-w-md leading-relaxed">
+                         <p className="font-bold text-sm opacity-90 max-w-md leading-relaxed text-white">
                             Stream & explore global cinema. Fast search, clean player, and curated picks for your island retreat.
                          </p>
                       </div>
@@ -120,7 +135,7 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-2xl font-black uppercase mb-3 leading-tight group-hover:text-[#FF9F1C] transition-colors">Drama Cina</h3>
                 <p className="font-medium text-sm opacity-80 mb-8 leading-relaxed">Access the Master Hub. Drama, Movies, and Variety Shows library.</p>
-                <div className="inline-flex items-center gap-2 font-black uppercase text-xs border-b-[3px] border-[#0F172A] pb-1 group-hover:text-[#FF9F1C] group-hover:border-[#FF9F1C] transition-colors">Launch Application &rarr;</div>
+                <div className="inline-flex items-center gap-2 font-black uppercase text-xs border-b-[3px] border-[#0F172A] pb-1 group-hover:border-[#FF9F1C] transition-colors">Launch Application &rarr;</div>
             </Link>
 
             {/* 3. DOWNLOADER */}
