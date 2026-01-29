@@ -21,9 +21,11 @@ export default function DashboardPage() {
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
-      {/* HEADER */}
-      <header className="relative z-10 px-6 py-6 md:px-12 border-b-[3px] border-[#0F172A] bg-white">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      {/* =======================
+          1. TOP BAR (HEADER)
+         ======================= */}
+      <header className="relative z-20 px-6 py-6 md:px-12 border-b-[3px] border-[#0F172A] bg-white">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex items-center gap-3">
              <div className="w-10 h-10 bg-[#FF99C8] border-[3px] border-[#0F172A] rounded-lg flex items-center justify-center font-black text-lg shadow-[3px_3px_0px_#0F172A]">B</div>
              <div>
@@ -39,28 +41,50 @@ export default function DashboardPage() {
                 <span className="w-2 h-2 bg-[#CBEF43] rounded-full animate-pulse border border-[#0F172A]"></span>
                 <span className="text-[10px] font-mono font-bold uppercase opacity-80">Session: Active</span>
              </div>
-             <div className="w-full md:w-auto h-10 border-[3px] border-[#0F172A] rounded-lg bg-white shadow-[2px_2px_0px_#0F172A] hover:translate-y-[1px] hover:shadow-none transition-all active:translate-y-[2px]">
+             
+             {/* POLISHED LOGOUT BUTTON WRAPPER */}
+             <div className="w-full md:w-auto h-11 border-[3px] border-[#0F172A] rounded-xl bg-white shadow-[4px_4px_0px_#0F172A] 
+                transition-all duration-75 ease-in-out
+                hover:-translate-y-[2px] hover:-translate-x-[1px] hover:shadow-[6px_6px_0px_#0F172A] 
+                active:translate-y-[2px] active:translate-x-[1px] active:shadow-none
+                focus-within:ring-4 focus-within:ring-[#FF99C8]/30 
+                flex items-center justify-center overflow-hidden">
                 <LogoutButton />
              </div>
           </div>
         </div>
       </header>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 py-12 md:py-16">
+      {/* =======================
+          2. MAIN DASHBOARD CONTENT
+         ======================= */}
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-12 md:py-16">
          
-         <div className="mb-12">
-            <h2 className="text-3xl md:text-5xl font-black uppercase mb-2">
-               Welcome back, <span className="text-[#FF9F1C] ml-2">Creamy.</span>
+         {/* POLISHED WELCOME BANNER */}
+         <div className="mb-14 group">
+            <div className="flex items-center gap-2 mb-3">
+               <span className="h-[3px] w-6 bg-[#0F172A]"></span>
+               <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#0F172A] opacity-40">System Access Granted</span>
+            </div>
+            
+            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter leading-[0.85] text-[#0F172A]">
+               Welcome back, <br className="md:hidden" />
+               <span className="relative inline-block">
+                  <span className="relative z-10 text-[#FF9F1C]">Creamy.</span>
+                  <span className="absolute bottom-2 left-0 w-full h-[20%] bg-[#FF9F1C]/20 -z-0 transition-all group-hover:h-[40%]"></span>
+               </span>
             </h2>
-            <p className="text-sm font-bold opacity-70 max-w-xl leading-relaxed">
-               Select a module to launch. All systems are running optimally. Enjoy your premium session.
+            
+            <p className="text-sm md:text-base font-bold text-[#0F172A] opacity-60 max-w-xl leading-relaxed mt-6 flex items-start gap-2">
+               <span className="text-[#FF9F1C] shrink-0">●</span>
+               Semua sistem berjalan optimal. Selamat menikmati sesi premium Anda hari ini.
             </p>
          </div>
 
-         {/* --- MODULES GRID (Opsi B: Hero Layout) --- */}
+         {/* --- MODULES GRID (Opsi B: Movie Hub Hero Layout) --- */}
          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             
-            {/* 1. MOVIE HUB (HERO CARD - SUNSET CORAL) */}
+            {/* 1. MOVIE HUB (HERO - SUNSET CORAL) */}
             <Link href="/movie-hub" className="md:col-span-2 group relative bg-[#FF708D] border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-12 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300 overflow-hidden text-white">
                 {/* Subtle Tropical Pattern (Palm Leaves) */}
                 <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/leaf.png')]"></div>
@@ -85,7 +109,7 @@ export default function DashboardPage() {
                 </div>
             </Link>
 
-            {/* 2. DRAMA CINA (ENTERING FROM LEFT) */}
+            {/* 2. DRAMA CINA */}
             <Link href="/dracin" className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-10 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#FF9F1C] transition-all duration-300 overflow-hidden">
                 <div className="absolute top-[-20%] right-[-10%] w-40 h-40 bg-[#FF9F1C] rounded-full blur-[60px] opacity-20 group-hover:opacity-40 transition-opacity"></div>
                 <div className="flex justify-between items-start mb-8">
@@ -96,10 +120,10 @@ export default function DashboardPage() {
                 </div>
                 <h3 className="text-2xl font-black uppercase mb-3 leading-tight group-hover:text-[#FF9F1C] transition-colors">Drama Cina</h3>
                 <p className="font-medium text-sm opacity-80 mb-8 leading-relaxed">Access the Master Hub. Drama, Movies, and Variety Shows library.</p>
-                <div className="inline-flex items-center gap-2 font-black uppercase text-xs border-b-[3px] border-[#0F172A] pb-1 group-hover:border-[#FF9F1C] transition-colors">Launch Application &rarr;</div>
+                <div className="inline-flex items-center gap-2 font-black uppercase text-xs border-b-[3px] border-[#0F172A] pb-1 group-hover:text-[#FF9F1C] group-hover:border-[#FF9F1C] transition-colors">Launch Application &rarr;</div>
             </Link>
 
-            {/* 3. DOWNLOADER (ENTERING FROM RIGHT) */}
+            {/* 3. DOWNLOADER */}
             <Link href="/downloader" className="group relative bg-[#2EC4B6] border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-10 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300 overflow-hidden text-white">
                 <div className="absolute inset-0 opacity-[0.05] bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
                 <div className="flex justify-between items-start mb-8 relative z-10">
