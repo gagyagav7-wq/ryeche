@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { movieApi } from "@/lib/movie-hub-api";
+import { movieHubApi } from "@/lib/movie-hub-api"; // <--- Pastikan mengeja 'movieHubApi'
 
 export default function MovieDetailPage() {
   const { slug } = useParams();
