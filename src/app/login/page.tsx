@@ -68,7 +68,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-block transition-transform md:hover:scale-105">
             <h1 className="text-4xl font-black uppercase tracking-tighter text-main">
-              BUTTER<span className="text-accent">HUB</span>
+              DAWG<span className="text-accent">HUB</span>
             </h1>
           </Link>
           <p className="text-sm font-bold opacity-70 mt-1">Portal Masuk Commander</p>
