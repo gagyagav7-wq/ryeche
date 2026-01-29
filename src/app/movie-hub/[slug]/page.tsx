@@ -1,11 +1,12 @@
 "use client";
+
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams } from "next/navigation"; // <--- WAJIB TAMBAHKAN INI, BRE!
 import Link from "next/link";
-import { movieHubApi } from "@/lib/movie-hub-api"; // Nama yang di-import
+import { movieHubApi } from "@/lib/movie-hub-api";
 
 export default function MovieDetailPage() {
-  const { slug } = useParams();
+  const { slug } = useParams(); // Sekarang ini sudah aman
   const [data, setData] = useState<any>(null);
   const [servers, setServers] = useState<any[]>([]);
   const [activeEp, setActiveEp] = useState(1);
