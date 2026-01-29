@@ -63,7 +63,7 @@ export default function DashboardPage() {
          <div className="mb-12">
             <h2 className="text-3xl md:text-5xl font-black uppercase mb-2">
                Welcome back, 
-               <span className="text-[#FF9F1C] ml-2">Operator.</span>
+               <span className="text-[#FF9F1C] ml-2">Creamy.</span>
             </h2>
             <p className="text-sm font-bold opacity-70 max-w-xl leading-relaxed">
                Select a module to launch. All systems are running optimally. Enjoy your premium session.
