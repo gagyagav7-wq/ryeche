@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback } from "react";
 
-// --- ICONS ---
+// --- ICONS (Brutal Style) ---
 const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 const IconFire = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#FF9F1C]"><path d="M8.5,14.5c0-2.2,1.8-4,4-4s4,1.8,4,4s-1.8,4-4,4S8.5,16.7,8.5,14.5z M12.5,3c-3,2.5-5,6-5,9.5c0,3.6,2.2,6.5,5,7.5 c2.8-1,5-3.9,5-7.5C17.5,9,15.5,5.5,12.5,3z"/></svg>;
 const IconStar = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#FF99C8]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
@@ -28,59 +28,57 @@ export default function DracinPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
 
-  // --- FUNGSI FETCH API ---
   const fetchMovies = useCallback(async (pageNum: number, isNewTab: boolean = false) => {
+    // Jangan lari kalau lagi loading, kecuali kalau pindah tab baru
     if (loading && !isNewTab) return;
     setLoading(true);
 
-    let url = "";
     const base = "https://api.sansekai.my.id/api/flickreels";
+    let url = "";
     
-    // Tentukan URL. Jika 'page' tidak ngefek, coba ganti parameter jadi 'page_num'
+    // Gunakan parameter yang sesuai (beberapa API butuh page_num atau offset)
     if (query) {
-      url = `${base}/search?query=${query}&page=${pageNum}`;
+      url = `${base}/search?query=${encodeURIComponent(query)}&page=${pageNum}`;
     } else {
-      switch (activeTab) {
-        case "HOT": url = `${base}/hotrank?page=${pageNum}`; break;
-        case "FORYOU": url = `${base}/foryou?page=${pageNum}`; break;
-        case "LATEST": 
-        default: url = `${base}/latest?page=${pageNum}`; break;
-      }
+      const endpoint = activeTab === "HOT" ? "hotrank" : activeTab === "FORYOU" ? "foryou" : "latest";
+      url = `${base}/${endpoint}?page=${pageNum}`;
     }
 
-    console.log(`[BUTTERHUB] Fetching: ${url}`); // DEBUG LOG
-
     try {
+      console.log(`[BUTTERHUB] Fetching Page ${pageNum}: ${url}`);
       const res = await fetch(url);
       const json = await res.json();
       
       let rawData: any[] = [];
-      if (query) rawData = json.data || [];
-      else if (activeTab === "HOT") rawData = json.data?.[0]?.data || [];
-      else if (activeTab === "LATEST") rawData = json.data?.[0]?.list || [];
-      else if (activeTab === "FORYOU") rawData = json.data?.list || [];
+      
+      // Mapping jalur JSON sesuai kritik GPT Thinking soal Data Shape
+      if (query) {
+        rawData = json.data || [];
+      } else {
+        if (activeTab === "HOT") rawData = json.data?.[0]?.data || [];
+        else if (activeTab === "LATEST") rawData = json.data?.[0]?.list || [];
+        else if (activeTab === "FORYOU") rawData = json.data?.list || [];
+      }
 
       const normalized: Movie[] = rawData.map((item: any) => ({
         id: item.playlet_id || item.id || item.book_id,
-        title: item.title || "Untitled",
-        cover: item.cover,
-        ep: item.upload_num || item.episodes || "On Going",
+        title: item.title || "Untitled Drama",
+        cover: item.cover || "",
+        ep: item.upload_num || item.episodes || "Ongoing",
         tag: item.playlet_tag_name?.[0] || item.tag_list?.[0]?.tag_name || item.tag_name?.[0] || "Drama"
-      })).filter(m => m.id);
+      })).filter(m => m.id); // Buang yang ID-nya rusak
 
       if (normalized.length === 0) {
-        console.warn("[BUTTERHUB] API returned empty data.");
-        setHasMore(false);
+        // Hanya setHasMore(false) kalau kita udah di halaman 2 keatas
+        if (pageNum > 1) setHasMore(false);
       } else {
         setMovies(prev => {
           if (isNewTab) return normalized;
 
+          // Satpam Anti-Duplikat (Dibuat lebih toleran)
           const existingIds = new Set(prev.map(m => String(m.id)));
           const uniqueNew = normalized.filter(m => !existingIds.has(String(m.id)));
           
-          console.log(`[BUTTERHUB] New items found: ${uniqueNew.length}`);
-
-          // Hanya matikan hasMore kalau bener-bener GAK ADA data baru di page > 1
           if (uniqueNew.length === 0 && pageNum > 1) {
             setHasMore(false);
             return prev;
@@ -89,14 +87,14 @@ export default function DracinPage() {
         });
       }
     } catch (err) {
-      console.error("[BUTTERHUB] Fetch Error:", err);
-      setHasMore(false);
+      console.error("[BUTTERHUB] ERROR:", err);
+      if (pageNum > 1) setHasMore(false);
     } finally {
       setLoading(false);
     }
   }, [activeTab, query, loading]);
 
-  // RESET SAAT GANTI TAB / SEARCH / REFRESH
+  // RESET LOGIC: Harus bersih pas pindah tab
   useEffect(() => {
     setMovies([]);
     setPage(1);
@@ -105,7 +103,7 @@ export default function DracinPage() {
   }, [activeTab, query]);
 
   const handleLoadMore = () => {
-    if (loading) return;
+    if (loading || !hasMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
     fetchMovies(nextPage);
@@ -114,10 +112,12 @@ export default function DracinPage() {
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans selection:bg-[#FF9F1C] pb-24">
       
+      {/* BACKGROUND TEXTURE */}
       <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" 
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
+      {/* HEADER (Polished Branding) */}
       <header className="relative z-30 sticky top-0 bg-[#FFFDF7]/90 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-4 md:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4 w-full md:w-auto">
@@ -151,7 +151,7 @@ export default function DracinPage() {
         </div>
       </header>
 
-      {/* TABS */}
+      {/* TABS NAVIGATION */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 mt-8 mb-8">
         <div className="flex flex-wrap gap-3">
             {[
@@ -175,75 +175,96 @@ export default function DracinPage() {
         </div>
       </section>
 
-      {/* CONTENT GRID */}
+      {/* CONTENT AREA */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8">
         
         <div className="flex items-end gap-3 mb-6 border-b-[3px] border-[#0F172A] pb-4">
             <h2 className="text-3xl font-black uppercase italic tracking-tighter">
                 {query ? `Search: "${query}"` : activeTab === 'HOT' ? "Trending Now 🔥" : activeTab === 'FORYOU' ? "Curated Picks ✨" : "Fresh Drops 🕒"}
             </h2>
-            <p className="text-xs font-bold opacity-50 mb-1 uppercase">
-                {loading && page === 1 ? "Waking up..." : `Showing ${movies.length} TITLES`}
+            <p className="text-xs font-bold opacity-50 mb-1 uppercase tracking-widest">
+                Showing {movies.length} TITLES
             </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {movies.map((movie, index) => (
-              <div key={`${movie.id}-${index}`} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[16px] overflow-hidden shadow-[4px_4px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300">
-                  <div className="aspect-[3/4] bg-gray-200 relative overflow-hidden border-b-[3px] border-[#0F172A]">
-                      <Image 
-                          src={movie.cover}
-                          alt={movie.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
-                          unoptimized
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                          <Link href={`/dracin/${movie.id}`} className="w-full">
-                              <button className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-xs shadow-[2px_2px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
-                                  <IconPlay /> Watch Now
-                              </button>
-                          </Link>
+        {/* LOADING STATE */}
+        {loading && page === 1 ? (
+           <div className="flex flex-col items-center justify-center py-20">
+              <IconLoading />
+              <p className="mt-4 font-black uppercase text-[10px] tracking-[0.3em] opacity-40">Synchronizing Archives...</p>
+           </div>
+        ) : (
+          <>
+            {/* GRID MOVIE CARDS */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+              {movies.map((movie, index) => (
+                  <div key={`${movie.id}-${index}`} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[10px_10px_0px_#0F172A] transition-all duration-300">
+                      <div className="aspect-[3/4] bg-[#E7E5D8] relative overflow-hidden border-b-[3px] border-[#0F172A]">
+                          <Image 
+                              src={movie.cover || "/placeholder.jpg"}
+                              alt={movie.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 768px) 50vw, 25vw"
+                              unoptimized // PENTING: Gunakan ini sementara kalau remotePatterns belum siap
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                              <Link href={`/dracin/${movie.id}`} className="w-full">
+                                  <button className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-[10px] shadow-[3px_3px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2">
+                                      <IconPlay /> Watch Now
+                                  </button>
+                              </Link>
+                          </div>
+                          <div className="absolute top-3 right-3 bg-[#CBEF43] border-[2px] border-[#0F172A] px-2 py-1 rounded-md text-[9px] font-black text-[#0F172A] shadow-sm">
+                              {movie.ep} EP
+                          </div>
                       </div>
-                      <div className="absolute top-3 right-3 bg-[#CBEF43] border-[2px] border-[#0F172A] px-2 py-1 rounded-md text-[10px] font-black text-[#0F172A] shadow-sm">
-                          {movie.ep} EP
+                      <div className="p-4 bg-white">
+                          <span className="text-[8px] font-black uppercase bg-[#0F172A] text-white px-2 py-0.5 rounded-sm mb-2 inline-block tracking-tighter">
+                            {movie.tag}
+                          </span>
+                          <h3 className="font-black text-sm md:text-base leading-tight uppercase line-clamp-2 group-hover:text-[#FF9F1C] transition-colors tracking-tight">
+                              {movie.title}
+                          </h3>
                       </div>
                   </div>
-                  <div className="p-4 bg-white">
-                      <div className="flex items-center gap-2 mb-2">
-                            <span className="text-[8px] font-bold uppercase bg-[#E7E5D8] px-1.5 py-0.5 rounded text-[#0F172A] border border-[#0F172A]/20 line-clamp-1">
-                              {movie.tag}
-                            </span>
-                      </div>
-                      <h3 className="font-black text-sm md:text-base leading-tight uppercase line-clamp-2 group-hover:text-[#FF9F1C] transition-colors">
-                          {movie.title}
-                      </h3>
-                  </div>
-              </div>
-          ))}
-        </div>
+              ))}
+            </div>
 
-        {/* --- TOMBOL LOAD MORE --- */}
-        <div className="mt-16 flex flex-col items-center gap-6">
-            {hasMore ? (
-                <button 
-                    onClick={handleLoadMore}
-                    disabled={loading}
-                    className="group relative flex items-center gap-3 px-10 py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-sm shadow-[6px_6px_0px_#0F172A] hover:translate-y-[-2px] hover:shadow-[8px_8px_0px_#0F172A] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                    {loading ? <IconLoading /> : "See More Dramas"}
-                    {!loading && <span className="group-hover:translate-x-1 transition-transform">🌴</span>}
-                </button>
-            ) : (
-                <div className="bg-white border-[3px] border-[#0F172A] px-8 py-4 shadow-[4px_4px_0px_#0F172A]">
-                    <p className="text-xs font-black uppercase tracking-widest italic text-center">
-                      🏝️ You've reached the end of the collection
-                    </p>
-                </div>
-            )}
-        </div>
+            {/* LOAD MORE / END STATE */}
+            <div className="mt-16 flex flex-col items-center gap-6">
+                {hasMore ? (
+                    <button 
+                        onClick={handleLoadMore}
+                        disabled={loading}
+                        className="group relative flex items-center gap-4 px-12 py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-xs shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#0F172A] active:translate-y-[2px] active:shadow-none transition-all disabled:opacity-50"
+                    >
+                        {loading ? <IconLoading /> : "View More Titles"}
+                        {!loading && <span className="group-hover:rotate-12 transition-transform">🍹</span>}
+                    </button>
+                ) : movies.length > 0 ? (
+                    <div className="bg-white border-[3px] border-[#0F172A] px-10 py-5 shadow-[6px_6px_0px_#0F172A] text-center transform -rotate-1">
+                        <p className="text-xs font-black uppercase tracking-widest italic">
+                          🏝️ You've reached the end of the collection
+                        </p>
+                    </div>
+                ) : null}
 
+                {/* RETRY STATE (Kalau pas refresh malah kosong) */}
+                {!loading && movies.length === 0 && (
+                   <div className="text-center py-10">
+                      <p className="font-black uppercase text-sm mb-4">Signal Lost in Paradise 🌊</p>
+                      <button 
+                        onClick={() => fetchMovies(1, true)}
+                        className="bg-[#0F172A] text-white px-6 py-2 font-black uppercase text-xs rounded shadow-[4px_4px_0px_#FF9F1C]"
+                      >
+                        RETRY CONNECTION
+                      </button>
+                   </div>
+                )}
+            </div>
+          </>
+        )}
       </section>
     </main>
   );
