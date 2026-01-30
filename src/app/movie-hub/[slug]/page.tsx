@@ -1,81 +1,105 @@
-"use client";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
-import { movieHubApi } from "@/lib/movie-hub-api"; // Import sudah benar
+// PENTING: Kita import dari client KHUSUS MOVIE yang baru lu generate
+import { PrismaClient } from "@prisma/client-movie";
 
-export default function MovieDetailPage() {
-  const { slug } = useParams();
-  const [data, setData] = useState<any>(null);
-  const [servers, setServers] = useState<any[]>([]);
-  const [activeEp, setActiveEp] = useState(1);
-  const [currentUrl, setCurrentUrl] = useState("");
+const prisma = new PrismaClient();
 
-  useEffect(() => {
-    // FIX: Gunakan movieHubApi (sesuai import)
-    movieHubApi.getDetail(slug as string).then(res => setData(res.data));
-  }, [slug]);
+// Fungsi ambil data dari DB Movie
+async function getMovie(slug: string) {
+  // Kita cari yang URL-nya mengandung slug tersebut
+  // Contoh: slug "they-were-witches" akan match dengan "http://.../they-were-witches-2025/"
+  const movie = await prisma.movies.findFirst({
+    where: {
+      url: {
+        contains: slug 
+      }
+    }
+  });
+  return movie;
+}
 
-  useEffect(() => {
-    // FIX: Gunakan movieHubApi (sesuai import)
-    movieHubApi.getPlay(slug as string, activeEp).then(res => {
-      setServers(res.data || []);
-      if (res.data?.[0]?.url) setCurrentUrl(res.data[0].url);
-    });
-  }, [slug, activeEp]);
+export default async function MoviePlayerPage({ params }: { params: { slug: string } }) {
+  const cleanSlug = decodeURIComponent(params.slug);
+  const movie = await getMovie(cleanSlug);
 
-  if (!data) return <div className="min-h-screen flex items-center justify-center font-black animate-bounce">SYNCING CORE...</div>;
+  if (!movie) {
+    return notFound();
+  }
+
+  // Bersihin Tags (misal "Country-Mexico" jadi "Mexico")
+  const tags = movie.tags 
+    ? movie.tags.split(',').map(t => t.replace('Country-', '').trim()).filter(t => t !== "")
+    : ["Movie"];
 
   return (
-    <main className="min-h-screen bg-[#FFFDF7] p-6 md:p-12">
-      <div className="max-w-6xl mx-auto space-y-8">
-        <Link href="/movie-hub" className="inline-flex items-center gap-2 border-[3px] border-[#0F172A] px-4 py-2 bg-white shadow-[4px_4px_0px_#0F172A] font-black uppercase text-xs hover:translate-x-1 transition-all">← Back to Gallery</Link>
-        
-        {/* BIG PLAYER */}
-        <div className="aspect-video bg-[#0F172A] border-[4px] border-[#0F172A] shadow-[12px_12px_0px_#FF708D] overflow-hidden rounded-[24px]">
-          {currentUrl ? (
-            <iframe src={currentUrl} className="w-full h-full" allowFullScreen />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white font-black opacity-20">ESTABLISHING UPLINK...</div>
-          )}
-        </div>
+    <main className="min-h-screen bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 bg-[#FFFDF7]/95 backdrop-blur border-b-[3px] border-[#0F172A] px-4 py-4 flex items-center justify-between">
+         <div className="flex items-center gap-3">
+            <Link href="/movie-hub" className="w-10 h-10 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-lg flex items-center justify-center text-white font-black hover:-translate-y-1 hover:shadow-[3px_3px_0px_#0F172A] transition-all">
+               ←
+            </Link>
+            <h1 className="text-xl font-black italic uppercase tracking-tighter">
+                BUTTER<span className="text-[#FF708D]">HUB</span> MOVIE
+            </h1>
+         </div>
+      </header>
 
+      <div className="max-w-6xl mx-auto px-4 mt-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          
+          {/* PLAYER SECTION */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white border-[3px] border-[#0F172A] p-8 shadow-[6px_6px_0px_#0F172A] rounded-[24px]">
-              <h2 className="text-4xl font-black uppercase tracking-tighter mb-4">{data.title}</h2>
-              <p className="text-sm font-bold opacity-70 leading-relaxed italic border-l-4 border-[#FF708D] pl-4">{data.synopsis}</p>
+            <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
+               {/* IFRAME MASKING: Vidhide jalan di domain lu */}
+               <iframe 
+                 src={movie.video || ""} 
+                 className="w-full h-full"
+                 allowFullScreen
+                 scrolling="no"
+                 frameBorder="0"
+                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+               ></iframe>
             </div>
-            
-            {/* SERVER PICKER */}
-            <div className="flex flex-wrap gap-3">
-              {servers.map((srv, idx) => (
-                <button 
-                  key={idx}
-                  onClick={() => setCurrentUrl(srv.url)}
-                  className={`px-4 py-2 border-[3px] border-[#0F172A] rounded-lg font-black text-[10px] uppercase transition-all ${currentUrl === srv.url ? 'bg-[#CBEF43] shadow-[3px_3px_0px_#0F172A]' : 'bg-white opacity-60'}`}
-                >
-                  Server {idx + 1}
-                </button>
-              ))}
+
+            {/* JUDUL & INFO */}
+            <div className="bg-white border-[3px] border-[#0F172A] p-6 rounded-[20px] shadow-[6px_6px_0px_#0F172A]">
+              <h1 className="text-2xl md:text-3xl font-black uppercase italic leading-none mb-4">
+                {movie.title}
+              </h1>
+              <div className="flex flex-wrap gap-2 mb-4">
+                 {tags.map((tag, i) => (
+                    <span key={i} className="px-3 py-1 bg-[#0F172A] text-white text-[10px] font-bold uppercase rounded-md">
+                      {tag}
+                    </span>
+                 ))}
+              </div>
+              <p className="text-sm font-medium opacity-80 leading-relaxed border-l-4 border-[#CBEF43] pl-4 italic">
+                {movie.synopsis || "No synopsis available."}
+              </p>
             </div>
           </div>
 
-          {/* SIDEBAR: EPISODES */}
-          <div className="bg-[#0F172A] text-white border-[3px] border-[#0F172A] p-6 shadow-[8px_8px_0px_#0F172A] rounded-[24px]">
-            <h3 className="font-black uppercase text-sm mb-6 border-b border-white/10 pb-4 tracking-widest">Episode Deck</h3>
-            <div className="grid grid-cols-4 gap-3 max-h-[400px] overflow-y-auto no-scrollbar">
-              {[...Array(data.episodes_count || 1)].map((_, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => setActiveEp(i + 1)}
-                  className={`aspect-square border-2 font-black text-xs flex items-center justify-center rounded-xl transition-all ${activeEp === i + 1 ? 'bg-[#FF708D] border-white text-white scale-110 shadow-lg' : 'bg-white/5 border-white/10 hover:border-white/40'}`}
-                >
-                  {i + 1}
-                </button>
-              ))}
-            </div>
+          {/* SIDEBAR: POSTER */}
+          <div className="space-y-6">
+             <div className="aspect-[2/3] relative border-[4px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[8px_8px_0px_#2EC4B6]">
+                <Image 
+                  src={movie.poster || "https://via.placeholder.com/300x450"} 
+                  alt="Poster" 
+                  fill 
+                  className="object-cover"
+                  unoptimized // Wajib on biar gambar luar muncul
+                />
+             </div>
+             
+             {/* CONTOH TOMBOL DOWNLOAD (Hiasan/Link Asli) */}
+             <a href={movie.video} target="_blank" className="block w-full py-3 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all">
+                Source Link 🔗
+             </a>
           </div>
+
         </div>
       </div>
     </main>
