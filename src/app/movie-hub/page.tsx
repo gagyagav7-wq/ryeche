@@ -145,7 +145,7 @@ export default async function MovieHubPage({
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
             {movies.map((movie) => {
                 const slug = getSlug(movie.url);
-                const tag = parseTags(movie.tags)[0];
+                const tags = ["MOVIE"];
                 return (
                 <div key={movie.url} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[10px_10px_0px_#FF9F1C] transition-all duration-300">
                     <div className="aspect-[3/4] bg-[#E7E5D8] relative overflow-hidden border-b-[3px] border-[#0F172A]">
