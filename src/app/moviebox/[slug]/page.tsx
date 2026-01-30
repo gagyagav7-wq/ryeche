@@ -41,7 +41,7 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
       {/* HEADER NAV */}
       <header className="sticky top-0 z-50 bg-[#FFFDF7]/90 backdrop-blur-md border-b-[3px] border-[#0F172A] py-3 px-4 lg:px-8 shadow-sm">
          <div className="max-w-6xl mx-auto flex items-center gap-4">
-            <Link href="/movie-hub" className="group flex items-center gap-2 font-black uppercase text-xs border-[2px] border-[#0F172A] px-4 py-2 rounded-lg bg-white hover:bg-[#FF9F1C] hover:text-white hover:shadow-[3px_3px_0px_#0F172A] hover:-translate-y-[2px] transition-all">
+            <Link href="/moviebox" className="group flex items-center gap-2 font-black uppercase text-xs border-[2px] border-[#0F172A] px-4 py-2 rounded-lg bg-white hover:bg-[#FF9F1C] hover:text-white hover:shadow-[3px_3px_0px_#0F172A] hover:-translate-y-[2px] transition-all">
                  <IconBack />
                  <span className="hidden md:inline">Back to Hub</span>
             </Link>
