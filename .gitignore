@@ -18,3 +18,5 @@ build/
 .DS_Store
 *.log
 *.bak
+
+prisma/movie-db/*.db
