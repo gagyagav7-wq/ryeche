@@ -1,12 +1,19 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PrismaClient } from "@prisma/client-movie";
+// --- NEW: Import Komponen Switcher biar seragam ---
+import ProviderSwitcher from "@/components/ProviderSwitcher";
 
-// Inisialisasi Prisma Client Khusus Movie
+// --- ICONS (Samain kayak Dracin) ---
+const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+const IconFire = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#FF9F1C]"><path d="M8.5,14.5c0-2.2,1.8-4,4-4s4,1.8,4,4s-1.8,4-4,4S8.5,16.7,8.5,14.5z M12.5,3c-3,2.5-5,6-5,9.5c0,3.6,2.2,6.5,5,7.5 c2.8-1,5-3.9,5-7.5C17.5,9,15.5,5.5,12.5,3z"/></svg>;
+const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
+const IconStar = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#FF99C8]"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+const IconPlay = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4"><path d="M5 3l14 9-14 9V3z"/></svg>;
+
 const prisma = new PrismaClient();
 
-// Fungsi Helper: Bikin Slug dari URL Database
-// Contoh: "http://.../judul-film-2025/" -> "judul-film-2025"
+// Helper Slug
 function getSlug(url: string) {
   try {
     const parts = url.split('/').filter(p => p !== "");
@@ -16,30 +23,23 @@ function getSlug(url: string) {
   }
 }
 
-// Fungsi Fetch Data dari DB Lokal (Server Side)
+// Fetch Data dari DB
 async function getMovies(query?: string) {
-  // Config pencarian
   const whereClause = query ? {
-    title: {
-      contains: query // Cari judul yang mengandung query
-    }
+    title: { contains: query }
   } : {};
 
   return await prisma.movies.findMany({
     where: whereClause,
-    take: 25, // Limit 25 film biar enteng
-    orderBy: {
-      // Karena ga ada kolom created_at, kita sort default aja
-      // Kalau mau random bisa pake raw query, tapi ini cukup buat sekarang
-      title: 'asc' 
-    }
+    take: 24,
+    orderBy: { title: 'asc' } // Default sort
   });
 }
 
-// Helper Extract Tags
+// Helper Parse Tags
 function parseTags(tagString: string | null) {
   if (!tagString) return ["MOVIE"];
-  return tagString.split(',').map(t => t.replace('Country-', '').trim()).slice(0, 2);
+  return tagString.split(',').map(t => t.replace('Country-', '').trim()).slice(0, 1);
 }
 
 export default async function MovieHubPage({
@@ -51,106 +51,135 @@ export default async function MovieHubPage({
   const movies = await getMovies(query);
 
   return (
-    <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] pb-24 font-sans">
+    <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans selection:bg-[#FF9F1C] pb-24">
       
-      {/* 1. STICKY TOPBAR DENGAN SEARCH (SERVER FORM) */}
-      <header className="sticky top-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-6 md:px-12 flex flex-col md:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-4 w-full md:w-auto">
-          <Link href="/dashboard" className="w-10 h-10 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white shadow-[3px_3px_0px_#0F172A] hover:scale-105 transition-transform">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
-          </Link>
-          <div className="flex flex-col">
-            <h1 className="text-xl font-black italic uppercase leading-none tracking-tighter">
-              MOVIE <span className="text-[#FF708D]">HUB</span>
-            </h1>
-            <span className="text-[8px] font-black uppercase opacity-40 tracking-widest mt-1">Lokal Database v1.0</span>
-          </div>
-        </div>
+      {/* BACKGROUND TEXTURE */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
+      </div>
 
-        {/* Search Bar Brutal (Form Submit) */}
-        <div className="relative w-full md:w-[400px]">
-          <form action="/movie-hub" method="get">
-            <input 
-              type="text" 
-              name="q"
-              defaultValue={query}
-              placeholder="Cari judul film... (Enter)" 
-              className="w-full pl-6 pr-4 py-2.5 bg-white border-[3px] border-[#0F172A] rounded-full font-bold text-sm focus:outline-none focus:border-[#FF708D] focus:shadow-[4px_4px_0px_#FF708D] transition-all placeholder:text-gray-300"
-            />
-          </form>
+      {/* HEADER (Sticky + Blur + Switcher) */}
+      <header className="relative z-20 sticky top-0 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-4 md:px-8 shadow-sm">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* 1. LOGO AREA */}
+            <div className="flex items-center gap-4 w-full md:w-auto">
+                <Link href="/dashboard" className="w-12 h-12 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform shadow-[3px_3px_0px_#0F172A]">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                </Link>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-black uppercase leading-none tracking-tight flex items-end gap-1">
+                        BUTTER<span className="text-[#FF9F1C]">HUB</span>
+                    </h1>
+                    <div className="flex items-center gap-2 mt-1">
+                        <span className="bg-[#0F172A] text-white text-[10px] font-black px-2 py-0.5 rounded-sm uppercase tracking-wider">MOVIE</span>
+                        <span className="w-[2px] h-3 bg-[#0F172A]/20"></span>
+                        <span className="text-[9px] font-bold text-[#0F172A] opacity-60 uppercase tracking-widest leading-none">Local DB</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* 2. SERVER SWITCHER (Biar tombol navigasinya ada juga disini) */}
+            <div className="flex justify-center w-full md:w-auto">
+              {/* Note: Karena ini bukan Dracin/Dramabox, switcher mungkin gak ada yg aktif, tapi tetep enak buat navigasi */}
+              <ProviderSwitcher />
+            </div>
+
+            {/* 3. SEARCH BAR (Server Action Form) */}
+            <div className="relative w-full md:w-[400px]">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#0F172A]/40">
+                    <IconSearch />
+                </div>
+                <form action="/movie-hub" method="get">
+                    <input 
+                        type="text" 
+                        name="q"
+                        defaultValue={query}
+                        placeholder="Cari judul film..." 
+                        className="w-full pl-12 pr-4 py-3 bg-white border-[3px] border-[#0F172A] rounded-full font-bold text-sm focus:outline-none focus:border-[#FF9F1C] focus:shadow-[4px_4px_0px_#FF9F1C] transition-all placeholder:text-gray-300"
+                    />
+                </form>
+            </div>
         </div>
       </header>
 
-      {/* 2. TAB NAVIGATION (Static Links for Style) */}
-      <nav className="max-w-7xl mx-auto px-6 mt-10 flex gap-3 overflow-x-auto no-scrollbar pb-2">
-        {[
-          { id: 'home', label: 'Latest Drop', color: 'bg-[#2EC4B6]' },
-          { id: 'trending', label: 'Hot Ranking', color: 'bg-[#FF9F1C]' },
-          { id: 'vip', label: 'VIP Access', color: 'bg-[#FF99C8]' },
-        ].map((t) => (
-          <Link 
-            key={t.id} 
-            href="/movie-hub"
-            className={`px-6 py-2.5 rounded-full border-[3px] border-[#0F172A] font-black uppercase text-[10px] tracking-wider transition-all shadow-[4px_4px_0px_#0F172A] whitespace-nowrap bg-white hover:bg-gray-50`}
-          >
-            {t.label}
-          </Link>
-        ))}
-      </nav>
+      {/* TABS (Tampilan ala Dracin, tapi pake Link karena Server Component) */}
+      <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 mt-8 mb-4">
+        <div className="flex flex-wrap gap-3">
+            {[
+                { id: "latest", label: "Latest Drop", icon: <IconClock />, color: "bg-[#2EC4B6] text-white" },
+                { id: "trending", label: "Hot Ranking", icon: <IconFire />, color: "bg-[#FF9F1C] text-white" },
+                { id: "foryou", label: "For You", icon: <IconStar />, color: "bg-[#FF99C8] text-[#0F172A]" },
+            ].map((tab) => (
+                <Link 
+                    key={tab.id}
+                    href="/movie-hub" // Sementara link ke self dulu
+                    className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-[3px] border-[#0F172A] font-black uppercase text-xs tracking-wide transition-all bg-white text-[#0F172A] hover:bg-gray-50 hover:-translate-y-1 hover:shadow-[4px_4px_0px_#0F172A]`}
+                >
+                    {tab.icon}
+                    {tab.label}
+                </Link>
+            ))}
+        </div>
+      </section>
 
-      {/* 3. SECTION HEADER */}
-      <section className="max-w-7xl mx-auto px-6 mt-12">
-        <div className="flex items-end gap-3 mb-10 border-b-[3px] border-[#0F172A] pb-4">
-          <h2 className="text-4xl font-black uppercase italic tracking-tighter">
-            {query ? `Searching: "${query}"` : 'Fresh Drops 🕒'}
-          </h2>
-          <span className="text-[10px] font-bold opacity-30 mb-1 uppercase tracking-tighter">{movies.length} TITLES FOUND</span>
+      {/* CONTENT GRID */}
+      <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8">
+        <div className="flex items-end gap-3 mb-6 border-b-[3px] border-[#0F172A] pb-4">
+            <h2 className="text-3xl font-black uppercase italic tracking-tighter">
+                {query ? `Search: "${query}"` : "Fresh Drops 🕒"}
+            </h2>
+            <p className="text-xs font-bold opacity-50 mb-1 uppercase tracking-widest">
+                {movies.length} TITLES
+            </p>
         </div>
 
-        {/* 4. GRID CONTENT */}
-        {movies.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 md:gap-10">
-            {movies.map((m) => {
-              const slug = getSlug(m.url);
-              const tags = parseTags(m.tags);
-              
-              return (
-                <Link key={m.url} href={`/movie/${slug}`} className="trop-card group bg-white border-[4px] border-[#0F172A] rounded-[28px] overflow-hidden shadow-[8px_8px_0px_#0F172A] hover:-translate-y-1.5 hover:shadow-[12px_12px_0px_#FF708D] transition-all duration-300">
-                  <div className="aspect-[3/4] relative border-b-[4px] border-[#0F172A] bg-[#E7E5D8]">
-                    <Image 
-                      src={m.poster || "https://via.placeholder.com/300x450"} 
-                      alt={m.title || "Movie"} 
-                      fill 
-                      className="object-cover" 
-                      unoptimized // Penting buat bypass domain check
-                    />
-                    <div className="absolute top-4 right-4 bg-[#CBEF43] border-[2px] border-[#0F172A] px-2 py-0.5 text-[10px] font-black shadow-sm rounded-md">
-                      HD
-                    </div>
-                  </div>
-                  <div className="p-5 bg-white">
-                    <h3 className="font-black text-sm uppercase line-clamp-2 leading-tight group-hover:text-[#FF708D] transition-colors">
-                      {m.title}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-3">
-                      <span className="text-[8px] font-black uppercase bg-[#0F172A] text-white px-2 py-0.5 rounded-sm">
-                        {tags[0]}
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+        {movies.length === 0 ? (
+           <div className="mt-10 bg-white border-[3px] border-[#0F172A] rounded-[20px] p-12 shadow-[10px_10px_0px_#FF99C8] text-center max-w-lg mx-auto">
+                <div className="text-4xl mb-4">🏝️</div>
+                <h3 className="text-2xl font-black uppercase mb-2">The beach is empty</h3>
+                <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                    Gak nemu filmnya, Bre.
+                </p>
+            </div>
         ) : (
-          <div className="py-24 text-center bg-white border-[4px] border-[#0F172A] rounded-[32px] shadow-[12px_12px_0px_#FF708D]">
-            <p className="text-3xl font-black uppercase italic opacity-20">No Movies found.</p>
-            {query && (
-              <Link href="/movie-hub" className="inline-block mt-4 text-xs font-bold underline">
-                Reset Search
-              </Link>
-            )}
-          </div>
+           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+            {movies.map((movie) => {
+                const slug = getSlug(movie.url);
+                const tag = parseTags(movie.tags)[0];
+                return (
+                <div key={movie.url} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[10px_10px_0px_#FF9F1C] transition-all duration-300">
+                    <div className="aspect-[3/4] bg-[#E7E5D8] relative overflow-hidden border-b-[3px] border-[#0F172A]">
+                        <Image 
+                            src={movie.poster || "https://via.placeholder.com/300x450"}
+                            alt={movie.title || "Movie"}
+                            fill
+                            className="object-cover"
+                            unoptimized
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A]/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                            <Link 
+                                href={`/movie-hub/${slug}`} 
+                                className="w-full py-3 bg-[#FF9F1C] border-[2px] border-[#0F172A] rounded-lg font-black uppercase text-white text-[10px] shadow-[3px_3px_0px_#0F172A] hover:scale-105 active:scale-95 transition-transform flex items-center justify-center gap-2 focus-visible:outline-none text-center"
+                            >
+                                <IconPlay /> Watch Now
+                            </Link>
+                        </div>
+                        <div className="absolute top-3 right-3 bg-[#CBEF43] border-[2px] border-[#0F172A] px-2 py-1 rounded-md text-[9px] font-black text-[#0F172A] shadow-sm">
+                            HD
+                        </div>
+                    </div>
+                    <div className="p-4 bg-white">
+                        <span className="text-[8px] font-black uppercase bg-[#0F172A] text-white px-2 py-0.5 rounded-sm mb-2 inline-block tracking-tighter">
+                            {tag}
+                        </span>
+                        <h3 className="font-black text-sm md:text-base leading-tight uppercase line-clamp-2 group-hover:text-[#FF9F1C] transition-colors tracking-tight">
+                            {movie.title}
+                        </h3>
+                    </div>
+                </div>
+                );
+            })}
+           </div>
         )}
       </section>
     </main>
