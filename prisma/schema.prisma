@@ -4,12 +4,40 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  // Pastikan URL ini mengarah ke file DB yang ada data filmnya!
+  // Kalau file DB kamu namanya 'movie.db', ganti jadi "file:./movie.db"
+  // Kalau pake env variable, pastikan di .env isinya bener.
+  url      = env("DATABASE_URL") 
 }
 
+// Model User (Biarin aja kalau emang butuh Auth)
 model User {
   id        String   @id @default(cuid())
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
+}
+
+// 👇 INI YANG HILANG TADI! (Saya ambil dari screenshot kamu sebelumnya)
+model movies {
+  url        String  @id
+  title      String?
+  synopsis   String?
+  poster     String?
+  video      String?
+  scraped_at Int?
+  
+  // Model kategori (opsional, dari screenshot kamu)
+  // categories movie_categories[] 
+
+  @@map("movies")
+}
+
+// Kalau butuh kategori juga (dari screenshot lama kamu):
+model movie_categories {
+   url      String
+   category String
+   
+   @@id([url, category])
+   @@map("movie_categories")
 }
