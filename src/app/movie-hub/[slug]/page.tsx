@@ -28,7 +28,7 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
   if (!movie) return notFound();
 
   // Parsing Tags
-  const tags = movie.tags 
+  const tags = ["MOVIE", "HD"];
     ? movie.tags.split(',').map(t => t.replace('Country-', '').trim()).filter(t => t !== "")
     : ["MOVIE"];
 
