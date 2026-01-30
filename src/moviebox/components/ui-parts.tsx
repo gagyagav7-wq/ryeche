@@ -1,11 +1,63 @@
 import React from "react";
 import Image from "next/image";
-// Hapus Link import dari sini kalau Link-nya di handle di parent (page.tsx), 
-// ATAU pasang Link di sini tapi arahkan ke /moviebox
-import Link from "next/link"; 
+import Link from "next/link";
 
+// --- 1. TAB PILL (Tombol Filter Atas) ---
+export const TabPill = ({
+  active,
+  label,
+  icon,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  icon?: React.ReactNode;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={`
+      flex items-center gap-2 px-6 py-3 rounded-full border-2 border-black font-bold text-sm uppercase transition-all
+      ${
+        active
+          ? "bg-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] translate-x-[-1px] translate-y-[-1px]"
+          : "bg-transparent text-gray-700 hover:bg-gray-100"
+      }
+    `}
+  >
+    {icon}
+    {label}
+  </button>
+);
+
+// --- 2. GENRE CHIP (Tombol Kategori Horizontal) ---
+export const GenreChip = ({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    onClick={onClick}
+    className={`
+      whitespace-nowrap px-4 py-2 rounded-xl border-2 border-black font-bold text-xs uppercase transition-all
+      ${
+        active
+          ? "bg-[#FFC94A] text-black shadow-[3px_3px_0px_0px_#000]"
+          : "bg-white text-gray-800 shadow-[2px_2px_0px_0px_#ccc] hover:shadow-[3px_3px_0px_0px_#000]"
+      }
+    `}
+  >
+    {label}
+  </button>
+);
+
+// --- 3. MOVIE CARD (Kartu Film) ---
 export const MovieCard = ({
-  id, // Butuh ID buat Link
+  id,
   title,
   poster,
   year,
