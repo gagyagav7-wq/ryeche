@@ -1,10 +1,9 @@
 import Link from "next/link";
 import Image from "next/image";
 import { PrismaClient } from "@prisma/client-movie";
-// --- NEW: Import Komponen Switcher biar seragam ---
 import ProviderSwitcher from "@/components/ProviderSwitcher";
 
-// --- ICONS (Samain kayak Dracin) ---
+// --- ICONS ---
 const IconSearch = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 const IconFire = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-[#FF9F1C]"><path d="M8.5,14.5c0-2.2,1.8-4,4-4s4,1.8,4,4s-1.8,4-4,4S8.5,16.7,8.5,14.5z M12.5,3c-3,2.5-5,6-5,9.5c0,3.6,2.2,6.5,5,7.5 c2.8-1,5-3.9,5-7.5C17.5,9,15.5,5.5,12.5,3z"/></svg>;
 const IconClock = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-4 h-4"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>;
@@ -32,14 +31,8 @@ async function getMovies(query?: string) {
   return await prisma.movies.findMany({
     where: whereClause,
     take: 24,
-    orderBy: { title: 'asc' } // Default sort
+    orderBy: { title: 'asc' } 
   });
-}
-
-// Helper Parse Tags
-function parseTags(tagString: string | null) {
-  if (!tagString) return ["MOVIE"];
-  return tagString.split(',').map(t => t.replace('Country-', '').trim()).slice(0, 1);
 }
 
 export default async function MovieHubPage({
@@ -58,10 +51,10 @@ export default async function MovieHubPage({
            style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
       </div>
 
-      {/* HEADER (Sticky + Blur + Switcher) */}
+      {/* HEADER */}
       <header className="relative z-20 sticky top-0 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-4 md:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            {/* 1. LOGO AREA */}
+            {/* LOGO */}
             <div className="flex items-center gap-4 w-full md:w-auto">
                 <Link href="/dashboard" className="w-12 h-12 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform shadow-[3px_3px_0px_#0F172A]">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
@@ -78,13 +71,12 @@ export default async function MovieHubPage({
                 </div>
             </div>
 
-            {/* 2. SERVER SWITCHER (Biar tombol navigasinya ada juga disini) */}
+            {/* SWITCHER */}
             <div className="flex justify-center w-full md:w-auto">
-              {/* Note: Karena ini bukan Dracin/Dramabox, switcher mungkin gak ada yg aktif, tapi tetep enak buat navigasi */}
               <ProviderSwitcher />
             </div>
 
-            {/* 3. SEARCH BAR (Server Action Form) */}
+            {/* SEARCH */}
             <div className="relative w-full md:w-[400px]">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#0F172A]/40">
                     <IconSearch />
@@ -102,7 +94,7 @@ export default async function MovieHubPage({
         </div>
       </header>
 
-      {/* TABS (Tampilan ala Dracin, tapi pake Link karena Server Component) */}
+      {/* TABS */}
       <section className="relative z-10 max-w-7xl mx-auto px-4 md:px-8 mt-8 mb-4">
         <div className="flex flex-wrap gap-3">
             {[
@@ -112,7 +104,7 @@ export default async function MovieHubPage({
             ].map((tab) => (
                 <Link 
                     key={tab.id}
-                    href="/movie-hub" // Sementara link ke self dulu
+                    href="/movie-hub"
                     className={`flex items-center gap-2 px-6 py-2.5 rounded-full border-[3px] border-[#0F172A] font-black uppercase text-xs tracking-wide transition-all bg-white text-[#0F172A] hover:bg-gray-50 hover:-translate-y-1 hover:shadow-[4px_4px_0px_#0F172A]`}
                 >
                     {tab.icon}
@@ -145,7 +137,11 @@ export default async function MovieHubPage({
            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
             {movies.map((movie) => {
                 const slug = getSlug(movie.url);
-                const tags = ["MOVIE"];
+                
+                // --- PERBAIKAN DI SINI ---
+                // Ganti nama variabel jadi 'tag' (tunggal) biar match sama JSX di bawah
+                const tag = "MOVIE"; 
+
                 return (
                 <div key={movie.url} className="group relative bg-white border-[3px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[4px] hover:shadow-[10px_10px_0px_#FF9F1C] transition-all duration-300">
                     <div className="aspect-[3/4] bg-[#E7E5D8] relative overflow-hidden border-b-[3px] border-[#0F172A]">
