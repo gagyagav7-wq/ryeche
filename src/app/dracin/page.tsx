@@ -3,6 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState, useEffect, useCallback, useMemo } from "react";
+// --- NEW: Import Komponen Switcher ---
+import ProviderSwitcher from "@/components/ProviderSwitcher";
 
 // --- CONSTANTS & ICONS ---
 const FALLBACK_IMG = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iNDAwIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRTdFNUQ4Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZpbGw9IiMwRjE3MkEiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+QlVUVEVSSEVCPC90ZXh0Pjwvc3ZnPg==";
@@ -20,7 +22,7 @@ interface Movie {
   cover: string;
   ep: string | number;
   tag: string;
-  tags: string[]; // NEW: Simpan semua tag dari API
+  tags: string[]; 
 }
 
 export default function DracinPage() {
@@ -32,7 +34,6 @@ export default function DracinPage() {
   const [error, setError] = useState<string | null>(null);
 
   // --- 1. DYNAMIC GENRES LOGIC (MODE A) ---
-  // Ekstrak semua tag unik yang beneran ada di list movies saat ini
   const GENRES_DYNAMIC = useMemo(() => {
     const genreSet = new Set<string>();
     movies.forEach((movie) => {
@@ -41,7 +42,6 @@ export default function DracinPage() {
     return ["Semua", ...Array.from(genreSet).sort()];
   }, [movies]);
 
-  // Filter movies secara lokal berdasarkan genre yang dipilih
   const visibleMovies = useMemo(() => {
     if (selectedGenre === "Semua") return movies;
     return movies.filter((movie) => movie.tags?.includes(selectedGenre));
@@ -55,14 +55,13 @@ export default function DracinPage() {
 
     const base = "https://api.sansekai.my.id/api/flickreels";
 
-    // Genre sekarang murni filter lokal, klik genre gak akan refetch ke API
     if (query) {
       url = `${base}/search?query=${encodeURIComponent(query)}`;
     } else {
       switch (activeTab) {
         case "HOT": url = `${base}/hotrank`; break;
         case "FORYOU": url = `${base}/foryou`; break;
-        default: url = `${base}/latest`; break;
+        case "LATEST": default: url = `${base}/latest`; break;
       }
     }
 
@@ -84,7 +83,6 @@ export default function DracinPage() {
       if (!Array.isArray(rawData)) throw new Error("Format data tidak sesuai");
 
       const normalized: Movie[] = rawData.map((item: any) => {
-        // Normalisasi tags dari berbagai kemungkinan shape API
         const tags: string[] = 
           Array.isArray(item.playlet_tag_name) ? item.playlet_tag_name
           : Array.isArray(item.tag_name) ? item.tag_name
@@ -112,7 +110,7 @@ export default function DracinPage() {
     } finally {
       if (!signal.aborted) setLoading(false);
     }
-  }, [activeTab, query]); // Hapus selectedGenre dari deps
+  }, [activeTab, query]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -137,6 +135,7 @@ export default function DracinPage() {
       {/* HEADER */}
       <header className="relative z-20 sticky top-0 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[3px] border-[#0F172A] py-4 px-4 md:px-8 shadow-sm">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+            {/* 1. LOGO AREA */}
             <div className="flex items-center gap-4 w-full md:w-auto">
                 <Link href="/dashboard" className="w-12 h-12 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white hover:scale-105 transition-transform shadow-[3px_3px_0px_#0F172A] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#FF9F1C]/50">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
@@ -153,6 +152,13 @@ export default function DracinPage() {
                 </div>
             </div>
 
+            {/* 2. SERVER SWITCHER (NEW) */}
+            <div className="flex justify-center w-full md:w-auto">
+              {/* Komponen ini menangani margin sendiri (mb-6) yang akan memberi jarak sedikit ke Search Bar di mobile */}
+              <ProviderSwitcher />
+            </div>
+
+            {/* 3. SEARCH BAR */}
             <div className="relative w-full md:w-[400px]">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#0F172A]/40">
                     <IconSearch />
