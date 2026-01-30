@@ -102,10 +102,11 @@ export const MovieAPI = {
           label: g.name || g.title || g.label,
           value: g.slug || g.id,
         })) || [],
+        // Di dalam MovieAPI.getFilters...
         years: data.years?.map((y: any) => ({
-          id: y,
-          label: String(y),
-          value: String(y),
+          id: y.id || y.value || String(y),
+          label: y.label || String(y), // ✅ Pastikan ambil property .label
+          value: y.value || String(y),
         })) || [],
         types: [
             { id: 'movie', label: 'Movies', value: 'movie' },
