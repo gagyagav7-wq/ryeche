@@ -7,3 +7,24 @@ datasource db {
   provider = "sqlite"
   url      = "file:./movie.db"
 }
+
+// KITA DEFINISIKAN MODEL MANUAL
+model movies {
+  // Kita "paksa" kolom url jadi ID (@id) biar Prisma gak error
+  // @map("url") artinya nama kolom di database lu adalah 'url'
+  url       String @id @map("url") 
+
+  title     String? @map("title")
+  synopsis  String? @map("synopsis")
+  poster    String? @map("poster")
+
+  // Asumsi nama kolom video di db lu 'video' atau 'video_url'
+  // Kalau nanti error, coba ganti jadi @map("video_url")
+  video     String? @map("video") 
+
+  tags      String? @map("tags")
+  time      Int?    @map("time")
+
+  // Biar Prisma tau nama tabel aslinya 'movies'
+  @@map("movies")
+}
