@@ -1,31 +1,29 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { dramaboxApi } from "@/lib/providers/dramabox"; 
+import { dramaboxApi } from "@/lib/providers/dramabox";
 import { usePathname } from "next/navigation";
+// --- NEW: Import Komponen Switcher ---
+import ProviderSwitcher from "@/components/ProviderSwitcher";
 
 export default function DramaboxPage() {
   const [movies, setMovies] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("latest"); 
+  const [activeTab, setActiveTab] = useState("latest");
   const pathname = usePathname();
 
   const tabs = [
     { id: "latest", label: "Fresh Drops" },
     { id: "trending", label: "Trending" },
     { id: "vip", label: "VIP Exclusive" },
-    { id: "dubindo", label: "Dubbing Indo" }, 
+    { id: "dubindo", label: "Dubbing Indo" },
     { id: "foryou", label: "For You" }
   ];
-   
-  // Konfigurasi Server dengan Badge & Warna
-  const servers = [
-    { id: "flickreels", label: "Flickreels", badge: "FR", color: "bg-[#FF9F1C]" }, 
-    { id: "dramabox", label: "Dramabox", badge: "DB", color: "bg-[#FF708D]" },    
-    { id: "netshort", label: "Netshort", badge: "NS", color: "bg-[#CBEF43]" },    
-    { id: "melolo", label: "Melolo", badge: "ML", color: "bg-[#2EC4B6]" },       
-  ];
+
+  // Note: Variabel 'servers' di kode lama sudah tidak dipakai lagi karena
+  // logic-nya sudah dipindah ke dalam komponen <ProviderSwitcher />.
 
   useEffect(() => {
     setLoading(true);
@@ -51,29 +49,9 @@ export default function DramaboxPage() {
             </span>
           </div>
 
-          {/* 2. SERVER SWITCHER (IMPLEMENTASI FINAL) */}
-          <div className="flex items-center gap-2 bg-white border-[3px] border-[#0F172A] rounded-full p-1.5 shadow-[5px_5px_0px_#0F172A]">
-            {servers.map((srv) => {
-              const isActive = pathname.includes(srv.id);
-              return (
-                <Link
-                  key={srv.id}
-                  href={`/${srv.id}`}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-full border-[2px] border-[#0F172A] font-black uppercase text-[10px] tracking-widest transition-all ${
-                    isActive
-                      ? "bg-[#0F172A] text-white shadow-[2px_2px_0px_#CBEF43] -translate-y-[1px]"
-                      : "bg-[#FFFDF7] text-[#0F172A] hover:bg-gray-100 border-transparent hover:border-[#0F172A]"
-                  }`}
-                >
-                  {/* Badge Kotak Kecil */}
-                  <span className={`w-5 h-5 grid place-items-center rounded border border-[#0F172A] text-[8px] font-black ${srv.color} text-[#0F172A]`}>
-                    {srv.badge}
-                  </span>
-                  {srv.label}
-                </Link>
-              );
-            })}
-          </div>
+          {/* 2. SERVER SWITCHER (NEW IMPL) */}
+          {/* Komponen ini otomatis menangani active state & disabled button */}
+          <ProviderSwitcher />
         </div>
 
         {/* 3. TAB NAVIGATION */}
