@@ -9,30 +9,28 @@ datasource db {
 }
 
 model movies {
-  url       String  @id @map("url")
-  title     String?
-  synopsis  String?
-  poster    String?
-  video     String?
-  tags      String?
-  time      Int?
+  url         String  @id
+  title       String?
+  synopsis    String?
+  poster      String?
+  
+  // KITA COCOKKAN NAMANYA:
+  // Di kodingan kita panggil 'video', tapi ambil dari kolom 'stream_link'
+  video       String? @map("stream_link")
+  
+  // Kolom tambahan yang ada di DB lu
+  scraped_at  Int?
 
+  // Kolom 'tags' dan 'time' KITA HAPUS karena emang gak ada di tabel ini
+  
   @@map("movies")
 }
 
+// Model kategori (buat jaga-jaga kalau mau dipake nanti)
 model movie_categories {
-  // PENTING: ID tidak boleh optional (tanpa ?)
   url      String
   category String
 
-  // Ini namanya Composite ID (ID gabungan)
   @@id([url, category])
   @@map("movie_categories")
-}
-
-model crawl_errors {
-  url   String  @id
-  error String?
-  
-  @@map("crawl_errors")
 }
