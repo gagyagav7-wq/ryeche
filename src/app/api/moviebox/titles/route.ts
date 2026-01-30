@@ -1,43 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client"; // Pastikan punya ini
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") || "";
-  const genre = searchParams.get("genre");
-  const year = searchParams.get("year");
-  const type = searchParams.get("type");
+  
+  // Karena kolom genre/year gak ada di DB kamu, kita skip dulu filter itu biar gak error
+  // const genre = searchParams.get("genre");
 
   try {
     const whereClause: any = {};
 
-    // 1. Filter Search
-    if (q) whereClause.title = { contains: q, mode: 'insensitive' };
-    
-    // 2. Filter Tahun (Pastikan nama kolom di DB lu 'year' atau 'releaseYear')
-    if (year) whereClause.year = year; // atau whereClause.releaseYear = year;
+    // 1. Filter Search (Title)
+    if (q) {
+      whereClause.title = { 
+        contains: q 
+      };
+    }
 
-    // 3. Filter Genre
-    if (genre) whereClause.genre = { contains: genre, mode: 'insensitive' };
-
-    // 4. Ambil Data dari Tabel 'movie' (Sesuaikan nama tabel lu!)
-    // Kalau error, cek schema.prisma lu, nama tabelnya 'movie', 'film', atau 'posts'?
-    const movies = await prisma.movie.findMany({
+    // 2. QUERY DATABASE (Pake 'movies' pake 's')
+    const dbData = await prisma.movies.findMany({
       where: whereClause,
-      take: 50, // Ambil 50 film biar rame
-      orderBy: { id: 'desc' }, // Yang baru di atas
+      take: 50,
+      // orderBy: { scraped_at: 'desc' }, // Bisa aktifin ini kalau mau urut yang baru di-scrape
     });
 
-    // 5. Normalisasi Data biar Frontend gak bingung
-    const results = movies.map((item: any) => ({
-      id: item.id || item.slug,
-      title: item.title,
-      poster: item.poster || item.image || "https://via.placeholder.com/300?text=No+Poster",
-      year: String(item.year || "N/A"),
-      type: item.type || "movie",
-      quality: item.quality || "HD",
+    // 3. Normalisasi Data (Mapping field DB lu ke Frontend)
+    const results = dbData.map((item: any) => ({
+      // DB Lu pake 'url' sebagai ID unik
+      id: item.url, 
+      
+      title: item.title || "No Title",
+      
+      // DB Lu kolomnya 'poster', aman.
+      poster: item.poster || "https://via.placeholder.com/300?text=No+Poster",
+      
+      // Karena DB gak ada tahun, kita coba ambil tahun dari teks Judul (misal "Film (2024)")
+      year: item.title?.match(/\((\d{4})\)/)?.[1] || "N/A",
+      
+      // Default value karena gak ada di DB
+      type: "movie",
+      quality: "HD", 
+      
+      // DB Lu kolomnya 'synopsis', frontend butuh buat detail nanti
+      overview: item.synopsis || "",
     }));
 
     return NextResponse.json({ results });
