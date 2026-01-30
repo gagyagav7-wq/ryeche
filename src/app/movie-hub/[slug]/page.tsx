@@ -1,20 +1,21 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-// PENTING: Kita import dari client KHUSUS MOVIE yang baru lu generate
 import { PrismaClient } from "@prisma/client-movie";
 
+// --- ICONS ---
+const IconBack = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-6 h-6"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>;
+const IconPlayCircle = () => <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5"><circle cx="12" cy="12" r="10" /><polygon points="10 8 16 12 10 16 10 8" fill="#FFFDF7" /></svg>;
+const IconDownload = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="w-5 h-5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>;
+
+// Inisialisasi Prisma
 const prisma = new PrismaClient();
 
-// Fungsi ambil data dari DB Movie
+// Fungsi Fetch Data
 async function getMovie(slug: string) {
-  // Kita cari yang URL-nya mengandung slug tersebut
-  // Contoh: slug "they-were-witches" akan match dengan "http://.../they-were-witches-2025/"
   const movie = await prisma.movies.findFirst({
     where: {
-      url: {
-        contains: slug 
-      }
+      url: { contains: slug }
     }
   });
   return movie;
@@ -24,84 +25,122 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
   const cleanSlug = decodeURIComponent(params.slug);
   const movie = await getMovie(cleanSlug);
 
-  if (!movie) {
-    return notFound();
-  }
+  if (!movie) return notFound();
 
-  // Bersihin Tags (misal "Country-Mexico" jadi "Mexico")
+  // Parsing Tags
   const tags = movie.tags 
     ? movie.tags.split(',').map(t => t.replace('Country-', '').trim()).filter(t => t !== "")
-    : ["Movie"];
+    : ["MOVIE"];
 
   return (
-    <main className="min-h-screen bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 bg-[#FFFDF7]/95 backdrop-blur border-b-[3px] border-[#0F172A] px-4 py-4 flex items-center justify-between">
-         <div className="flex items-center gap-3">
-            <Link href="/movie-hub" className="w-10 h-10 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-lg flex items-center justify-center text-white font-black hover:-translate-y-1 hover:shadow-[3px_3px_0px_#0F172A] transition-all">
-               ←
+    <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans selection:bg-[#FF9F1C] pb-24">
+      
+      {/* BACKGROUND TEXTURE */}
+      <div className="fixed inset-0 opacity-[0.03] pointer-events-none z-0" 
+           style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}>
+      </div>
+
+      {/* TROPICAL HEADER NAV (Match Dracin Style) */}
+      <header className="sticky top-0 z-50 bg-[#FFFDF7]/90 backdrop-blur-md border-b-[3px] border-[#0F172A] py-3 px-4 lg:px-8 shadow-sm">
+         <div className="max-w-6xl mx-auto flex items-center gap-4">
+            <Link href="/movie-hub" className="group flex items-center gap-2 font-black uppercase text-xs border-[2px] border-[#0F172A] px-4 py-2 rounded-lg bg-white hover:bg-[#FF9F1C] hover:text-white hover:shadow-[3px_3px_0px_#0F172A] hover:-translate-y-[2px] transition-all">
+                 <IconBack />
+                 <span className="hidden md:inline">Back to Hub</span>
             </Link>
-            <h1 className="text-xl font-black italic uppercase tracking-tighter">
-                BUTTER<span className="text-[#FF708D]">HUB</span> MOVIE
-            </h1>
+            <div className="flex-grow overflow-hidden">
+                 <h1 className="font-black uppercase text-lg md:text-xl whitespace-nowrap overflow-hidden text-ellipsis text-[#0F172A]">
+                    {movie.title}
+                 </h1>
+                 <p className="text-[10px] font-bold text-[#FF9F1C] uppercase tracking-widest flex items-center gap-2">
+                    <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    Now Playing: Full Movie
+                 </p>
+            </div>
          </div>
       </header>
 
-      <div className="max-w-6xl mx-auto px-4 mt-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* PLAYER SECTION */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
-               {/* IFRAME MASKING: Vidhide jalan di domain lu */}
-               <iframe 
-                 src={movie.video || ""} 
-                 className="w-full h-full"
-                 allowFullScreen
-                 scrolling="no"
-                 frameBorder="0"
-                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-               ></iframe>
-            </div>
-
-            {/* JUDUL & INFO */}
-            <div className="bg-white border-[3px] border-[#0F172A] p-6 rounded-[20px] shadow-[6px_6px_0px_#0F172A]">
-              <h1 className="text-2xl md:text-3xl font-black uppercase italic leading-none mb-4">
-                {movie.title}
-              </h1>
-              <div className="flex flex-wrap gap-2 mb-4">
-                 {tags.map((tag, i) => (
-                    <span key={i} className="px-3 py-1 bg-[#0F172A] text-white text-[10px] font-bold uppercase rounded-md">
-                      {tag}
-                    </span>
-                 ))}
-              </div>
-              <p className="text-sm font-medium opacity-80 leading-relaxed border-l-4 border-[#CBEF43] pl-4 italic">
-                {movie.synopsis || "No synopsis available."}
-              </p>
-            </div>
-          </div>
-
-          {/* SIDEBAR: POSTER */}
-          <div className="space-y-6">
-             <div className="aspect-[2/3] relative border-[4px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[8px_8px_0px_#2EC4B6]">
-                <Image 
-                  src={movie.poster || "https://via.placeholder.com/300x450"} 
-                  alt="Poster" 
-                  fill 
-                  className="object-cover"
-                  unoptimized // Wajib on biar gambar luar muncul
-                />
-             </div>
-             
-             {/* CONTOH TOMBOL DOWNLOAD (Hiasan/Link Asli) */}
-             <a href={movie.video} target="_blank" className="block w-full py-3 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all">
-                Source Link 🔗
-             </a>
-          </div>
-
+      {/* VIDEO PLAYER AREA (CINEMA MODE) */}
+      <section className="relative z-10 max-w-5xl mx-auto mt-6 lg:mt-10 px-4">
+        <div className="w-full aspect-video bg-[#000] relative rounded-xl overflow-hidden border-[3px] border-[#0F172A] shadow-[8px_8px_0px_#0F172A]">
+           <iframe 
+             src={movie.video || ""} 
+             className="w-full h-full"
+             allowFullScreen
+             scrolling="no"
+             frameBorder="0"
+             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+           ></iframe>
         </div>
-      </div>
+      </section>
+
+      {/* INFO & CONTROL CONTAINER */}
+      <section className="relative z-10 max-w-5xl mx-auto p-4 lg:px-0 mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        
+        {/* KIRI: Detail Movie */}
+        <div className="lg:col-span-2 bg-white border-[3px] border-[#0F172A] rounded-2xl p-6 shadow-[4px_4px_0px_#0F172A]">
+            <h2 className="text-3xl font-black uppercase text-[#0F172A] leading-none mb-4">
+                {movie.title}
+            </h2>
+            
+            {/* Tags / Labels */}
+            <div className="flex flex-wrap gap-2 mb-6">
+                <span className="px-3 py-1 bg-[#FF9F1C] text-white border-[2px] border-[#0F172A] rounded-md text-[10px] font-black uppercase shadow-[2px_2px_0px_#0F172A]">
+                    HD QUALITY
+                </span>
+               {tags.map((tag, i) => (
+                  <span key={i} className="px-3 py-1 bg-[#E7E5D8] text-[#0F172A] border-[2px] border-[#0F172A]/30 rounded-md text-[10px] font-bold uppercase">
+                    {tag}
+                  </span>
+               ))}
+            </div>
+            
+            {/* Synopsis */}
+            <div className="bg-[#FFFDF7] p-4 rounded-xl border-[2px] border-[#0F172A]/10">
+                <h3 className="text-xs font-black uppercase mb-2 opacity-50 tracking-widest">Plot Summary</h3>
+                <p className="text-sm opacity-80 leading-relaxed font-medium">
+                {movie.synopsis || "No synopsis available for this title."}
+                </p>
+            </div>
+        </div>
+
+        {/* KANAN: Cinema Control (Pengganti Episode Selector) */}
+        <div className="bg-[#0F172A] p-4 rounded-2xl border-[3px] border-[#0F172A] shadow-[4px_4px_0px_#0F172A] lg:sticky lg:top-24 space-y-4">
+           <div className="flex justify-between items-center pb-2 border-b-2 border-white/10">
+                <h3 className="font-black uppercase text-xs text-white tracking-widest">
+                    Cinema Deck
+                </h3>
+                <span className="text-[10px] font-bold text-[#FF9F1C] bg-[#FF9F1C]/10 px-2 py-1 rounded">
+                    Ready
+                </span>
+           </div>
+           
+           {/* Poster Preview */}
+           <div className="aspect-[2/3] relative rounded-lg overflow-hidden border-2 border-white/20">
+               <Image 
+                 src={movie.poster || "https://via.placeholder.com/300x450"} 
+                 alt="Poster" 
+                 fill 
+                 className="object-cover"
+                 unoptimized
+               />
+           </div>
+
+           {/* Source Link Button (Styled like Episode Button) */}
+           <a 
+             href={movie.video || "#"} 
+             target="_blank"
+             className="flex items-center justify-center gap-3 w-full py-3 bg-[#CBEF43] border-[2px] border-white/20 rounded-lg text-[#0F172A] font-black uppercase text-xs shadow-[4px_4px_0px_#FF9F1C] hover:translate-y-1 hover:shadow-none transition-all"
+           >
+              <IconDownload />
+              Original Source
+           </a>
+
+           <div className="text-[10px] text-white/40 text-center font-mono">
+             ID: {movie.url}
+           </div>
+        </div>
+
+      </section>
     </main>
   );
 }
