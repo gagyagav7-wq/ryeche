@@ -113,7 +113,7 @@ export default function DashboardPage() {
          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
             
             {/* 1. MOVIE HUB (HERO - SUNSET CORAL) */}
-            <Link href="/movie-hub" className="md:col-span-2 group relative bg-[#FF708D] border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-12 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300 overflow-hidden text-white">
+            <Link href="/moviebox" className="md:col-span-2 group relative bg-[#FF708D] border-[3px] border-[#0F172A] rounded-[20px] p-8 md:p-12 shadow-[6px_6px_0px_#0F172A] hover:-translate-y-[2px] hover:shadow-[8px_8px_0px_#0F172A] transition-all duration-300 overflow-hidden text-white">
                 <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/leaf.png')]"></div>
                 
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
