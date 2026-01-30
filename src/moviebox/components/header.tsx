@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Link from "next/link"; // 👈 WAJIB IMPORT INI
 
 interface HeaderProps {
   searchTerm: string;
@@ -8,7 +9,6 @@ interface HeaderProps {
 export const Header = ({ searchTerm, onSearchChange }: HeaderProps) => {
   const [localSearch, setLocalSearch] = useState(searchTerm);
 
-  // Sync prop changes
   useEffect(() => {
     setLocalSearch(searchTerm);
   }, [searchTerm]);
@@ -22,10 +22,14 @@ export const Header = ({ searchTerm, onSearchChange }: HeaderProps) => {
     <div className="flex flex-col gap-6 mb-6">
       {/* Top Bar: Logo & Badge */}
       <div className="flex items-center gap-3">
-        <div className="bg-[#FFC94A] w-12 h-12 flex items-center justify-center rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000]">
-           {/* Arrow Icon mock */}
-           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
-        </div>
+        
+        {/* 👇 TOMBOL BACK YANG SUDAH DIPERBAIKI 👇 */}
+        <Link href="/dashboard" className="cursor-pointer group"> 
+          <div className="bg-[#FFC94A] w-12 h-12 flex items-center justify-center rounded-xl border-2 border-black shadow-[3px_3px_0px_0px_#000] group-hover:translate-x-[-1px] group-hover:translate-y-[-1px] group-hover:shadow-[4px_4px_0px_0px_#000] transition-all">
+             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          </div>
+        </Link>
+        
         <div className="flex flex-col">
           <h1 className="text-3xl font-black text-black uppercase leading-none tracking-tight">
             BUTTER <span className="text-[#FFC94A]">HUB</span>
@@ -37,9 +41,10 @@ export const Header = ({ searchTerm, onSearchChange }: HeaderProps) => {
         </div>
       </div>
 
-      {/* Main Search Bar */}
+      {/* Search Bar tetep sama... */}
       <div className="relative w-full">
-        <input
+         {/* ... code input search kamu ... */}
+         <input
           type="text"
           value={localSearch}
           onChange={handleChange}
