@@ -161,8 +161,15 @@ export default function MovieBoxPage() {
             onChange={(e) => setActiveYear(e.target.value || null)}
           >
             <option value="">Any Year</option>
-            {filterOpts.years.map(y => <option key={y.id} value={y.value}>{y.label}</option>)}
+            {/* 👇 PERBAIKAN DISINI 👇 */}
+            {filterOpts.years.map((y) => (
+              <option key={y.id} value={y.value}
+          >
+                {y.label}
+              </option>
+            ))}
           </select>
+          
         </div>
 
         {/* MOVIE GRID */}
