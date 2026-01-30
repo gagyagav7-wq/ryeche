@@ -1,20 +1,21 @@
 // src/moviebox/lib/api.ts
 
 // --- CONFIGURATION ---
-// Ganti URL ini sesuai backend kamu
 const CONFIG = {
-  API_BASE: process.env.NEXT_PUBLIC_MOVIEBOX_API || "https://api.example.com",
+  // PENTING: Kosongkan ("") biar otomatis ngikut domain browser (Cloudflare/Localhost)
+  API_BASE: "", 
+  
   ENDPOINTS: {
-    TITLES: "/titles",
-    FILTERS: "/filters", // Atau endpoint agregat
-    GENRES: "/genres",
-    YEARS: "/years",
+    TITLES: "/api/moviebox/titles",
+    FILTERS: "/api/moviebox/filters",
   },
   DEFAULT_PARAMS: {
     limit: 20,
     page: 1,
   },
 };
+
+// ... (sisanya ke bawah biarin aja)
 
 // --- TYPES ---
 
