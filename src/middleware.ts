@@ -33,7 +33,8 @@ export async function middleware(req: NextRequest) {
   // 2. PROTEKSI AREA VIP (WAJIB LOGIN)
   // --- NAH, INI DIA DAFTARNYA ---
   // Kita tambah '/dracin' biar gak jebol lagi!
-  const protectedPrefixes = ['/dashboard', '/downloader', '/dracin']; 
+  const protectedPrefixes = ['/dashboard', '/downloader', '/dracin', 
+                            '/moviebox']; 
   
   const isProtected = protectedPrefixes.some(p => path.startsWith(p));
 
