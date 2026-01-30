@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { MovieAPI, MovieTitle, FilterData, FilterPayload } from "@/src/moviebox/lib/api";
-import { TabPill, GenreChip, MovieCard } from "@/src/moviebox/components/ui-parts";
-import { Header } from "@/src/moviebox/components/header";
+import { MovieAPI, MovieTitle, FilterData, FilterPayload } from "@/moviebox/lib/api";
+import { TabPill, GenreChip, MovieCard } from "@/moviebox/components/ui-parts";
+import { Header } from "@/moviebox/components/header";
 
 // Icons for tabs
 const FireIcon = () => (
