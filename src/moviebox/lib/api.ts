@@ -1,14 +1,22 @@
 // src/moviebox/lib/api.ts
 
 // --- CONFIGURATION ---
+
+// FUNGSI PINTAR: Deteksi otomatis environment
+// 1. Client (Browser) -> Pakai Relative Path ("") agar otomatis ngikut domain Cloudflare
+// 2. Server (Next.js) -> Pakai Localhost agar fetch internal ngebut
+const getBaseUrl = () => {
+  if (typeof window !== "undefined") return ""; 
+  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
+  return "http://localhost:3000"; 
+};
+
 const CONFIG = {
-  // Gunakan Localhost saat dev, atau Environment Variable saat deploy
-  // PENTING: Untuk Server Component (Detail Page), harus Absolute URL (http://...)
-  API_BASE: process.env.NEXT_PUBLIC_SITE_URL || "Https://remote-concentration-streaming-models.trycloudflare.com", 
+  API_BASE: getBaseUrl(),
   
   ENDPOINTS: {
-    TITLES: "/api/moviebox/titles",   // Mengarah ke file route.ts yang kita buat
-    FILTERS: "/api/moviebox/filters", // Mengarah ke file route.ts yang kita buat
+    TITLES: "/api/moviebox/titles",
+    FILTERS: "/api/moviebox/filters",
   },
   DEFAULT_PARAMS: {
     limit: 20,
@@ -21,7 +29,7 @@ const CONFIG = {
 export type FilterPayload = {
   q?: string;
   genre?: string;
-  category?: string; // movie | series
+  category?: string;
   year?: string;
   type?: string;
   sort?: "latest" | "hot" | "forYou";
@@ -36,7 +44,6 @@ export interface MovieTitle {
   type: "movie" | "series";
   quality: string;
   rating?: string;
-  // Optional extra fields for detail
   overview?: string;
   backdrop?: string;
 }
@@ -53,21 +60,44 @@ export interface FilterData {
   types: FilterOption[];
 }
 
-// --- NORMALIZERS (Fallbacks) ---
+// --- HELPER: URL SLUG EXTRACTOR (PENTING BUAT DB KAMU) ---
+// Mengubah "http://178.62.86.69/they-were-witches-2025/" menjadi "they-were-witches-2025"
+const getSlugFromUrl = (url: string) => {
+  if (!url) return Math.random().toString();
+  // Buang trailing slash (garis miring di akhir) kalau ada
+  const cleanUrl = url.endsWith('/') ? url.slice(0, -1) : url;
+  // Ambil bagian paling belakang setelah garis miring terakhir
+  const parts = cleanUrl.split('/');
+  return parts[parts.length - 1]; 
+};
+
+// --- NORMALIZERS (Fallbacks & Mapper) ---
 
 const normalizeTitle = (item: any): MovieTitle => {
-  if (!item) return {} as MovieTitle; // Safety check
+  if (!item) return {} as MovieTitle;
   
+  // 1. AMBIL ID BERSIH
+  // Prioritas: field "URL ID" (DB Kamu) -> field "id" -> field "slug"
+  const rawId = item["URL ID"] || item.id || item.slug;
+  const cleanId = getSlugFromUrl(String(rawId));
+
   return {
-    id: item.id || item._id || item.slug || Math.random().toString(),
-    title: item.title || item.name || "Untitled",
-    poster: item.poster || item.thumbnail || item.cover || item.image || "/placeholder.jpg",
-    year: String(item.year || item.releaseYear || item.date || "N/A"),
+    id: cleanId, 
+    
+    // Mapper Field Database Kamu
+    title: item["Judul"] || item.title || item.name || "Untitled",
+    poster: item["Poster Link"] || item.poster || item.thumbnail || "/placeholder.jpg",
+    
+    // Logic Tahun: Ambil dari field "Judul" (misal "(2025)") kalau field year kosong
+    year: String(item.year || item["Judul"]?.match(/\((\d{4})\)/)?.[1] || item.releaseYear || "2025"),
+    
     type: (item.type?.toLowerCase() === "series" || item.isSeries) ? "series" : "movie",
     quality: item.quality || "HD",
     rating: item.rating ? String(item.rating) : undefined,
-    overview: item.overview || item.description || "No description available.",
-    backdrop: item.backdrop || item.poster || "/placeholder-wide.jpg",
+    
+    // Detail tambahan
+    overview: item["Sinopsis"] || item.overview || "No description available.",
+    backdrop: item["Video Link"] || item.backdrop || item.poster,
   };
 };
 
@@ -85,12 +115,11 @@ const buildQuery = (params: FilterPayload) => {
 };
 
 export const MovieAPI = {
-  // 1. Fetch Filters (Genre, Year, Type)
+  // 1. Fetch Filters
   getFilters: async (): Promise<FilterData> => {
     try {
-      // Fetch ke internal API /api/moviebox/filters
       const res = await fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.FILTERS}`, {
-        next: { revalidate: 3600 } // Cache 1 jam kalau di server
+        next: { revalidate: 3600 }
       });
       
       if (!res.ok) throw new Error("Failed to fetch filters");
@@ -118,18 +147,17 @@ export const MovieAPI = {
     }
   },
 
-  // 2. Fetch List Titles (Search + Filter)
+  // 2. Fetch Titles
   getTitles: async (params: FilterPayload, signal?: AbortSignal): Promise<MovieTitle[]> => {
     const queryString = buildQuery({ ...CONFIG.DEFAULT_PARAMS, ...params });
     const url = `${CONFIG.API_BASE}${CONFIG.ENDPOINTS.TITLES}?${queryString}`;
 
     try {
-      const res = await fetch(url, { signal, cache: 'no-store' }); // No store agar search selalu fresh
+      const res = await fetch(url, { signal, cache: 'no-store' });
       if (!res.ok) throw new Error("Failed to fetch titles");
       
       const rawData = await res.json();
       
-      // Normalisasi response shape
       const list = Array.isArray(rawData) 
         ? rawData 
         : rawData.results || rawData.data || rawData.items || [];
@@ -142,22 +170,17 @@ export const MovieAPI = {
     }
   },
 
-  // 3. Fetch Single Detail (Untuk Halaman [slug])
+  // 3. Fetch Detail
   getDetail: async (slug: string): Promise<MovieTitle | null> => {
-    // Kita reuse endpoint TITLES dengan search query atau logic khusus
-    // Idealnya backend punya endpoint /api/moviebox/titles/[slug], tapi kita akali pakai query
-    // Atau kalau backend support: `${CONFIG.API_BASE}${CONFIG.ENDPOINTS.TITLES}/${slug}`
-    
-    // Skenario: Fetch spesifik ID/Slug
+    // Kita request ke API Titles dengan parameter ID/Slug
     const url = `${CONFIG.API_BASE}${CONFIG.ENDPOINTS.TITLES}?id=${slug}`; 
-    // ^ Pastikan backend route.ts kamu handle query "?id=..." atau buat route dynamic baru.
     
     try {
       const res = await fetch(url, { cache: 'no-store' });
       if (!res.ok) return null;
       
       const data = await res.json();
-      // Asumsi backend balikin array results, ambil yg pertama
+      // Ambil item pertama dari hasil pencarian
       const item = Array.isArray(data.results) ? data.results[0] : data;
       
       if (!item) return null;
