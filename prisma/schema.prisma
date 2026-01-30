@@ -24,8 +24,11 @@ model movies {
   title      String?
   synopsis   String?
   poster     String?
-  video      String?
+  // video      String? @map("stream_link") <--- KOMEN AJA DULU
   scraped_at Int?
+
+  @@map("movies")
+}
   
   // Model kategori (opsional, dari screenshot kamu)
   // categories movie_categories[] 
