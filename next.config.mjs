@@ -2,6 +2,12 @@
 const nextConfig = {
   images: {
     remotePatterns: [
+      // 1. Domain Mock Data (PENTING: Buat gambar dummy yang sekarang error)
+      {
+        protocol: 'https',
+        hostname: 'image.tmdb.org', 
+      },
+      // 2. Domain Bawaan Kamu (Tetap dipertahankan)
       {
         protocol: 'https',
         hostname: 'via.placeholder.com', 
@@ -16,6 +22,13 @@ const nextConfig = {
         hostname: 'zshipricf.farsunpteltd.com', // Domain Episode Cover
         pathname: '/**',
       },
+      // 3. Opsi "Sapu Jagat" (Opsional: Aktifkan kalau malas nambahin domain satu-satu saat dev)
+      /*
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      */
     ],
   },
 };
