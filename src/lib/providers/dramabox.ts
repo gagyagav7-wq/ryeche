@@ -92,25 +92,41 @@ export const dramaboxApi = {
     }
   },
 
-  // 4. Get Episodes (Player)
+  // src/lib/providers/dramabox.ts
+
+  // ... (Kode getHome, search, getDetail sebelumnya tetap sama) ...
+
+  // 4. Get Episodes (Updated for Multi-Resolution)
   async getEpisodes(bookId: string) {
     try {
       const res = await fetch(`${BASE_URL}/allepisode?bookId=${bookId}`, { cache: 'no-store' });
       const data = await res.json();
       
-      // Mapping episode list biar enak dibaca player
       return {
         success: true,
-        data: Array.isArray(data) ? data.map((ep: any) => ({
-          index: ep.chapterIndex,
-          name: ep.chapterName,
-          id: ep.chapterId,
-          // Ambil video quality terbaik (1080p atau default)
-          videoUrl: ep.cdnList?.[0]?.videoPathList?.find((v:any) => v.quality === 720)?.videoPath || 
-                    ep.cdnList?.[0]?.videoPathList?.[0]?.videoPath || ""
-        })) : []
+        data: Array.isArray(data) ? data.map((ep: any) => {
+          // Ambil list video dari CDN pertama (biasanya yang utama)
+          const videoList = ep.cdnList?.[0]?.videoPathList || [];
+          
+          // Format resolusi biar rapi
+          const qualities = videoList.map((v: any) => ({
+            quality: v.quality, // 1080, 720, 360, etc
+            url: v.videoPath,
+            label: `${v.quality}p`
+          })).sort((a: any, b: any) => b.quality - a.quality); // Urutkan dari HD ke SD
+
+          return {
+            index: ep.chapterIndex,
+            name: ep.chapterName || `Episode ${ep.chapterIndex + 1}`,
+            id: ep.chapterId,
+            qualities: qualities,
+            // Default URL: Cari 720p, kalau gak ada ambil yang pertama (paling tinggi)
+            defaultUrl: qualities.find((q: any) => q.quality === 720)?.url || qualities[0]?.url || ""
+          };
+        }) : []
       };
     } catch (error) {
+      console.error("Dramabox Episode Error:", error);
       return { success: false, data: [] };
     }
   }
