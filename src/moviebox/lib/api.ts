@@ -1,19 +1,31 @@
-import { PrismaClient } from "@prisma/client-movie"; // Sesuaikan jika import lu beda
+import { PrismaClient } from "@prisma/client-movie";
 import { MovieItem, FilterResponse, SearchParams } from "./types";
 
 const prisma = new PrismaClient();
-
-// CONFIG: Fallback
 const FALLBACK_POSTER = "https://via.placeholder.com/300x450?text=NO+IMG";
 
-// --- 1. GET DYNAMIC FILTERS (Versi Safe Mode) ---
+// --- 1. GET DYNAMIC FILTERS (REAL DB) ---
 export async function getFilters(): Promise<FilterResponse> {
-  // A. Ambil Tahun dari Judul (Sampling 500 judul terbaru)
-  // Karena kolom 'year' gak ada, kita regex dari title
+  // A. Ambil Genre ASLI dari tabel movie_categories
+  // Kalau tabel ini kosong, tombol genre bakal ilang (kecuali 'All Genres')
+  let realGenres: { label: string; value: string }[] = [];
+  
+  try {
+    const categoriesRaw = await prisma.movie_categories.findMany({
+      select: { category: true },
+      distinct: ['category'], // Ambil nama kategori unik aja
+      orderBy: { category: 'asc' }
+    });
+    
+    realGenres = categoriesRaw.map(c => ({ label: c.category, value: c.category }));
+  } catch (e) {
+    console.error("Gagal ambil kategori, pastikan tabel 'movie_categories' ada.");
+  }
+
+  // B. Ambil Tahun dari Judul (Sampling 500 film)
   const moviesRaw = await prisma.movies.findMany({
     select: { title: true },
     take: 500,
-    // orderBy: { scraped_at: 'desc' } // Aktifkan kalau kolom scraped_at ada
   });
 
   const yearSet = new Set<string>();
@@ -29,12 +41,7 @@ export async function getFilters(): Promise<FilterResponse> {
   const toOption = (arr: string[]) => arr.map(v => ({ label: v, value: v }));
 
   return {
-    // Genre kita kosongin dulu atau kasih dummy biar UI gak rusak
-    genres: [
-      { label: "All Genres", value: "" },
-      { label: "Action", value: "Action" }, // Dummy (Hardcode)
-      { label: "Drama", value: "Drama" },   // Dummy (Hardcode)
-    ],
+    genres: [{ label: "All Genres", value: "" }, ...realGenres],
     years: [{ label: "All Years", value: "" }, ...toOption(Array.from(yearSet).sort().reverse())],
     countries: [],
     types: [
@@ -44,49 +51,63 @@ export async function getFilters(): Promise<FilterResponse> {
   };
 }
 
-// --- 2. GET MOVIES (Logic Sesuai Snippet Lu) ---
+// --- 2. GET MOVIES (FILTER AKTIF) ---
 export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
-  const { q, year } = params; // Genre kita ignore dulu
+  const { q, genre, year } = params;
 
   const whereClause: any = {};
 
-  // 1. Filter Search (Title)
+  // 1. FILTER SEARCH
   if (q) {
-    whereClause.title = { 
-      contains: q 
-    };
+    whereClause.title = { contains: q };
   }
 
-  // 2. Filter Tahun (Regex logic di query, agak tricky di SQLite biasa, jadi kita filter di JS atau partial match)
-  // Paling aman pake 'contains' string "(2024)"
+  // 2. FILTER GENRE (NEW! 🔥)
+  if (genre) {
+    // Cari URL film yang punya kategori ini
+    const connectedMovies = await prisma.movie_categories.findMany({
+      where: { category: genre },
+      select: { url: true }
+    });
+    
+    const validUrls = connectedMovies.map(c => c.url);
+    
+    // Syarat: URL film harus ada di daftar validUrls
+    if (validUrls.length > 0) {
+      whereClause.url = { in: validUrls };
+    } else {
+      // Kalau genre dipilih tapi gak ada filmnya, paksa return kosong
+      // (url must be impossible value)
+      whereClause.url = "NO_MATCH"; 
+    }
+  }
+
+  // 3. FILTER TAHUN
   if (year) {
-    whereClause.title = {
-      contains: `(${year})`
-    };
+    whereClause.title = { contains: `(${year})` };
   }
 
-  // ⚠️ Fetch Data Pake 'prisma.movies'
+  // Fetch Data
   const dbData = await prisma.movies.findMany({
     where: whereClause,
-    take: 50,
-    // orderBy: { title: 'asc' }, 
+    take: 36,
   });
 
-  // 3. Normalisasi Data (Mapping field DB lu ke Frontend)
+  // Normalisasi Data
   return dbData.map((item: any) => {
-    // Logic Extract Tahun dari Judul
     const yearMatch = item.title?.match(/\((\d{4})\)/);
     const inferredYear = yearMatch ? yearMatch[1] : "N/A";
 
     return {
-      id: item.url, // ID Unik
+      id: item.url,
       title: item.title || "No Title",
       poster: item.poster || FALLBACK_POSTER,
       year: inferredYear,
-      type: "Movie", // Default
-      quality: "HD", // Default
+      type: "Movie",
+      quality: "HD",
       rating: "N/A",
-      genres: ["Movie"], // Default Tag
+      // Kita set default aja biar loading cepet
+      genres: genre ? [genre] : ["Movie"], 
     };
   });
 }
