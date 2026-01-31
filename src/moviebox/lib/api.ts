@@ -1,31 +1,23 @@
-import { PrismaClient } from "@prisma/client-movie";
+import { PrismaClient } from "@prisma/client-movie"; // Sesuaikan jika import lu beda
 import { MovieItem, FilterResponse, SearchParams } from "./types";
 
 const prisma = new PrismaClient();
 
-// CONFIG: Fallback Poster
+// CONFIG: Fallback
 const FALLBACK_POSTER = "https://via.placeholder.com/300x450?text=NO+IMG";
 
-// --- 1. GET DYNAMIC FILTERS ---
-// Ambil Genre dari tabel 'movie_categories' & Tahun dari Regex Judul
+// --- 1. GET DYNAMIC FILTERS (Versi Safe Mode) ---
 export async function getFilters(): Promise<FilterResponse> {
-  // A. Ambil Genre Unik dari tabel kategori
-  // Pastikan model 'movie_categories' ada di schema.prisma lu!
-  const categoriesRaw = await prisma.movie_categories.findMany({
-    select: { category: true },
-    distinct: ['category'], // Fitur prisma buat ambil yg unik aja
-    orderBy: { category: 'asc' }
-  });
-
-  // B. Ambil Tahun dari Judul Film (Sampling 500 film aja biar cepet)
+  // A. Ambil Tahun dari Judul (Sampling 500 judul terbaru)
+  // Karena kolom 'year' gak ada, kita regex dari title
   const moviesRaw = await prisma.movies.findMany({
     select: { title: true },
-    take: 500, 
-    orderBy: { title: 'desc' } // Asumsi judul baru ada tahun baru
+    take: 500,
+    // orderBy: { scraped_at: 'desc' } // Aktifkan kalau kolom scraped_at ada
   });
 
   const yearSet = new Set<string>();
-  const regexYear = /\((\d{4})\)/; // Cari pola "(2024)"
+  const regexYear = /\((\d{4})\)/; 
 
   moviesRaw.forEach(m => {
     if (m.title) {
@@ -35,74 +27,66 @@ export async function getFilters(): Promise<FilterResponse> {
   });
 
   const toOption = (arr: string[]) => arr.map(v => ({ label: v, value: v }));
-  
+
   return {
-    genres: [{ label: "All Genres", value: "" }, ...toOption(categoriesRaw.map(c => c.category))],
+    // Genre kita kosongin dulu atau kasih dummy biar UI gak rusak
+    genres: [
+      { label: "All Genres", value: "" },
+      { label: "Action", value: "Action" }, // Dummy (Hardcode)
+      { label: "Drama", value: "Drama" },   // Dummy (Hardcode)
+    ],
     years: [{ label: "All Years", value: "" }, ...toOption(Array.from(yearSet).sort().reverse())],
-    countries: [], // Skip dulu karena gak ada data negara di DB lu
+    countries: [],
     types: [
         { label: "All Types", value: "" },
-        { label: "Movies", value: "Movie" }, // Default anggap semua movie
+        { label: "Movies", value: "Movie" },
     ],
   };
 }
 
-// --- 2. GET TITLES WITH FILTER ---
+// --- 2. GET MOVIES (Logic Sesuai Snippet Lu) ---
 export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
-  const { q, genre, year, sort } = params;
+  const { q, year } = params; // Genre kita ignore dulu
 
-  let where: any = {};
+  const whereClause: any = {};
 
-  // A. Filter Search Judul
+  // 1. Filter Search (Title)
   if (q) {
-    where.title = { contains: q };
+    whereClause.title = { 
+      contains: q 
+    };
   }
 
-  // B. Filter Genre (Agak tricky karena beda tabel)
-  // Kita cari dulu URL film yg punya genre tersebut
-  if (genre) {
-    const movieUrlsWithGenre = await prisma.movie_categories.findMany({
-      where: { category: genre },
-      select: { url: true }
-    });
-    const urls = movieUrlsWithGenre.map(item => item.url);
-    
-    // Tambahkan kondisi: URL film harus ada di daftar URL genre tsb
-    where.url = { in: urls }; 
-  }
-
-  // C. Filter Tahun (Pake contains di judul karena gak ada kolom tahun)
+  // 2. Filter Tahun (Regex logic di query, agak tricky di SQLite biasa, jadi kita filter di JS atau partial match)
+  // Paling aman pake 'contains' string "(2024)"
   if (year) {
-    // Cari judul yg mengandung "(2024)"
-    where.title = { contains: `(${year})` };
+    whereClause.title = {
+      contains: `(${year})`
+    };
   }
 
-  // Sorting Logic
-  // Karena gak ada 'created_at', kita pake sort title default
-  let orderBy: any = { title: 'asc' }; 
-  // if (sort === 'latest') ... (skip karena gak ada kolom tanggal)
-
-  const rawData = await prisma.movies.findMany({
-    where,
-    take: 36,
-    orderBy,
+  // ⚠️ Fetch Data Pake 'prisma.movies'
+  const dbData = await prisma.movies.findMany({
+    where: whereClause,
+    take: 50,
+    // orderBy: { title: 'asc' }, 
   });
 
-  // NORMALISASI OUTPUT
-  return rawData.map((m) => {
-    // Ekstrak tahun dari judul
-    const yearMatch = m.title?.match(/\((\d{4})\)/);
+  // 3. Normalisasi Data (Mapping field DB lu ke Frontend)
+  return dbData.map((item: any) => {
+    // Logic Extract Tahun dari Judul
+    const yearMatch = item.title?.match(/\((\d{4})\)/);
     const inferredYear = yearMatch ? yearMatch[1] : "N/A";
 
     return {
-      id: m.url, 
-      title: m.title || "Untitled",
-      poster: m.poster || FALLBACK_POSTER,
+      id: item.url, // ID Unik
+      title: item.title || "No Title",
+      poster: item.poster || FALLBACK_POSTER,
       year: inferredYear,
       type: "Movie", // Default
       quality: "HD", // Default
       rating: "N/A",
-      genres: ["Movie"], // Kita hardcode dulu biar loading cepet (gak perlu fetch kategori per item)
+      genres: ["Movie"], // Default Tag
     };
   });
 }
