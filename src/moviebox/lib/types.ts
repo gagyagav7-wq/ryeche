@@ -30,3 +30,11 @@ export interface SearchParams {
   country?: string;
   sort?: "latest" | "hot" | "foryou";
 }
+
+export type MoviesResponse = {
+  items: Movie[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+};
