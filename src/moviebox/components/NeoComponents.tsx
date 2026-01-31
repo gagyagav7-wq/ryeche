@@ -12,27 +12,16 @@ const toPosterHD = (url?: string) => {
             .replace(/([?&])(w|width|h|height|resize)=\d+/gi, "$1");
 };
 
-// --- HELPER: Slugify Title for SEO URL ---
-const slugify = (s: string) => s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
-
-// --- 1. MOVIE CARD (Fixed Layout & HD Poster) ---
-// ... (import dan helper lain tetep sama)
-
 // --- 1. MOVIE CARD (Base64 Safe Link) ---
 export const MovieCard = ({ item }: { item: MovieItem }) => {
   // 1. Encode ID ke Base64 biar URL bersih dari karakter aneh (slash/titik dua)
   // btoa() adalah fungsi bawaan browser untuk encode Base64
-  const base64Id = btoa(item.id).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const base64Id = typeof window !== 'undefined' ? btoa(item.id).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') : '';
   
   // 2. Gabung ke URL
   const href = `/movie-hub/${base64Id}`;
 
   return (
-    <Link 
-      href={href}
-      className="group block bg-white border-[3px] border-[#0F172A] rounded-[24px] overflow-hidden shadow-[5px_5px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[8px_8px_0px_#FF708D] transition-all duration-300"
-    >
-{/* ... sisa isi komponen JANGAN DIUBAH ... */}
     <Link 
       href={href}
       className="group block bg-white border-[3px] border-[#0F172A] rounded-[24px] overflow-hidden shadow-[5px_5px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[8px_8px_0px_#FF708D] transition-all duration-300"
@@ -83,8 +72,6 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
   const handleFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     value ? params.set(key, value) : params.delete(key);
-    // Reset ke page 1 kalau filter berubah (opsional)
-    // params.delete("page"); 
     router.push(`/movie-hub?${params.toString()}`);
   };
 
