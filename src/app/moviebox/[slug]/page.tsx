@@ -15,16 +15,25 @@ function decodeSafeId(encoded: string) {
 }
 
 async function getMovie(targetUrl: string) {
-  // Cari Exact Match atau Tanpa Slash
   const urlClean = targetUrl.replace(/\/$/, "");
+
   return await prisma.movies.findFirst({
     where: {
       OR: [
         { url: targetUrl },
         { url: urlClean },
-        { url: urlClean + "/" }
-      ]
-    }
+        { url: urlClean + "/" },
+      ],
+    },
+    select: {
+      url: true,
+      title: true,
+      synopsis: true,
+      poster: true,
+      iframe_link: true,
+      scraped_at: true,
+      status: true,
+    },
   });
 }
 
@@ -35,7 +44,7 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
   if (!originalUrl) return notFound();
 
   // Cari di Database Lu
-  const movie = await getMovie(originalUrl);
+  const videoSrc = movie.iframe_link || "";
 
   if (!movie) return notFound();
 
