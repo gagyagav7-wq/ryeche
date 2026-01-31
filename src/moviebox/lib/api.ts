@@ -1,150 +1,90 @@
-// src/moviebox/lib/api.ts
+import { PrismaClient } from "@prisma/client-movie";
+import { MovieItem, FilterResponse, SearchParams } from "./types";
 
-// --- CONFIGURATION ---
-const CONFIG = {
-  // PENTING: Kosongkan ("") biar otomatis ngikut domain browser (Cloudflare/Localhost)
-  API_BASE: "", 
-  
-  ENDPOINTS: {
-    TITLES: "/api/moviebox/titles",
-    FILTERS: "/api/moviebox/filters",
-  },
-  DEFAULT_PARAMS: {
-    limit: 20,
-    page: 1,
-  },
-};
+const prisma = new PrismaClient();
 
-// ... (sisanya ke bawah biarin aja)
+// 1. GET DYNAMIC FILTERS (Mining dari kolom 'tags' di DB)
+export async function getFilters(): Promise<FilterResponse> {
+  const allMovies = await prisma.movies.findMany({
+    select: { tags: true },
+  });
 
-// --- TYPES ---
+  const genreSet = new Set<string>();
+  const yearSet = new Set<string>();
+  const countrySet = new Set<string>();
 
-export interface MovieItem {
-  id: string; // URL asli atau ID unik
-  title: string;
-  poster: string;
-  year?: string;
-  type: "Movie" | "Series";
-  quality: "HD" | "CAM" | "RAW";
-  rating?: string;
-  genres: string[];
-}
-
-export interface FilterOption {
-  label: string;
-  value: string;
-  count?: number;
-}
-
-export interface FilterResponse {
-  genres: FilterOption[];
-  years: FilterOption[];
-  types: FilterOption[];
-  countries: FilterOption[];
-}
-
-export interface SearchParams {
-  q?: string;
-  genre?: string;
-  year?: string;
-  type?: string;
-  country?: string;
-  sort?: "latest" | "hot" | "foryou";
-}
-
-// --- NORMALIZERS (Fallbacks) ---
-
-const normalizeTitle = (item: any): MovieTitle => {
-  return {
-    id: item.id || item._id || item.slug || Math.random(),
-    title: item.title || item.name || "Untitled",
-    poster: item.poster || item.thumbnail || item.cover || item.image || "/placeholder.jpg",
-    year: item.year || item.releaseYear || item.date || "N/A",
-    type: item.type?.toLowerCase() === "series" || item.isSeries ? "series" : "movie",
-    quality: item.quality || "HD",
-    rating: item.rating || undefined,
-  };
-};
-
-// --- FETCHERS ---
-
-// Helper untuk build query string
-const buildQuery = (params: FilterPayload) => {
-  const searchParams = new URLSearchParams();
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      searchParams.append(key, String(value));
+  allMovies.forEach((m) => {
+    if (m.tags) {
+      m.tags.split(",").forEach((t) => {
+        const tag = t.trim();
+        if (tag.startsWith("Country-")) {
+          countrySet.add(tag.replace("Country-", ""));
+        } else if (!isNaN(Number(tag)) && tag.length === 4) {
+          yearSet.add(tag);
+        } else if (tag !== "Movie" && tag !== "Series" && tag !== "") {
+          genreSet.add(tag);
+        }
+      });
     }
   });
-  return searchParams.toString();
-};
 
-export const MovieAPI = {
-  // Fetch semua opsi filter (Genre, Year, dll)
-  getFilters: async (): Promise<FilterData> => {
-    try {
-      // CONTOH: Fetch parallel jika endpoint terpisah
-      // const [genresRes, yearsRes] = await Promise.all([
-      //   fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.GENRES}`),
-      //   fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.YEARS}`)
-      // ]);
-      
-      // SEMENTARA: Menggunakan mock logic agar bisa jalan tanpa API real dulu
-      // Ganti logic di dalam try block ini dengan fetch asli kamu
-      
-      const res = await fetch(`${CONFIG.API_BASE}${CONFIG.ENDPOINTS.FILTERS}`);
-      if (!res.ok) throw new Error("Failed to fetch filters");
-      const data = await res.json();
+  const toOption = (set: Set<string>) => 
+    Array.from(set).sort().map(v => ({ label: v, value: v }));
 
-      // Normalisasi output filter
-      return {
-        genres: data.genres?.map((g: any) => ({
-          id: g.id || g.slug,
-          label: g.name || g.title || g.label,
-          value: g.slug || g.id,
-        })) || [],
-        // Di dalam MovieAPI.getFilters...
-        years: data.years?.map((y: any) => ({
-          id: y.id || y.value || String(y),
-          label: y.label || String(y), // ✅ Pastikan ambil property .label
-          value: y.value || String(y),
-        })) || [],
-        types: [
-            { id: 'movie', label: 'Movies', value: 'movie' },
-            { id: 'series', label: 'Series', value: 'series' }
-        ]
-      };
-    } catch (error) {
-      console.error("Filter Fetch Error:", error);
-      // Fallback empty state
-      return { genres: [], years: [], types: [] };
-    }
-  },
+  return {
+    genres: [{ label: "All Genres", value: "" }, ...toOption(genreSet)],
+    years: [{ label: "All Years", value: "" }, ...toOption(yearSet).reverse()],
+    countries: [{ label: "All Countries", value: "" }, ...toOption(countrySet)],
+    types: [
+        { label: "All Types", value: "" },
+        { label: "Movies", value: "Movie" },
+        { label: "Series", value: "Series" }
+    ],
+  };
+}
 
-  // Fetch Titles dengan AbortController
-  getTitles: async (params: FilterPayload, signal?: AbortSignal): Promise<MovieTitle[]> => {
-    const queryString = buildQuery({ ...CONFIG.DEFAULT_PARAMS, ...params });
-    const url = `${CONFIG.API_BASE}${CONFIG.ENDPOINTS.TITLES}?${queryString}`;
+// 2. GET TITLES WITH FILTER
+export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
+  const { q, genre, year, type, country, sort } = params;
 
-    try {
-      const res = await fetch(url, { signal });
-      if (!res.ok) throw new Error("Failed to fetch titles");
-      
-      const rawData = await res.json();
-      
-      // Handle berbagai shape response: { results: [] } atau [] atau { data: [] }
-      const list = Array.isArray(rawData) 
-        ? rawData 
-        : rawData.results || rawData.data || rawData.items || [];
+  // Build Query Dinamis
+  const where: any = {};
+  const andConditions = [];
 
-      return list.map(normalizeTitle);
-    } catch (error: any) {
-      if (error.name === "AbortError") {
-        // Request cancelled, ignore
-        throw error;
-      }
-      console.error("Titles Fetch Error:", error);
-      return [];
-    }
-  },
-};
+  if (q) where.title = { contains: q };
+  if (genre) andConditions.push({ tags: { contains: genre } });
+  if (year) andConditions.push({ tags: { contains: year } });
+  if (country) andConditions.push({ tags: { contains: `Country-${country}` } });
+  if (type) andConditions.push({ tags: { contains: type } }); // Asumsi ada tag 'Movie'/'Series'
+
+  if (andConditions.length > 0) where.AND = andConditions;
+
+  // Sorting
+  let orderBy: any = { title: 'asc' }; // Default fallback
+  // if (sort === 'latest') orderBy = { scraped_at: 'desc' }; // Aktifkan jika kolom scraped_at ada
+
+  const rawData = await prisma.movies.findMany({
+    where,
+    take: 36, // Load agak banyak biar grid padat
+    orderBy,
+  });
+
+  // NORMALISASI DATA (Mapping ke UI)
+  return rawData.map((m) => {
+    const tagList = m.tags ? m.tags.split(",").map(t => t.trim()) : [];
+    
+    // Logic tebak tahun (dari tag atau regex judul)
+    const yearMatch = m.title?.match(/\((\d{4})\)/);
+    const inferredYear = yearMatch ? yearMatch[1] : tagList.find(t => !isNaN(Number(t)) && t.length === 4);
+
+    return {
+      id: m.url, // ID Paling aman adalah URL aslinya
+      title: m.title || "Untitled",
+      poster: m.poster || "",
+      year: inferredYear || "N/A",
+      type: tagList.includes("Series") ? "Series" : "Movie",
+      quality: tagList.includes("CAM") ? "CAM" : "HD", // Default HD
+      genres: tagList.filter(t => !t.startsWith("Country-") && isNaN(Number(t))),
+    };
+  });
+}
