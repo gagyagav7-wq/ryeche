@@ -5,52 +5,73 @@ import { PrismaClient } from "@prisma/client-movie";
 
 const prisma = new PrismaClient();
 
-// Fungsi Fetch Data
-async function getMovie(targetUrl: string) {
-  // Cari URL yang persis sama
-  const movie = await prisma.movies.findFirst({
-    where: { url: targetUrl }
-  });
-  return movie;
-}
-
-// Helper Decode Base64 (Server Side)
+// --- 1. DECODER BASE64 YANG LEBIH KUAT ---
 function decodeSafeId(encoded: string) {
   try {
     // Balikin karakter URL-safe ke Base64 standar
     let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
     // Tambah padding '=' kalau kurang
-    while (base64.length % 4) base64 += '=';
-    // Decode pake Buffer (karena ini jalan di server Node.js)
+    while (base64.length % 4) {
+      base64 += '=';
+    }
     return Buffer.from(base64, 'base64').toString('utf-8');
   } catch (e) {
+    console.error("Gagal decode Base64:", e);
     return null;
   }
 }
 
-// Support params [slug] maupun [...slug]
-export default async function MoviePlayerPage({ params }: { params: { slug: string | string[] } }) {
-  // 1. Ambil slug (kalau array, ambil yg pertama aja karena Base64 pasti 1 segmen)
-  const rawSlug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+// --- 2. FUNGSI CARI DATA (ANTI-MISS) ---
+async function getMovie(targetUrl: string) {
+  // Bersihkan slash di belakang (kalau ada)
+  const urlClean = targetUrl.replace(/\/$/, "");
   
-  // 2. Decode Base64 -> URL Asli (http://...)
+  // LOG KE TERMINAL BUAT DEBUGGING
+  console.log("🔍 Mencari Film:", targetUrl);
+  console.log("👉 Coba Variasi 1:", urlClean);
+  console.log("👉 Coba Variasi 2:", urlClean + "/");
+
+  // Cari dengan LOGIKA OR (Salah satu cocok, ambil!)
+  const movie = await prisma.movies.findFirst({
+    where: {
+      OR: [
+        { url: targetUrl },         // Cek asli
+        { url: urlClean },          // Cek tanpa slash
+        { url: urlClean + "/" }     // Cek pakai slash
+      ]
+    }
+  });
+  
+  return movie;
+}
+
+export default async function MoviePlayerPage({ params }: { params: { slug: string[] } }) {
+  // Handle [...slug] array, gabung jadi satu string
+  const rawSlug = Array.isArray(params.slug) ? params.slug.join('') : params.slug;
+  
+  // Decode ID
   const originalUrl = decodeSafeId(rawSlug);
 
-  if (!originalUrl) return notFound(); // Kalau gagal decode, 404
+  if (!originalUrl) {
+    console.log("❌ Gagal decode URL slug");
+    return notFound();
+  }
 
-  // 3. Cari di DB
+  // Cari di DB
   const movie = await getMovie(originalUrl);
 
   if (!movie) {
-    // Debugging: Kalau masih 404, cek log server buat liat URL apa yg dicari
-    console.log("Movie Not Found. Searching for:", originalUrl);
+    console.log("❌ Film tidak ditemukan di Database!");
     return notFound();
   }
+
+  console.log("✅ Film Ditemukan:", movie.title);
 
   // --- RENDERING PAGE ---
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
       
+      {/* HEADER SIMPLE */}
       <header className="sticky top-0 z-50 bg-[#FFFDF7]/95 backdrop-blur border-b-[3px] border-[#0F172A] px-6 py-4 flex items-center gap-4">
          <Link href="/movie-hub" className="w-10 h-10 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-lg flex items-center justify-center text-white font-black hover:scale-105 transition-transform">
             ←
