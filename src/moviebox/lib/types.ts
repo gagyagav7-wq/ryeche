@@ -1,36 +1,3 @@
-export interface MovieItem {
-  id: string; // URL asli atau ID unik
-  title: string;
-  poster: string;
-  year?: string;
-  type: "Movie" | "Series";
-  quality: "HD" | "CAM" | "RAW";
-  rating?: string;
-  genres: string[];
-}
-
-export interface FilterOption {
-  label: string;
-  value: string;
-  count?: number;
-}
-
-export interface FilterResponse {
-  genres: FilterOption[];
-  years: FilterOption[];
-  types: FilterOption[];
-  countries: FilterOption[];
-}
-
-export interface SearchParams {
-  q?: string;
-  genre?: string;
-  year?: string;
-  type?: string;
-  country?: string;
-  sort?: "latest" | "hot" | "foryou";
-}
-
 export type SearchParams = {
   q?: string;
   genre?: string;
@@ -38,7 +5,36 @@ export type SearchParams = {
   country?: string;
   type?: string;
 
-  // ✅ pagination
+  // ✅ pagination params (dari URL biasanya string)
   page?: string | number;
   limit?: string | number;
+};
+
+export type MovieItem = {
+  id: string;
+  title: string;
+  poster: string;
+  year: string;
+  type: string;
+  quality: string;
+  rating?: string;
+  genres?: string[];
+};
+
+export type FilterOption = { label: string; value: string };
+
+export type FilterResponse = {
+  genres: FilterOption[];
+  years: FilterOption[];
+  countries: FilterOption[];
+  types: FilterOption[];
+};
+
+// ✅ response pagination untuk MovieHub
+export type MoviesResponse = {
+  items: MovieItem[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 };
