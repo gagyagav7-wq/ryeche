@@ -7,12 +7,15 @@ import { MovieCard, FilterBar, SearchForm } from "@/moviebox/components/NeoCompo
 // .no-scrollbar::-webkit-scrollbar { display: none; }
 // .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export default async function MovieHubPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
   // Fetch Data Parallel (Cepat)
+  
   const [filtersData, moviesData] = await Promise.all([
     getFilters(),
     getMovies(searchParams),
