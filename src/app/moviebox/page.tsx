@@ -26,8 +26,20 @@ export default async function MovieHubPage({
          <div className="w-full max-w-7xl mx-auto px-4 md:px-6">
             <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
                
-               {/* Brand & Nav */}
-               <div className="flex items-center justify-between w-full md:w-auto">
+               {/* Brand & Nav Wrapper */}
+               <div className="flex items-center w-full md:w-auto">
+                   
+                   {/* TOMBOL BACK DRACIN STYLE (Kiri) */}
+                   <Link 
+                      href="/dashboard" 
+                      className="shrink-0 w-10 h-10 md:w-12 md:h-12 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white shadow-[3px_3px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[5px_5px_0px_#0F172A] active:translate-y-0 active:shadow-none transition-all mr-4"
+                   >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-5 h-5 md:w-6 md:h-6">
+                        <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                   </Link>
+
+                   {/* Brand Logo (Kanan Tombol Back) */}
                    <div className="flex flex-col">
                       <Link href="/moviebox" className="group">
                         <h1 className="text-3xl md:text-4xl font-black italic uppercase leading-none tracking-tighter group-hover:skew-x-2 transition-transform">
@@ -43,10 +55,6 @@ export default async function MovieHubPage({
                          </span>
                       </div>
                    </div>
-                   {/* Tombol Back Mobile (Optional) */}
-                   <Link href="/dashboard" className="md:hidden w-10 h-10 bg-[#FF99C8] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center shadow-[3px_3px_0px_#0F172A] active:translate-y-1 active:shadow-none transition-all">
-                      <span className="font-black">↩</span>
-                   </Link>
                </div>
 
                {/* Search Bar (Sekarang Client Component) */}
@@ -54,10 +62,6 @@ export default async function MovieHubPage({
                   <SearchForm />
                </div>
 
-               {/* Desktop Nav Button */}
-               <Link href="/dashboard" className="hidden md:flex w-12 h-12 bg-[#FF99C8] border-[3px] border-[#0F172A] rounded-xl items-center justify-center shadow-[4px_4px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0F172A] transition-all">
-                  <span className="font-black text-xl">↩</span>
-               </Link>
             </div>
          </div>
       </header>
