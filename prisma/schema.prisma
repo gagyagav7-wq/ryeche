@@ -7,9 +7,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+// --- TABEL UTAMA APLIKASI ---
+
+model User {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
 model movies {
-  url         String @id
+  url         String  @id
   title       String?
   synopsis    String?
   poster      String?
@@ -21,7 +29,6 @@ model movies {
   @@map("movies")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model movie_categories {
   url      String
   category String
@@ -30,7 +37,9 @@ model movie_categories {
   @@map("movie_categories")
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+// --- TABEL SCRAPER (LOGS) ---
+// Dibiarkan ignore karena cuma buat log bot scraper, gak dipake di web
+
 model checkpoints {
   category_url String? @id
   last_page    Int?
@@ -40,7 +49,6 @@ model checkpoints {
   @@ignore
 }
 
-/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model crawl_errors {
   url          String?
   category     String?
