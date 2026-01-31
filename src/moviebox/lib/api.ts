@@ -19,36 +19,37 @@ const CONFIG = {
 
 // --- TYPES ---
 
-export type FilterPayload = {
-  q?: string;
-  genre?: string;
-  category?: string; // movie | series
-  year?: string;
-  type?: string;
-  sort?: "latest" | "hot" | "forYou";
-  page?: number;
-};
-
-export interface MovieTitle {
-  id: string | number;
+export interface MovieItem {
+  id: string; // URL asli atau ID unik
   title: string;
   poster: string;
-  year: string;
-  type: "movie" | "series";
-  quality: string;
+  year?: string;
+  type: "Movie" | "Series";
+  quality: "HD" | "CAM" | "RAW";
   rating?: string;
+  genres: string[];
 }
 
 export interface FilterOption {
-  id: string | number;
   label: string;
   value: string;
+  count?: number;
 }
 
-export interface FilterData {
+export interface FilterResponse {
   genres: FilterOption[];
   years: FilterOption[];
   types: FilterOption[];
+  countries: FilterOption[];
+}
+
+export interface SearchParams {
+  q?: string;
+  genre?: string;
+  year?: string;
+  type?: string;
+  country?: string;
+  sort?: "latest" | "hot" | "foryou";
 }
 
 // --- NORMALIZERS (Fallbacks) ---
