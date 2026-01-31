@@ -31,10 +31,14 @@ export interface SearchParams {
   sort?: "latest" | "hot" | "foryou";
 }
 
-export type MoviesResponse = {
-  items: Movie[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
+export type SearchParams = {
+  q?: string;
+  genre?: string;
+  year?: string;
+  country?: string;
+  type?: string;
+
+  // ✅ pagination
+  page?: string | number;
+  limit?: string | number;
 };
