@@ -1,6 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import VideoPlayer from "@/components/VideoPlayer";
+import VideoPlayer from "@/components/dracin/VideoPlayerDracin";
 
 interface Props {
   dramaId: string;
