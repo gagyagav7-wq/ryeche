@@ -16,12 +16,23 @@ const toPosterHD = (url?: string) => {
 const slugify = (s: string) => s.toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-");
 
 // --- 1. MOVIE CARD (Fixed Layout & HD Poster) ---
+// ... (import dan helper lain tetep sama)
+
+// --- 1. MOVIE CARD (Base64 Safe Link) ---
 export const MovieCard = ({ item }: { item: MovieItem }) => {
-  // ROUTING AMAN: Gunakan encodeURIComponent pada ID
-  const safeId = encodeURIComponent(item.id); 
-  const href = `/movie-hub/${encodeURIComponent(item.id)}`;
+  // 1. Encode ID ke Base64 biar URL bersih dari karakter aneh (slash/titik dua)
+  // btoa() adalah fungsi bawaan browser untuk encode Base64
+  const base64Id = btoa(item.id).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  
+  // 2. Gabung ke URL
+  const href = `/movie-hub/${base64Id}`;
 
   return (
+    <Link 
+      href={href}
+      className="group block bg-white border-[3px] border-[#0F172A] rounded-[24px] overflow-hidden shadow-[5px_5px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[8px_8px_0px_#FF708D] transition-all duration-300"
+    >
+{/* ... sisa isi komponen JANGAN DIUBAH ... */}
     <Link 
       href={href}
       className="group block bg-white border-[3px] border-[#0F172A] rounded-[24px] overflow-hidden shadow-[5px_5px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[8px_8px_0px_#FF708D] transition-all duration-300"
