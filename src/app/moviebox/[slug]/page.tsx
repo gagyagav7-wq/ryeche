@@ -28,16 +28,15 @@ export default async function MoviePlayerPage({
 }: {
   params: { slug: string };
 }) {
-  // 1) Decode slug -> original url
   const originalUrl = decodeSafeId(params.slug);
   if (!originalUrl) return notFound();
 
-  // 2) Fetch from DB
   const movie = await getMovie(originalUrl);
   if (!movie) return notFound();
 
-  // 3) Use DB field that ACTUALLY exists
-  const videoSrc = movie.iframe_link || "";
+  // ✅ DB lu punya ini:
+  const iframeSrc = movie.iframe_link ?? "";
+  const sourceLink = movie.stream_link ?? movie.iframe_link ?? "";
 
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
@@ -54,24 +53,23 @@ export default async function MoviePlayerPage({
         </h1>
       </header>
 
-      {/* CONTENT */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* PLAYER + DESC */}
+          {/* PLAYER */}
           <div className="lg:col-span-2 space-y-6">
             <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
-              {/* IMPORTANT: allow attribute for iOS/Android */}
-              <iframe
-                src={videoSrc}
-                className="w-full h-full"
-                allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                allowFullScreen
-                scrolling="no"
-                frameBorder="0"
-              />
-              {!videoSrc && (
+              {iframeSrc ? (
+                <iframe
+                  src={iframeSrc}
+                  className="w-full h-full"
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                  allowFullScreen
+                  scrolling="no"
+                  frameBorder="0"
+                />
+              ) : (
                 <div className="absolute inset-0 grid place-items-center text-white font-black p-6 text-center">
-                  VIDEO LINK KOSONG (iframe_link belum ada di DB)
+                  iframe_link kosong di DB (ga ada link embed)
                 </div>
               )}
             </div>
@@ -99,7 +97,7 @@ export default async function MoviePlayerPage({
             </div>
 
             <a
-              href={videoSrc || "#"}
+              href={sourceLink || "#"}
               target="_blank"
               rel="noreferrer"
               className="block w-full py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
