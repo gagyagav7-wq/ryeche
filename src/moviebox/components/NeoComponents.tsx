@@ -72,7 +72,7 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
   const handleFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
     value ? params.set(key, value) : params.delete(key);
-    router.push(`/movie-hub?${params.toString()}`);
+    router.push(`/moviebox?${params.toString()}`);
   };
 
   const currentGenre = searchParams.get("genre") || "";
