@@ -19,7 +19,7 @@ const slugify = (s: string) => s.toLowerCase().trim().replace(/[^\w\s-]/g, "").r
 export const MovieCard = ({ item }: { item: MovieItem }) => {
   // ROUTING AMAN: Gunakan encodeURIComponent pada ID
   const safeId = encodeURIComponent(item.id); 
-  const href = `/movie-hub/${safeId}-${slugify(item.title)}`;
+  const href = `/movie-hub/${encodeURIComponent(item.id)}`;
 
   return (
     <Link 
