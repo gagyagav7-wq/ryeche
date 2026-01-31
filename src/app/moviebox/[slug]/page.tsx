@@ -1,9 +1,7 @@
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { PrismaClient } from "@prisma/client-movie";
-
-const prisma = new PrismaClient();
+import { prisma } from "@/lib/prisma";
 
 // --- DECODER & DB SEARCH ---
 function decodeSafeId(encoded: string) {
