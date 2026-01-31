@@ -66,13 +66,14 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
             <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
-               <iframe 
-                 src={movie.video || ""} 
+               <iframe
+                 src={videoSrc}
                  className="w-full h-full"
+                 allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                  allowFullScreen
                  scrolling="no"
                  frameBorder="0"
-               ></iframe>
+               />
             </div>
             <div className="bg-white border-[3px] border-[#0F172A] p-6 rounded-[20px] shadow-[6px_6px_0px_#0F172A]">
               <h1 className="text-2xl font-black uppercase italic mb-4">{movie.title}</h1>
@@ -90,8 +91,13 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
                   fill className="object-cover" unoptimized
                 />
              </div>
-             <a href={movie.video || "#"} target="_blank" className="block w-full py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all">
-                Download / Source
+             <a
+               href={videoSrc || "#"}
+               target="_blank"
+               rel="noreferrer"
+               className="block w-full py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
+             >
+               Download / Source
              </a>
           </div>
         </div>
