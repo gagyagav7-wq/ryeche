@@ -19,7 +19,7 @@ export const MovieCard = ({ item }: { item: MovieItem }) => {
   const base64Id = typeof window !== 'undefined' ? btoa(item.id).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') : '';
   
   // 2. Gabung ke URL
-  const href = `/movie-hub/${base64Id}`;
+  const href = `/moviebox/${base64Id}`;
 
   return (
     <Link 
