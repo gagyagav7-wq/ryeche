@@ -5,48 +5,49 @@ import { PrismaClient } from "@prisma/client-movie";
 
 const prisma = new PrismaClient();
 
-// Fungsi Fetch Data (ROBUST: Cek dengan & tanpa garis miring belakang)
+// Fungsi Fetch Data
 async function getMovie(targetUrl: string) {
-  // Buat versi tanpa slash belakang
-  const urlNoSlash = targetUrl.replace(/\/$/, "");
-
+  // Cari URL yang persis sama
   const movie = await prisma.movies.findFirst({
-    where: {
-      OR: [
-        { url: targetUrl },       // Cek persis
-        { url: urlNoSlash },      // Cek tanpa slash
-        { url: urlNoSlash + "/" } // Cek pakai slash
-      ]
-    }
+    where: { url: targetUrl }
   });
   return movie;
 }
 
-// Perhatikan tipe params: slug sekarang string[] (Array)
-export default async function MoviePlayerPage({ params }: { params: { slug: string[] } }) {
-  let cleanUrl = "";
-
-  // LOGIC REKONSTRUKSI URL
-  // Jika Next.js memecah URL jadi array (karena ada slash), kita gabung balik.
-  if (Array.isArray(params.slug)) {
-    // Contoh: ['http:', '', '178.62...', 'judul'] -> join jadi "http://178.62.../judul"
-    cleanUrl = params.slug.join('/');
-    
-    // Kadang decodeURIComponent masih dibutuhkan kalau ada karakter spesial lain
-    cleanUrl = decodeURIComponent(cleanUrl);
-  } else {
-    // Jaga-jaga kalau cuma 1 segmen
-    cleanUrl = decodeURIComponent(params.slug);
+// Helper Decode Base64 (Server Side)
+function decodeSafeId(encoded: string) {
+  try {
+    // Balikin karakter URL-safe ke Base64 standar
+    let base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    // Tambah padding '=' kalau kurang
+    while (base64.length % 4) base64 += '=';
+    // Decode pake Buffer (karena ini jalan di server Node.js)
+    return Buffer.from(base64, 'base64').toString('utf-8');
+  } catch (e) {
+    return null;
   }
+}
 
-  // Cari di DB
-  const movie = await getMovie(cleanUrl);
+// Support params [slug] maupun [...slug]
+export default async function MoviePlayerPage({ params }: { params: { slug: string | string[] } }) {
+  // 1. Ambil slug (kalau array, ambil yg pertama aja karena Base64 pasti 1 segmen)
+  const rawSlug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  
+  // 2. Decode Base64 -> URL Asli (http://...)
+  const originalUrl = decodeSafeId(rawSlug);
+
+  if (!originalUrl) return notFound(); // Kalau gagal decode, 404
+
+  // 3. Cari di DB
+  const movie = await getMovie(originalUrl);
 
   if (!movie) {
+    // Debugging: Kalau masih 404, cek log server buat liat URL apa yg dicari
+    console.log("Movie Not Found. Searching for:", originalUrl);
     return notFound();
   }
 
-  // --- RENDERING PAGE (Sama kayak sebelumnya) ---
+  // --- RENDERING PAGE ---
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
       
@@ -62,6 +63,7 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
       <div className="max-w-7xl mx-auto px-4 md:px-6 mt-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
+          {/* PLAYER */}
           <div className="lg:col-span-2 space-y-6">
             <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
                <iframe 
@@ -83,6 +85,7 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
             </div>
           </div>
 
+          {/* SIDEBAR */}
           <div className="space-y-6">
              <div className="aspect-[2/3] relative border-[4px] border-[#0F172A] rounded-[20px] overflow-hidden shadow-[8px_8px_0px_#2EC4B6] bg-[#0F172A]">
                 <Image 
