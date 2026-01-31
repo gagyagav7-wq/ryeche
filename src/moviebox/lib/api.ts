@@ -1,39 +1,17 @@
-// FIX: Import prisma dari singleton biar koneksi gak bocor
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client";
-import { MovieItem, FilterResponse, SearchParams } from "./types";
+import { MovieItem, FilterResponse, SearchParams, MoviesResponse } from "./types";
 
 const FALLBACK_POSTER = "https://via.placeholder.com/300x450?text=NO+IMG";
 
-// --- helpers ---
-function inferYear(title?: string | null) {
-  const m = title?.match(/\((\d{4})\)/);
-  return m?.[1] ?? "N/A";
-}
-
-function clampInt(v: any, def: number, min: number, max: number) {
+// helper parse angka dari query
+function toInt(v: unknown, fallback: number) {
   const n = Number(v);
-  if (!Number.isFinite(n)) return def;
-  return Math.max(min, Math.min(max, Math.floor(n)));
+  return Number.isFinite(n) ? n : fallback;
 }
 
-/**
- * NOTE:
- * getMovies() sekarang return PAGED RESPONSE:
- * { items, total, page, limit, hasMore }
- * jadi page.tsx lu harus pakai movies.items & movies.total
- */
-export type MoviesResponse = {
-  items: MovieItem[];
-  total: number;
-  page: number;
-  limit: number;
-  hasMore: boolean;
-};
-
-// --- 1. GET DYNAMIC FILTERS ---
+// --- 1) GET FILTERS ---
 export async function getFilters(): Promise<FilterResponse> {
-  // A. Ambil Genre
+  // A) genres
   let realGenres: { label: string; value: string }[] = [];
   try {
     const categoriesRaw = await prisma.movie_categories.findMany({
@@ -50,19 +28,19 @@ export async function getFilters(): Promise<FilterResponse> {
     console.error("Gagal ambil kategori:", e);
   }
 
-  // B. Ambil Tahun (DB lu total 1660, jadi ambil aja banyak sekalian biar akurat)
+  // B) years (ambil dari title "(2024)")
   const moviesRaw = await prisma.movies.findMany({
     select: { title: true },
-    take: 5000,
-    orderBy: { scraped_at: "desc" }, // lebih masuk akal daripada title desc
+    take: 2000,
+    orderBy: { title: "desc" },
   });
 
   const yearSet = new Set<string>();
   const regexYear = /\((\d{4})\)/;
 
   for (const m of moviesRaw) {
-    const t = m.title || "";
-    const match = t.match(regexYear);
+    if (!m.title) continue;
+    const match = m.title.match(regexYear);
     if (match) yearSet.add(match[1]);
   }
 
@@ -71,7 +49,7 @@ export async function getFilters(): Promise<FilterResponse> {
   return {
     genres: [{ label: "All Genres", value: "" }, ...realGenres],
     years: [{ label: "All Years", value: "" }, ...years],
-    countries: [],
+    countries: [{ label: "All Countries", value: "" }], // placeholder (DB lu belum ada)
     types: [
       { label: "All Types", value: "" },
       { label: "Movies", value: "Movie" },
@@ -79,135 +57,77 @@ export async function getFilters(): Promise<FilterResponse> {
   };
 }
 
-// --- 2. GET MOVIES (PAGINATION + TOTAL + JOIN GENRE) ---
+// --- 2) GET MOVIES (PAGINATED) ---
 export async function getMovies(params: SearchParams): Promise<MoviesResponse> {
-  const q = (params.q || "").trim();
-  const genre = (params.genre || "").trim();
-  const year = (params.year || "").trim();
+  const q = (params.q ?? "").toString().trim();
+  const genre = (params.genre ?? "").toString().trim();
+  const year = (params.year ?? "").toString().trim();
 
   // pagination
-  const page = clampInt((params as any).page, 1, 1, 99999);
-  const limit = clampInt((params as any).limit, 36, 6, 60); // default 36, max 60
-  const offset = (page - 1) * limit;
+  const page = Math.max(1, toInt(params.page, 1));
+  const limit = Math.min(60, Math.max(6, toInt(params.limit, 36)));
+  const skip = (page - 1) * limit;
 
-  // bikin WHERE clause aman (pakai SQL fragment)
-  // pakai COALESCE biar kolom nullable tetap bisa di-like
-  const whereParts: Prisma.Sql[] = [];
+  const AND: any[] = [];
 
+  // 1) search
   if (q) {
-    whereParts.push(Prisma.sql`COALESCE(m.title,'') LIKE ${"%" + q + "%"}`);
+    AND.push({
+      title: { contains: q },
+    });
   }
 
+  // 2) year from title
   if (year) {
-    // cari pattern "(2024)" di title
-    whereParts.push(Prisma.sql`COALESCE(m.title,'') LIKE ${"%(" + year + ")%"}`);
+    AND.push({
+      title: { contains: `(${year})` },
+    });
   }
 
-  // kalau mau cuma status OK, hidupin ini:
-  // whereParts.push(Prisma.sql`COALESCE(m.status,'') = 'OK'`);
-
-  const whereSql =
-    whereParts.length > 0
-      ? Prisma.sql`WHERE ${Prisma.join(whereParts, Prisma.sql` AND `)}`
-      : Prisma.empty;
-
-  // CASE A: ada genre => JOIN movie_categories
+  // 3) genre via movie_categories table
   if (genre) {
-    const whereWithGenre = whereParts.length
-      ? Prisma.sql`WHERE mc.category = ${genre} AND ${Prisma.join(whereParts, Prisma.sql` AND `)}`
-      : Prisma.sql`WHERE mc.category = ${genre}`;
+    const connected = await prisma.movie_categories.findMany({
+      where: { category: genre },
+      select: { url: true },
+    });
 
-    // total (distinct url)
-    const totalRows = await prisma.$queryRaw<{ n: bigint }[]>`
-      SELECT COUNT(DISTINCT m.url) as n
-      FROM movies m
-      JOIN movie_categories mc ON mc.url = m.url
-      ${whereWithGenre}
-    `;
-    const total = Number(totalRows?.[0]?.n ?? 0);
+    const validUrls = connected.map((c) => c.url);
+    if (validUrls.length === 0) {
+      return { items: [], total: 0, page, limit, hasMore: false };
+    }
+    AND.push({ url: { in: validUrls } });
+  }
 
-    // items
-    const rows = await prisma.$queryRaw<
-      {
-        url: string;
-        title: string | null;
-        poster: string | null;
-        synopsis: string | null;
-        iframe_link: string | null;
-        scraped_at: number | null;
-        status: string | null;
-      }[]
-    >`
-      SELECT m.url, m.title, m.poster, m.synopsis, m.iframe_link, m.scraped_at, m.status
-      FROM movies m
-      JOIN movie_categories mc ON mc.url = m.url
-      ${whereWithGenre}
-      ORDER BY COALESCE(m.scraped_at, 0) DESC, COALESCE(m.title,'') ASC
-      LIMIT ${limit} OFFSET ${offset}
-    `;
+  const whereClause = AND.length > 0 ? { AND } : {};
 
-    const items: MovieItem[] = rows.map((item) => ({
+  // total count (buat badge + hasMore)
+  const total = await prisma.movies.count({ where: whereClause });
+
+  // data page ini
+  const dbData = await prisma.movies.findMany({
+    where: whereClause,
+    take: limit,
+    skip,
+    orderBy: { scraped_at: "desc" }, // lebih masuk akal untuk "Fresh Drops"
+  });
+
+  const items: MovieItem[] = dbData.map((item: any) => {
+    const yearMatch = item.title?.match(/\((\d{4})\)/);
+    const inferredYear = yearMatch ? yearMatch[1] : "N/A";
+
+    return {
       id: item.url,
       title: item.title || "No Title",
       poster: item.poster || FALLBACK_POSTER,
-      year: inferYear(item.title),
+      year: inferredYear,
       type: "Movie",
       quality: "HD",
       rating: "N/A",
-      genres: [genre],
-    }));
-
-    return {
-      items,
-      total,
-      page,
-      limit,
-      hasMore: offset + items.length < total,
+      genres: genre ? [genre] : ["Movie"],
     };
-  }
+  });
 
-  // CASE B: tanpa genre => query langsung movies
-  const totalRows = await prisma.$queryRaw<{ n: bigint }[]>`
-    SELECT COUNT(*) as n
-    FROM movies m
-    ${whereSql}
-  `;
-  const total = Number(totalRows?.[0]?.n ?? 0);
+  const hasMore = skip + items.length < total;
 
-  const rows = await prisma.$queryRaw<
-    {
-      url: string;
-      title: string | null;
-      poster: string | null;
-      synopsis: string | null;
-      iframe_link: string | null;
-      scraped_at: number | null;
-      status: string | null;
-    }[]
-  >`
-    SELECT m.url, m.title, m.poster, m.synopsis, m.iframe_link, m.scraped_at, m.status
-    FROM movies m
-    ${whereSql}
-    ORDER BY COALESCE(m.scraped_at, 0) DESC, COALESCE(m.title,'') ASC
-    LIMIT ${limit} OFFSET ${offset}
-  `;
-
-  const items: MovieItem[] = rows.map((item) => ({
-    id: item.url,
-    title: item.title || "No Title",
-    poster: item.poster || FALLBACK_POSTER,
-    year: inferYear(item.title),
-    type: "Movie",
-    quality: "HD",
-    rating: "N/A",
-    genres: ["Movie"],
-  }));
-
-  return {
-    items,
-    total,
-    page,
-    limit,
-    hasMore: offset + items.length < total,
-  };
+  return { items, total, page, limit, hasMore };
 }
