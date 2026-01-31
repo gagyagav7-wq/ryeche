@@ -237,7 +237,7 @@ export const MovieCard = ({ item }: { item: MovieItem }) => {
           {item.title}
         </h3>
         <p className="mt-2 text-[9px] font-bold uppercase text-gray-400 tracking-wider truncate">
-           {item.genres.slice(0, 2).join(", ")}
+          {(item.genres ?? []).slice(0, 2).join(", ") || "Movie"}
         </p>
       </div>
     </Link>
