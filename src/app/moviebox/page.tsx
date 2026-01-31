@@ -32,7 +32,7 @@ export default async function MovieHubPage({
                </div>
 
                {/* Search Bar (Besar & Bold) */}
-               <form action="/movie-hub" method="get" className="flex-1 max-w-md hidden md:block">
+               <form action="/moviebox" method="get" className="flex-1 max-w-md hidden md:block">
                   <input 
                     type="text" 
                     name="q"
