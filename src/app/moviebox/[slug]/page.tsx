@@ -6,9 +6,27 @@ import { prisma } from "@/lib/prisma";
 // --- DECODER ---
 function decodeSafeId(encoded: string) {
   try {
+    // base64url -> base64
     let base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
-    return Buffer.from(base64, "base64").toString("utf-8");
+
+    // Prefer Buffer (Node runtime)
+    // Fallback to atob (jika suatu saat runtime bukan Node penuh)
+    if (typeof Buffer !== "undefined") {
+      return Buffer.from(base64, "base64").toString("utf-8");
+    }
+    if (typeof atob !== "undefined") {
+      return decodeURIComponent(
+        Array.prototype.map
+          .call(atob(base64), (c: string) => {
+            const code = c.charCodeAt(0).toString(16).padStart(2, "0");
+            return "%" + code;
+          })
+          .join("")
+      );
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -34,7 +52,7 @@ export default async function MoviePlayerPage({
   const movie = await getMovie(originalUrl);
   if (!movie) return notFound();
 
-  // ✅ DB lu punya ini:
+  // ✅ DB lu punya kolom ini
   const iframeSrc = movie.iframe_link ?? "";
   const sourceLink = movie.stream_link ?? movie.iframe_link ?? "";
 
@@ -48,6 +66,7 @@ export default async function MoviePlayerPage({
         >
           ←
         </Link>
+
         <h1 className="text-lg font-black italic uppercase truncate w-full">
           {movie.title || "Untitled"}
         </h1>
@@ -65,7 +84,9 @@ export default async function MoviePlayerPage({
                   allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
                   allowFullScreen
                   scrolling="no"
-                  frameBorder="0"
+                  frameBorder={0}
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="absolute inset-0 grid place-items-center text-white font-black p-6 text-center">
@@ -75,9 +96,9 @@ export default async function MoviePlayerPage({
             </div>
 
             <div className="bg-white border-[3px] border-[#0F172A] p-6 rounded-[20px] shadow-[6px_6px_0px_#0F172A]">
-              <h1 className="text-2xl font-black uppercase italic mb-4">
+              <h2 className="text-2xl font-black uppercase italic mb-4">
                 {movie.title || "Untitled"}
-              </h1>
+              </h2>
               <p className="text-sm font-medium opacity-80 italic border-l-4 border-[#CBEF43] pl-4">
                 {movie.synopsis || "No synopsis available."}
               </p>
@@ -93,6 +114,7 @@ export default async function MoviePlayerPage({
                 fill
                 className="object-cover"
                 unoptimized
+                sizes="(max-width: 1024px) 100vw, 33vw"
               />
             </div>
 
