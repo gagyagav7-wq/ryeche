@@ -1,3 +1,4 @@
+console.log("[NEXT BUILD] DATABASE_URL =", process.env.DATABASE_URL)
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
