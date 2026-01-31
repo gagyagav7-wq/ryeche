@@ -22,6 +22,7 @@ model movies {
   synopsis    String?
   poster      String?
   iframe_link String?
+  stream_link String?   // <-- tambah ini
   scraped_at  Int?
   status      String?
 
