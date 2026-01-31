@@ -7,27 +7,48 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(cuid())
-  username  String   @unique
-  password  String
-  createdAt DateTime @default(now())
-}
-
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model movies {
-  url        String  @id
-  title      String?
-  synopsis   String?
-  poster     String?
-  scraped_at Int?
+  url         String @id
+  title       String?
+  synopsis    String?
+  poster      String?
+  iframe_link String?
+  scraped_at  Int?
+  status      String?
 
+  @@index([status], map: "idx_movies_status")
   @@map("movies")
 }
 
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 model movie_categories {
   url      String
   category String
 
   @@id([url, category])
   @@map("movie_categories")
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model checkpoints {
+  category_url String? @id
+  last_page    Int?
+  status       String?
+  updated_at   Int?
+
+  @@ignore
+}
+
+/// The underlying table does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
+model crawl_errors {
+  url          String?
+  category     String?
+  stage        String?
+  error_detail String?
+  scraped_at   Int?
+  resolved     Int?    @default(0)
+
+  @@index([resolved], map: "idx_errors_resolved")
+  @@ignore
 }
