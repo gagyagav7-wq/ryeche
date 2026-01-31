@@ -1,79 +1,108 @@
 import Link from "next/link";
 import { getFilters, getMovies } from "@/moviebox/lib/api";
 import { SearchParams } from "@/moviebox/lib/types";
-import { MovieCard, FilterBar } from "@/moviebox/components/NeoComponents";
+import { MovieCard, FilterBar, SearchForm } from "@/moviebox/components/NeoComponents";
+
+// Tambahkan no-scrollbar utility secara inline atau di global.css
+// .no-scrollbar::-webkit-scrollbar { display: none; }
+// .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
 export default async function MovieHubPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
-  // 1. Fetch Parallel (Data + Filters)
+  // Fetch Data Parallel (Cepat)
   const [filtersData, moviesData] = await Promise.all([
     getFilters(),
     getMovies(searchParams),
   ]);
 
   return (
-    <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
+    <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24 selection:bg-[#FF9F1C] selection:text-white">
       
-      {/* 1. HEADER (Sticky & Wide) */}
-      <header className="sticky top-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[4px] border-[#0F172A] py-4">
-         <div className="w-full max-w-7xl mx-auto px-4 md:px-6 space-y-4">
-            {/* Top Row */}
-            <div className="flex justify-between items-center gap-4">
-               <div className="flex flex-col">
-                  <h1 className="text-3xl font-black italic uppercase leading-none tracking-tighter">
-                     BUTTER<span className="text-[#FF9F1C]">HUB</span>
-                  </h1>
-                  <span className="text-[10px] font-bold opacity-60 tracking-widest uppercase">
-                    MovieBox • Local DB
-                  </span>
+      {/* 1. HEADER (Sticky & Responsive) */}
+      <header className="sticky top-0 z-40 bg-[#FFFDF7]/95 backdrop-blur-md border-b-[4px] border-[#0F172A] py-4 shadow-sm transition-all">
+         <div className="w-full max-w-7xl mx-auto px-4 md:px-6">
+            <div className="flex flex-col md:flex-row gap-4 md:items-center justify-between">
+               
+               {/* Brand & Nav */}
+               <div className="flex items-center justify-between w-full md:w-auto">
+                   <div className="flex flex-col">
+                      <Link href="/moviebox" className="group">
+                        <h1 className="text-3xl md:text-4xl font-black italic uppercase leading-none tracking-tighter group-hover:skew-x-2 transition-transform">
+                           BUTTER<span className="text-[#FF9F1C]">HUB</span>
+                        </h1>
+                      </Link>
+                      <div className="flex gap-2 mt-1">
+                         <span className="bg-[#0F172A] text-white px-1.5 py-0.5 text-[9px] font-bold uppercase rounded">
+                            v2.0
+                         </span>
+                         <span className="bg-[#CBEF43] border-[2px] border-[#0F172A] px-1.5 py-0.5 text-[9px] font-bold uppercase rounded">
+                            LOCAL DB
+                         </span>
+                      </div>
+                   </div>
+                   {/* Tombol Back Mobile (Optional) */}
+                   <Link href="/dashboard" className="md:hidden w-10 h-10 bg-[#FF99C8] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center shadow-[3px_3px_0px_#0F172A] active:translate-y-1 active:shadow-none transition-all">
+                      <span className="font-black">↩</span>
+                   </Link>
                </div>
 
-               {/* Search Bar (Besar & Bold) */}
-               <form action="/moviebox" method="get" className="flex-1 max-w-md hidden md:block">
-                  <input 
-                    type="text" 
-                    name="q"
-                    defaultValue={searchParams.q}
-                    placeholder="FIND MOVIES..." 
-                    className="w-full px-4 py-2 bg-white border-[3px] border-[#0F172A] rounded-lg font-bold text-sm uppercase focus:outline-none focus:shadow-[4px_4px_0px_#FF9F1C] transition-all"
-                  />
-               </form>
+               {/* Search Bar (Sekarang Client Component) */}
+               <div className="w-full md:max-w-md">
+                  <SearchForm />
+               </div>
+
+               {/* Desktop Nav Button */}
+               <Link href="/dashboard" className="hidden md:flex w-12 h-12 bg-[#FF99C8] border-[3px] border-[#0F172A] rounded-xl items-center justify-center shadow-[4px_4px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#0F172A] transition-all">
+                  <span className="font-black text-xl">↩</span>
+               </Link>
             </div>
          </div>
       </header>
 
-      {/* 2. MAIN CONTENT CONTAINER (Lebar max-w-7xl biar gak HP raksasa) */}
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-8">
+      {/* 2. MAIN CONTENT */}
+      <div className="w-full max-w-7xl mx-auto px-4 md:px-6 mt-6 md:mt-10">
          
-         {/* Filter Bar Component */}
+         {/* Filter Bar System */}
          <FilterBar filters={filtersData} />
 
-         {/* Title & Count */}
-         <div className="flex items-end justify-between mb-6 border-b-[3px] border-[#0F172A] pb-2">
-            <h2 className="text-3xl font-black uppercase italic tracking-tighter">
-               {searchParams.q ? `Results: "${searchParams.q}"` : "Fresh Drops"}
-            </h2>
-            <span className="bg-[#0F172A] text-white px-3 py-1 text-xs font-bold rounded mb-1">
+         {/* Section Title */}
+         <div className="flex items-end justify-between mb-6 md:mb-8 border-b-[4px] border-[#0F172A] pb-4">
+            <div className="flex flex-col gap-1">
+               <h2 className="text-2xl md:text-4xl font-black uppercase italic tracking-tighter">
+                  {searchParams.q ? `Search: "${searchParams.q}"` : "Fresh Drops"}
+               </h2>
+               <p className="text-xs md:text-sm font-bold opacity-60 uppercase tracking-widest">
+                  Updated Daily • Curated for You
+               </p>
+            </div>
+            <span className="bg-[#0F172A] text-white px-3 py-1 md:px-4 md:py-2 text-[10px] md:text-xs font-black rounded-lg shadow-[3px_3px_0px_#FF9F1C]">
                {moviesData.length} TITLES
             </span>
          </div>
 
-         {/* GRID RESPONSIVE (Up to 6 columns on XL) */}
+         {/* GRID DISPLAY */}
          {moviesData.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-8 pb-10">
                {moviesData.map((movie) => (
                   <MovieCard key={movie.id} item={movie} />
                ))}
             </div>
          ) : (
-            <div className="py-24 text-center border-[4px] border-[#0F172A] rounded-[32px] bg-white shadow-[8px_8px_0px_#CBEF43]">
-               <h3 className="text-2xl font-black uppercase">No Movies Found</h3>
-               <p className="text-sm font-bold opacity-50 uppercase mt-2">Try searching something else, Bre.</p>
-               <Link href="/moviebox" className="inline-block mt-6 px-6 py-3 bg-[#0F172A] text-white font-black uppercase rounded-lg hover:bg-[#FF9F1C] transition-colors">
-                  Reset All
+            // EMPTY STATE (Neo-Brutal)
+            <div className="py-24 text-center border-[4px] border-[#0F172A] rounded-[32px] bg-white shadow-[8px_8px_0px_#CBEF43] mx-4 md:mx-auto max-w-2xl">
+               <div className="text-6xl mb-4">🌵</div>
+               <h3 className="text-2xl md:text-3xl font-black uppercase">No Results Found</h3>
+               <p className="text-xs md:text-sm font-bold opacity-50 uppercase mt-2 max-w-xs mx-auto">
+                  We couldn't find what you're looking for. Try adjusting your filters.
+               </p>
+               <Link 
+                  href="/moviebox" 
+                  className="inline-block mt-8 px-8 py-4 bg-[#0F172A] text-white font-black uppercase rounded-xl hover:bg-[#FF9F1C] hover:-translate-y-1 hover:shadow-[4px_4px_0px_#0F172A] transition-all"
+               >
+                  Reset All Filters
                </Link>
             </div>
          )}
