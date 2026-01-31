@@ -1,31 +1,34 @@
-import { PrismaClient } from "@prisma/client-movie";
+// FIX: Import prisma dari singleton biar koneksi gak bocor
+import { prisma } from "@/lib/prisma"; 
 import { MovieItem, FilterResponse, SearchParams } from "./types";
 
-const prisma = new PrismaClient();
 const FALLBACK_POSTER = "https://via.placeholder.com/300x450?text=NO+IMG";
 
-// --- 1. GET DYNAMIC FILTERS (REAL DB) ---
+// --- 1. GET DYNAMIC FILTERS ---
 export async function getFilters(): Promise<FilterResponse> {
-  // A. Ambil Genre ASLI dari tabel movie_categories
-  // Kalau tabel ini kosong, tombol genre bakal ilang (kecuali 'All Genres')
+  // A. Ambil Genre (Optimized: Sort di JS)
   let realGenres: { label: string; value: string }[] = [];
-  
   try {
     const categoriesRaw = await prisma.movie_categories.findMany({
       select: { category: true },
-      distinct: ['category'], // Ambil nama kategori unik aja
-      orderBy: { category: 'asc' }
+      distinct: ['category'], 
     });
     
-    realGenres = categoriesRaw.map(c => ({ label: c.category, value: c.category }));
+    // Sort manual di JS lebih aman daripada distinct + orderBy di beberapa DB
+    realGenres = categoriesRaw
+      .map(c => c.category)
+      .sort((a, b) => a.localeCompare(b))
+      .map(cat => ({ label: cat, value: cat }));
+
   } catch (e) {
-    console.error("Gagal ambil kategori, pastikan tabel 'movie_categories' ada.");
+    console.error("Gagal ambil kategori:", e);
   }
 
-  // B. Ambil Tahun dari Judul (Sampling 500 film)
+  // B. Ambil Tahun (Naikin limit sampling jadi 2000 biar lebih akurat)
   const moviesRaw = await prisma.movies.findMany({
     select: { title: true },
-    take: 500,
+    take: 2000, 
+    orderBy: { title: 'desc' } // Biar yg keambil judul-judul baru dulu
   });
 
   const yearSet = new Set<string>();
@@ -51,20 +54,29 @@ export async function getFilters(): Promise<FilterResponse> {
   };
 }
 
-// --- 2. GET MOVIES (FILTER AKTIF) ---
+// --- 2. GET MOVIES (FIXED LOGIC) ---
 export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
   const { q, genre, year } = params;
 
-  const whereClause: any = {};
+  // FIX: Gunakan array AND supaya filter TIDAK saling menimpa
+  const AND: any[] = [];
 
   // 1. FILTER SEARCH
   if (q) {
-    whereClause.title = { contains: q };
+    AND.push({ 
+      title: { contains: q } // Tambah mode: 'insensitive' kalau DB support
+    });
   }
 
-  // 2. FILTER GENRE (NEW! 🔥)
+  // 2. FILTER TAHUN
+  if (year) {
+    AND.push({ 
+      title: { contains: `(${year})` } 
+    });
+  }
+
+  // 3. FILTER GENRE
   if (genre) {
-    // Cari URL film yang punya kategori ini
     const connectedMovies = await prisma.movie_categories.findMany({
       where: { category: genre },
       select: { url: true }
@@ -72,25 +84,22 @@ export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
     
     const validUrls = connectedMovies.map(c => c.url);
     
-    // Syarat: URL film harus ada di daftar validUrls
     if (validUrls.length > 0) {
-      whereClause.url = { in: validUrls };
+      AND.push({ url: { in: validUrls } });
     } else {
-      // Kalau genre dipilih tapi gak ada filmnya, paksa return kosong
-      // (url must be impossible value)
-      whereClause.url = "NO_MATCH"; 
+      // Kalau genre dipilih tapi gak ada filmnya, return kosong langsung (hemat resource)
+      return [];
     }
   }
 
-  // 3. FILTER TAHUN
-  if (year) {
-    whereClause.title = { contains: `(${year})` };
-  }
+  // Gabungkan semua kondisi
+  const whereClause = AND.length > 0 ? { AND } : {};
 
   // Fetch Data
   const dbData = await prisma.movies.findMany({
     where: whereClause,
     take: 36,
+    orderBy: { title: 'asc' }, // Default sort biar stabil
   });
 
   // Normalisasi Data
@@ -106,7 +115,7 @@ export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
       type: "Movie",
       quality: "HD",
       rating: "N/A",
-      // Kita set default aja biar loading cepet
+      // Set default genre sesuai filter biar UX nyambung
       genres: genre ? [genre] : ["Movie"], 
     };
   });
