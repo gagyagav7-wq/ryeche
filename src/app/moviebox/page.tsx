@@ -6,14 +6,16 @@ import { MovieCard, FilterBar, SearchForm } from "@/moviebox/components/NeoCompo
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+// ✅ helper: bikin query string yang rapi & gabung param existing + patch
 function nextQuery(searchParams: SearchParams, patch: Partial<SearchParams>) {
   const qs = new URLSearchParams();
-
   const merged: SearchParams = { ...searchParams, ...patch };
 
-  // bersihin param kosong
   Object.entries(merged).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && String(v).length > 0) qs.set(k, String(v));
+    if (v === undefined || v === null) return;
+    const s = String(v).trim();
+    if (s.length === 0) return;
+    qs.set(k, s);
   });
 
   return qs.toString();
@@ -29,7 +31,8 @@ export default async function MovieHubPage({
     getMovies(searchParams),
   ]);
 
-  const page = Number(searchParams.page || 1);
+  const page = Math.max(1, Number(searchParams.page ?? 1));
+  const limit = Math.min(60, Math.max(6, Number(searchParams.limit ?? 36)));
 
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24 selection:bg-[#FF9F1C] selection:text-white">
@@ -42,8 +45,18 @@ export default async function MovieHubPage({
                 href="/dashboard"
                 className="shrink-0 w-10 h-10 md:w-12 md:h-12 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl flex items-center justify-center text-white shadow-[3px_3px_0px_#0F172A] hover:-translate-y-1 hover:shadow-[5px_5px_0px_#0F172A] active:translate-y-0 active:shadow-none transition-all mr-4"
               >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" className="w-5 h-5 md:w-6 md:h-6">
-                  <path d="M15 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  className="w-5 h-5 md:w-6 md:h-6"
+                >
+                  <path
+                    d="M15 19l-7-7 7-7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               </Link>
 
@@ -53,8 +66,11 @@ export default async function MovieHubPage({
                     BUTTER<span className="text-[#FF9F1C]">HUB</span>
                   </h1>
                 </Link>
+
                 <div className="flex gap-2 mt-1">
-                  <span className="bg-[#0F172A] text-white px-1.5 py-0.5 text-[9px] font-bold uppercase rounded">v2.0</span>
+                  <span className="bg-[#0F172A] text-white px-1.5 py-0.5 text-[9px] font-bold uppercase rounded">
+                    v2.0
+                  </span>
                   <span className="bg-[#CBEF43] border-[2px] border-[#0F172A] px-1.5 py-0.5 text-[9px] font-bold uppercase rounded">
                     LOCAL DB
                   </span>
@@ -83,7 +99,7 @@ export default async function MovieHubPage({
             </p>
           </div>
 
-          {/* ✅ pake TOTAL dari server, bukan items.length */}
+          {/* ✅ total dari server */}
           <span className="bg-[#0F172A] text-white px-3 py-1 md:px-4 md:py-2 text-[10px] md:text-xs font-black rounded-lg shadow-[3px_3px_0px_#FF9F1C]">
             {movies.total} TITLES
           </span>
@@ -97,24 +113,44 @@ export default async function MovieHubPage({
               ))}
             </div>
 
-            {/* ✅ Load More (server pagination) */}
-            {movies.hasMore && (
-              <div className="pb-10 flex justify-center">
+            {/* Pagination */}
+            <div className="pb-10 flex items-center justify-center gap-3">
+              {/* Prev */}
+              {page > 1 && (
                 <Link
-                  href={`/moviebox?${nextQuery(searchParams, { page: String(page + 1) })}`}
+                  href={`/moviebox?${nextQuery(searchParams, {
+                    page: String(page - 1),
+                    limit: String(limit),
+                  })}`}
+                  className="px-6 py-3 bg-white border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
+                >
+                  Prev
+                </Link>
+              )}
+
+              {/* Load More */}
+              {movies.hasMore && (
+                <Link
+                  href={`/moviebox?${nextQuery(searchParams, {
+                    page: String(page + 1),
+                    limit: String(limit),
+                  })}`}
                   className="px-8 py-4 bg-[#FF9F1C] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
                 >
                   Load More
                 </Link>
-              </div>
-            )}
+              )}
+            </div>
           </>
         ) : (
           <div className="py-24 text-center border-[4px] border-[#0F172A] rounded-[32px] bg-white shadow-[8px_8px_0px_#CBEF43] mx-4 md:mx-auto max-w-2xl">
             <div className="text-6xl mb-4">🌵</div>
-            <h3 className="text-2xl md:text-3xl font-black uppercase">No Results Found</h3>
+            <h3 className="text-2xl md:text-3xl font-black uppercase">
+              No Results Found
+            </h3>
             <p className="text-xs md:text-sm font-bold opacity-50 uppercase mt-2 max-w-xs mx-auto">
-              We couldn't find what you're looking for. Try adjusting your filters.
+              We couldn't find what you're looking for. Try adjusting your
+              filters.
             </p>
             <Link
               href="/moviebox"
