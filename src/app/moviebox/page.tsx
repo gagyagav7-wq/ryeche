@@ -72,7 +72,7 @@ export default async function MovieHubPage({
             <div className="py-24 text-center border-[4px] border-[#0F172A] rounded-[32px] bg-white shadow-[8px_8px_0px_#CBEF43]">
                <h3 className="text-2xl font-black uppercase">No Movies Found</h3>
                <p className="text-sm font-bold opacity-50 uppercase mt-2">Try searching something else, Bre.</p>
-               <Link href="/movie-hub" className="inline-block mt-6 px-6 py-3 bg-[#0F172A] text-white font-black uppercase rounded-lg hover:bg-[#FF9F1C] transition-colors">
+               <Link href="/moviebox" className="inline-block mt-6 px-6 py-3 bg-[#0F172A] text-white font-black uppercase rounded-lg hover:bg-[#FF9F1C] transition-colors">
                   Reset All
                </Link>
             </div>
