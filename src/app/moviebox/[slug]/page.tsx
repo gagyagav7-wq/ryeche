@@ -6,8 +6,9 @@ import { PrismaClient } from "@prisma/client-movie";
 // Init Prisma
 const prisma = new PrismaClient();
 
-// Fungsi Fetch Data (Pake Exact Match URL)
+// Fungsi Fetch Data (Pake Exact Match)
 async function getMovie(targetUrl: string) {
+  // Kita cari URL yang PERSIS sama dengan yg dikirim dari link
   const movie = await prisma.movies.findFirst({
     where: {
       url: targetUrl 
@@ -17,7 +18,7 @@ async function getMovie(targetUrl: string) {
 }
 
 export default async function MoviePlayerPage({ params }: { params: { slug: string } }) {
-  // 1. Decode URL dari browser (ambil ID asli)
+  // 1. Decode URL dari browser
   // Contoh: "http%3A%2F%2F..." menjadi "http://..."
   const cleanUrl = decodeURIComponent(params.slug);
   
@@ -48,7 +49,7 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
           {/* PLAYER (KIRI) */}
           <div className="lg:col-span-2 space-y-6">
             <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
-               {/* FIX: Pake movie.video (sesuai schema prisma) */}
+               {/* Embed Video (Pake kolom video sesuai schema) */}
                <iframe 
                  src={movie.video || ""} 
                  className="w-full h-full"
@@ -80,7 +81,6 @@ export default async function MoviePlayerPage({ params }: { params: { slug: stri
                 />
              </div>
              
-             {/* FIX: Pake movie.video disini juga */}
              <a href={movie.video || "#"} target="_blank" className="block w-full py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all">
                 Download / Source
              </a>
