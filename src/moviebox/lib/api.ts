@@ -3,88 +3,106 @@ import { MovieItem, FilterResponse, SearchParams } from "./types";
 
 const prisma = new PrismaClient();
 
-// 1. GET DYNAMIC FILTERS (Mining dari kolom 'tags' di DB)
+// CONFIG: Fallback Poster
+const FALLBACK_POSTER = "https://via.placeholder.com/300x450?text=NO+IMG";
+
+// --- 1. GET DYNAMIC FILTERS ---
+// Ambil Genre dari tabel 'movie_categories' & Tahun dari Regex Judul
 export async function getFilters(): Promise<FilterResponse> {
-  const allMovies = await prisma.movies.findMany({
-    select: { tags: true },
+  // A. Ambil Genre Unik dari tabel kategori
+  // Pastikan model 'movie_categories' ada di schema.prisma lu!
+  const categoriesRaw = await prisma.movie_categories.findMany({
+    select: { category: true },
+    distinct: ['category'], // Fitur prisma buat ambil yg unik aja
+    orderBy: { category: 'asc' }
   });
 
-  const genreSet = new Set<string>();
-  const yearSet = new Set<string>();
-  const countrySet = new Set<string>();
+  // B. Ambil Tahun dari Judul Film (Sampling 500 film aja biar cepet)
+  const moviesRaw = await prisma.movies.findMany({
+    select: { title: true },
+    take: 500, 
+    orderBy: { title: 'desc' } // Asumsi judul baru ada tahun baru
+  });
 
-  allMovies.forEach((m) => {
-    if (m.tags) {
-      m.tags.split(",").forEach((t) => {
-        const tag = t.trim();
-        if (tag.startsWith("Country-")) {
-          countrySet.add(tag.replace("Country-", ""));
-        } else if (!isNaN(Number(tag)) && tag.length === 4) {
-          yearSet.add(tag);
-        } else if (tag !== "Movie" && tag !== "Series" && tag !== "") {
-          genreSet.add(tag);
-        }
-      });
+  const yearSet = new Set<string>();
+  const regexYear = /\((\d{4})\)/; // Cari pola "(2024)"
+
+  moviesRaw.forEach(m => {
+    if (m.title) {
+      const match = m.title.match(regexYear);
+      if (match) yearSet.add(match[1]);
     }
   });
 
-  const toOption = (set: Set<string>) => 
-    Array.from(set).sort().map(v => ({ label: v, value: v }));
-
+  const toOption = (arr: string[]) => arr.map(v => ({ label: v, value: v }));
+  
   return {
-    genres: [{ label: "All Genres", value: "" }, ...toOption(genreSet)],
-    years: [{ label: "All Years", value: "" }, ...toOption(yearSet).reverse()],
-    countries: [{ label: "All Countries", value: "" }, ...toOption(countrySet)],
+    genres: [{ label: "All Genres", value: "" }, ...toOption(categoriesRaw.map(c => c.category))],
+    years: [{ label: "All Years", value: "" }, ...toOption(Array.from(yearSet).sort().reverse())],
+    countries: [], // Skip dulu karena gak ada data negara di DB lu
     types: [
         { label: "All Types", value: "" },
-        { label: "Movies", value: "Movie" },
-        { label: "Series", value: "Series" }
+        { label: "Movies", value: "Movie" }, // Default anggap semua movie
     ],
   };
 }
 
-// 2. GET TITLES WITH FILTER
+// --- 2. GET TITLES WITH FILTER ---
 export async function getMovies(params: SearchParams): Promise<MovieItem[]> {
-  const { q, genre, year, type, country, sort } = params;
+  const { q, genre, year, sort } = params;
 
-  // Build Query Dinamis
-  const where: any = {};
-  const andConditions = [];
+  let where: any = {};
 
-  if (q) where.title = { contains: q };
-  if (genre) andConditions.push({ tags: { contains: genre } });
-  if (year) andConditions.push({ tags: { contains: year } });
-  if (country) andConditions.push({ tags: { contains: `Country-${country}` } });
-  if (type) andConditions.push({ tags: { contains: type } }); // Asumsi ada tag 'Movie'/'Series'
+  // A. Filter Search Judul
+  if (q) {
+    where.title = { contains: q };
+  }
 
-  if (andConditions.length > 0) where.AND = andConditions;
+  // B. Filter Genre (Agak tricky karena beda tabel)
+  // Kita cari dulu URL film yg punya genre tersebut
+  if (genre) {
+    const movieUrlsWithGenre = await prisma.movie_categories.findMany({
+      where: { category: genre },
+      select: { url: true }
+    });
+    const urls = movieUrlsWithGenre.map(item => item.url);
+    
+    // Tambahkan kondisi: URL film harus ada di daftar URL genre tsb
+    where.url = { in: urls }; 
+  }
 
-  // Sorting
-  let orderBy: any = { title: 'asc' }; // Default fallback
-  // if (sort === 'latest') orderBy = { scraped_at: 'desc' }; // Aktifkan jika kolom scraped_at ada
+  // C. Filter Tahun (Pake contains di judul karena gak ada kolom tahun)
+  if (year) {
+    // Cari judul yg mengandung "(2024)"
+    where.title = { contains: `(${year})` };
+  }
+
+  // Sorting Logic
+  // Karena gak ada 'created_at', kita pake sort title default
+  let orderBy: any = { title: 'asc' }; 
+  // if (sort === 'latest') ... (skip karena gak ada kolom tanggal)
 
   const rawData = await prisma.movies.findMany({
     where,
-    take: 36, // Load agak banyak biar grid padat
+    take: 36,
     orderBy,
   });
 
-  // NORMALISASI DATA (Mapping ke UI)
+  // NORMALISASI OUTPUT
   return rawData.map((m) => {
-    const tagList = m.tags ? m.tags.split(",").map(t => t.trim()) : [];
-    
-    // Logic tebak tahun (dari tag atau regex judul)
+    // Ekstrak tahun dari judul
     const yearMatch = m.title?.match(/\((\d{4})\)/);
-    const inferredYear = yearMatch ? yearMatch[1] : tagList.find(t => !isNaN(Number(t)) && t.length === 4);
+    const inferredYear = yearMatch ? yearMatch[1] : "N/A";
 
     return {
-      id: m.url, // ID Paling aman adalah URL aslinya
+      id: m.url, 
       title: m.title || "Untitled",
-      poster: m.poster || "",
-      year: inferredYear || "N/A",
-      type: tagList.includes("Series") ? "Series" : "Movie",
-      quality: tagList.includes("CAM") ? "CAM" : "HD", // Default HD
-      genres: tagList.filter(t => !t.startsWith("Country-") && isNaN(Number(t))),
+      poster: m.poster || FALLBACK_POSTER,
+      year: inferredYear,
+      type: "Movie", // Default
+      quality: "HD", // Default
+      rating: "N/A",
+      genres: ["Movie"], // Kita hardcode dulu biar loading cepet (gak perlu fetch kategori per item)
     };
   });
 }
