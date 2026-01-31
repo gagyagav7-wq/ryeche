@@ -13,7 +13,7 @@ const toPosterHD = (url?: string) => {
             .replace(/([?&])(w|width|h|height|resize)=\d+/gi, "$1");
 };
 
-// URL Builder Helper: Merge params baru dengan params lama agar tidak hilang
+// URL Builder Helper
 const buildQuery = (currentParams: URLSearchParams, key: string, value: string | null) => {
   const newParams = new URLSearchParams(currentParams.toString());
   if (value) {
@@ -21,26 +21,23 @@ const buildQuery = (currentParams: URLSearchParams, key: string, value: string |
   } else {
     newParams.delete(key);
   }
-  // Reset page ke 1 setiap filter berubah (optional, good UX)
-  // newParams.delete("page"); 
   return newParams.toString();
 };
 
-// --- 1. SEARCH FORM COMPONENT (Responsive & Sync) ---
+// --- 1. SEARCH FORM COMPONENT (Fixed Type Error) ---
 export const SearchForm = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState(searchParams.get("q") || "");
 
-  // Sync state local jika URL berubah dari luar
   useEffect(() => {
     setQuery(searchParams.get("q") || "");
   }, [searchParams]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Gunakan helper buildQuery untuk update 'q' tanpa hapus filter lain (genre/year)
-    const queryString = buildQuery(new URLSearchParams(searchParams), "q", query);
+    // FIX: Tambahkan .toString() agar Tipe Datanya cocok
+    const queryString = buildQuery(new URLSearchParams(searchParams.toString()), "q", query);
     router.push(`/moviebox?${queryString}`);
   };
 
@@ -57,7 +54,6 @@ export const SearchForm = () => {
         aria-label="Search movies"
         className="w-full pl-12 pr-4 py-3 md:py-3.5 bg-white border-[3px] border-[#0F172A] rounded-xl md:rounded-2xl font-black text-sm md:text-base uppercase placeholder:text-gray-400 focus:outline-none focus:border-[#FF9F1C] focus:shadow-[4px_4px_0px_#FF9F1C] transition-all"
       />
-      {/* Tombol Search Mobile (Icon Arrow) */}
       <button 
         type="submit"
         aria-label="Submit Search"
@@ -69,30 +65,29 @@ export const SearchForm = () => {
   );
 };
 
-// --- 2. FILTER BAR (2-Layer Layout, Scrollable Chips, Robust) ---
+// --- 2. FILTER BAR (Fixed Type Error) ---
 export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Handler utama: Update URL
   const handleFilter = (key: string, value: string) => {
-    const queryString = buildQuery(new URLSearchParams(searchParams), key, value);
+    // FIX: Tambahkan .toString() disini juga
+    const queryString = buildQuery(new URLSearchParams(searchParams.toString()), key, value);
     router.push(`/moviebox?${queryString}`);
   };
 
   const currentGenre = searchParams.get("genre") || "";
   const currentYear = searchParams.get("year") || "";
   const currentType = searchParams.get("type") || "";
-  const currentTab = searchParams.get("sort") || "latest"; // Default sort
+  const currentTab = searchParams.get("sort") || "latest"; 
   const currentCountry = searchParams.get("country") || "";
 
   return (
     <div className="space-y-4 md:space-y-6 mb-8 select-none">
       
-      {/* --- LAYER 1: TABS (Sort) + YEAR + TYPE --- */}
+      {/* LAYER 1 */}
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-        
-        {/* TABS (Sort Logic) */}
+        {/* TABS */}
         <div className="flex bg-white border-[3px] border-[#0F172A] rounded-xl p-1 gap-1 shadow-[4px_4px_0px_#0F172A] w-full md:w-auto overflow-x-auto no-scrollbar">
            {[
               { id: "latest", label: "LATEST 🕒" },
@@ -113,9 +108,9 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
            ))}
         </div>
 
-        {/* DROPDOWNS & TYPE (Right Side) */}
+        {/* DROPDOWNS */}
         <div className="flex gap-3 w-full md:w-auto">
-           {/* Type Toggle */}
+           {/* Type */}
            <div className="flex bg-white border-[3px] border-[#0F172A] rounded-xl p-1 shadow-[4px_4px_0px_#0F172A] flex-1 md:flex-none">
               {filters.types.map(t => (
                  <button
@@ -130,7 +125,7 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
               ))}
            </div>
 
-           {/* Year Dropdown */}
+           {/* Year */}
            <div className="relative flex-1 md:flex-none min-w-[100px]">
              <select 
                 onChange={(e) => handleFilter("year", e.target.value)}
@@ -147,14 +142,11 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
         </div>
       </div>
 
-      {/* --- LAYER 2: CHIPS (Genre & Country) - HORIZONTAL SCROLL --- */}
+      {/* LAYER 2: CHIPS */}
       <div className="relative group">
-        {/* Fade Edge Kiri (muncul kalau scroll) */}
         <div className="absolute left-0 top-0 bottom-0 w-8 md:w-16 bg-gradient-to-r from-[#FFFDF7] to-transparent z-10 pointer-events-none" />
         
-        {/* Scrollable Container */}
         <div className="flex gap-2 overflow-x-auto pb-4 pt-2 px-1 no-scrollbar mask-scroll">
-           {/* Reset Chip */}
            <button
               onClick={() => router.push('/moviebox')}
               className="shrink-0 px-4 py-2 bg-[#0F172A] text-white border-[3px] border-[#0F172A] rounded-full text-[10px] font-black uppercase hover:bg-gray-800 transition-all shadow-sm"
@@ -162,9 +154,8 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
              ✖ RESET
            </button>
 
-           {/* Genre Chips */}
            {filters.genres.map((g) => {
-             if (!g.value) return null; // Skip "All Genres" label logic inside chips
+             if (!g.value) return null;
              return (
                <button
                  key={g.value} 
@@ -182,7 +173,6 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
              );
            })}
 
-           {/* Country Chips (Disatukan di row yang sama biar dense) */}
            {filters.countries.map((c) => {
              if(!c.value) return null;
              return (
@@ -203,7 +193,6 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
            })}
         </div>
 
-        {/* Fade Edge Kanan */}
         <div className="absolute right-0 top-0 bottom-4 w-8 md:w-16 bg-gradient-to-l from-[#FFFDF7] to-transparent z-10 pointer-events-none" />
       </div>
 
@@ -211,7 +200,7 @@ export const FilterBar = ({ filters }: { filters: FilterResponse }) => {
   );
 };
 
-// --- 3. MOVIE CARD (Visual Consistency) ---
+// --- 3. MOVIE CARD ---
 export const MovieCard = ({ item }: { item: MovieItem }) => {
   const base64Id = typeof window !== 'undefined' ? btoa(item.id).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') : '';
   const href = `/moviebox/${base64Id}`;
@@ -233,7 +222,6 @@ export const MovieCard = ({ item }: { item: MovieItem }) => {
             {item.quality}
           </span>
         </div>
-        {/* Gradient Overlay tipis buat teks putih kalau mau, tapi kita pake panel bawah */}
       </div>
 
       <div className="p-4 bg-white relative">
@@ -248,7 +236,6 @@ export const MovieCard = ({ item }: { item: MovieItem }) => {
         <h3 className="font-black text-sm md:text-base uppercase leading-tight line-clamp-2 group-hover:text-[#FF9F1C] transition-colors">
           {item.title}
         </h3>
-        {/* Genre text kecil */}
         <p className="mt-2 text-[9px] font-bold uppercase text-gray-400 tracking-wider truncate">
            {item.genres.slice(0, 2).join(", ")}
         </p>
