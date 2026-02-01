@@ -3,30 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
-// --- DECODER ---
 function decodeSafeId(encoded: string) {
   try {
-    // base64url -> base64
     let base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
     while (base64.length % 4) base64 += "=";
-
-    // Prefer Buffer (Node runtime)
-    // Fallback to atob (jika suatu saat runtime bukan Node penuh)
-    if (typeof Buffer !== "undefined") {
-      return Buffer.from(base64, "base64").toString("utf-8");
-    }
-    if (typeof atob !== "undefined") {
-      return decodeURIComponent(
-        Array.prototype.map
-          .call(atob(base64), (c: string) => {
-            const code = c.charCodeAt(0).toString(16).padStart(2, "0");
-            return "%" + code;
-          })
-          .join("")
-      );
-    }
-
-    return null;
+    return Buffer.from(base64, "base64").toString("utf-8");
   } catch {
     return null;
   }
@@ -41,6 +22,10 @@ async function getMovie(targetUrl: string) {
   });
 }
 
+function isHls(url: string) {
+  return /\.m3u8(\?|#|$)/i.test(url);
+}
+
 export default async function MoviePlayerPage({
   params,
 }: {
@@ -52,13 +37,20 @@ export default async function MoviePlayerPage({
   const movie = await getMovie(originalUrl);
   if (!movie) return notFound();
 
-  // ✅ DB lu punya kolom ini
-  const iframeSrc = movie.iframe_link ?? "";
-  const sourceLink = movie.stream_link ?? movie.iframe_link ?? "";
+  const iframeSrc = (movie.iframe_link ?? "").trim();
+  const streamSrc = (movie.stream_link ?? "").trim();
+
+  const poster = movie.poster || "https://via.placeholder.com/300x450";
+  const title = movie.title || "Untitled";
+
+  // tombol source: prioritas stream_link, lalu iframe_link
+  const sourceLink = streamSrc || iframeSrc || "#";
+
+  // kalau provider embed error, minimal user dapat tombol buka sumber
+  const showIframe = Boolean(iframeSrc) && !streamSrc; // iframe cuma dipakai kalau stream kosong
 
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
-      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-[#FFFDF7]/95 backdrop-blur border-b-[3px] border-[#0F172A] px-6 py-4 flex items-center gap-4">
         <Link
           href="/moviebox"
@@ -66,9 +58,8 @@ export default async function MoviePlayerPage({
         >
           ←
         </Link>
-
         <h1 className="text-lg font-black italic uppercase truncate w-full">
-          {movie.title || "Untitled"}
+          {title}
         </h1>
       </header>
 
@@ -77,28 +68,57 @@ export default async function MoviePlayerPage({
           {/* PLAYER */}
           <div className="lg:col-span-2 space-y-6">
             <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
-              {iframeSrc ? (
-                <iframe
-                  src={iframeSrc}
-                  className="w-full h-full"
-                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                  allowFullScreen
-                  scrolling="no"
-                  frameBorder={0}
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
+              {streamSrc ? (
+                // NOTE: untuk HLS/MP4 yang beneran direct link, lebih cocok pakai <video> (client component).
+                // Di sini kita kasih placeholder informasi aja.
+                <div className="absolute inset-0 grid place-items-center text-white font-black p-6 text-center">
+                  STREAM LINK TERSEDIA ✅<br />
+                  (pake VideoPlayer HLS/MP4)
+                  <div className="mt-4">
+                    <a
+                      href={streamSrc}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block px-4 py-2 bg-[#CBEF43] text-black border-[3px] border-[#0F172A] rounded-xl shadow-[4px_4px_0px_#0F172A] font-black uppercase text-xs"
+                    >
+                      Open Stream
+                    </a>
+                  </div>
+                </div>
+              ) : showIframe ? (
+                <>
+                  <iframe
+                    src={iframeSrc}
+                    className="w-full h-full"
+                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
+                    allowFullScreen
+                    scrolling="no"
+                    frameBorder="0"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute bottom-3 left-3">
+                    <a
+                      href={iframeSrc}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-2 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-lg font-black text-xs shadow-[3px_3px_0px_#0F172A]"
+                    >
+                      OPEN PLAYER
+                    </a>
+                  </div>
+                </>
               ) : (
                 <div className="absolute inset-0 grid place-items-center text-white font-black p-6 text-center">
-                  iframe_link kosong di DB (ga ada link embed)
+                  Tidak ada link playback di DB.<br />
+                  Isi `stream_link` (mp4/m3u8) atau `iframe_link`.
                 </div>
               )}
             </div>
 
             <div className="bg-white border-[3px] border-[#0F172A] p-6 rounded-[20px] shadow-[6px_6px_0px_#0F172A]">
-              <h2 className="text-2xl font-black uppercase italic mb-4">
-                {movie.title || "Untitled"}
-              </h2>
+              <h1 className="text-2xl font-black uppercase italic mb-4">
+                {title}
+              </h1>
               <p className="text-sm font-medium opacity-80 italic border-l-4 border-[#CBEF43] pl-4">
                 {movie.synopsis || "No synopsis available."}
               </p>
@@ -108,24 +128,24 @@ export default async function MoviePlayerPage({
           {/* SIDEBAR */}
           <div className="space-y-6">
             <div className="aspect-[2/3] relative border-[4px] border-[#0F172A] rounded-[20px] overflow-hidden bg-[#0F172A]">
-              <Image
-                src={movie.poster || "https://via.placeholder.com/300x450"}
-                alt={movie.title || "Poster"}
-                fill
-                className="object-cover"
-                unoptimized
-                sizes="(max-width: 1024px) 100vw, 33vw"
-              />
+              <Image src={poster} alt={title} fill className="object-cover" unoptimized />
             </div>
 
             <a
-              href={sourceLink || "#"}
+              href={sourceLink}
               target="_blank"
               rel="noreferrer"
               className="block w-full py-4 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-xl font-black uppercase text-center shadow-[4px_4px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
             >
               Download / Source
             </a>
+
+            {!streamSrc && iframeSrc ? (
+              <div className="text-xs font-bold opacity-70 border-[3px] border-[#0F172A] rounded-xl p-4 bg-white shadow-[4px_4px_0px_#0F172A]">
+                ⚠️ Provider embed bisa error (kayak “Server error undefined”).<br />
+                Solusi paling stabil: isi <code>stream_link</code> (mp4/m3u8) dari sumber yang lu kontrol/diizinkan.
+              </div>
+            ) : null}
           </div>
         </div>
       </div>
