@@ -1,13 +1,22 @@
-export type SearchParams = {
-  q?: string;
-  genres: string[];
-  year?: string;
-  country?: string;
-  type?: string;
+// src/moviebox/lib/types.ts
 
-  // ✅ pagination params (dari URL biasanya string)
-  page?: string | number;
-  limit?: string | number;
+// Next.js searchParams bisa jadi string, string[], atau undefined
+export type QueryValue = string | string[] | undefined;
+
+export type SearchParams = {
+  q?: QueryValue;
+
+  // ✅ penting: dari URL bisa "Action" / ["Action","Comedy"] / "Action,Comedy" / undefined
+  // jadi jangan dipaksa string[] di type
+  genres?: QueryValue;
+
+  year?: QueryValue;
+  country?: QueryValue;
+  type?: QueryValue;
+
+  // ✅ pagination dari URL biasanya string, tapi kadang lu set number di code
+  page?: QueryValue | number;
+  limit?: QueryValue | number;
 };
 
 export type MovieItem = {
@@ -18,6 +27,8 @@ export type MovieItem = {
   type: string;
   quality: string;
   rating?: string;
+
+  // ✅ UI aman: selalu array
   genres: string[];
 };
 
