@@ -94,7 +94,9 @@ export default async function MoviePlayerPage({
                     allowFullScreen
                     scrolling="no"
                     frameBorder="0"
-                    referrerPolicy="no-referrer"
+                    referrerPolicy="origin"
+                  />
+
                   />
                   <div className="absolute bottom-3 left-3">
                     <a
