@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+// --- DECODER ---
 function decodeSafeId(encoded: string) {
   try {
     let base64 = encoded.replace(/-/g, "+").replace(/_/g, "/");
@@ -13,6 +14,7 @@ function decodeSafeId(encoded: string) {
   }
 }
 
+// --- DB SEARCH ---
 async function getMovie(targetUrl: string) {
   const urlClean = targetUrl.replace(/\/$/, "");
   return prisma.movies.findFirst({
@@ -22,6 +24,7 @@ async function getMovie(targetUrl: string) {
   });
 }
 
+// --- UTIL ---
 function isHls(url: string) {
   return /\.m3u8(\?|#|$)/i.test(url);
 }
@@ -40,17 +43,24 @@ export default async function MoviePlayerPage({
   const iframeSrc = (movie.iframe_link ?? "").trim();
   const streamSrc = (movie.stream_link ?? "").trim();
 
-  const poster = movie.poster || "https://via.placeholder.com/300x450";
-  const title = movie.title || "Untitled";
+  const poster = (movie.poster ?? "").trim() || "https://via.placeholder.com/300x450";
+  const title = (movie.title ?? "").trim() || "Untitled";
 
   // tombol source: prioritas stream_link, lalu iframe_link
   const sourceLink = streamSrc || iframeSrc || "#";
 
-  // kalau provider embed error, minimal user dapat tombol buka sumber
-  const showIframe = Boolean(iframeSrc) && !streamSrc; // iframe cuma dipakai kalau stream kosong
+  // iframe dipakai cuma kalau stream kosong
+  const showIframe = Boolean(iframeSrc) && !streamSrc;
+
+  const streamType: "hls" | "mp4" | null = streamSrc
+    ? isHls(streamSrc)
+      ? "hls"
+      : "mp4"
+    : null;
 
   return (
     <main className="min-h-dvh bg-[#FFFDF7] text-[#0F172A] font-sans pb-24">
+      {/* HEADER */}
       <header className="sticky top-0 z-50 bg-[#FFFDF7]/95 backdrop-blur border-b-[3px] border-[#0F172A] px-6 py-4 flex items-center gap-4">
         <Link
           href="/moviebox"
@@ -69,20 +79,37 @@ export default async function MoviePlayerPage({
           <div className="lg:col-span-2 space-y-6">
             <div className="relative aspect-video bg-black border-[4px] border-[#0F172A] shadow-[8px_8px_0px_#FF9F1C] rounded-[20px] overflow-hidden">
               {streamSrc ? (
-                // NOTE: untuk HLS/MP4 yang beneran direct link, lebih cocok pakai <video> (client component).
-                // Di sini kita kasih placeholder informasi aja.
-                <div className="absolute inset-0 grid place-items-center text-white font-black p-6 text-center">
-                  STREAM LINK TERSEDIA ✅<br />
-                  (pake VideoPlayer HLS/MP4)
-                  <div className="mt-4">
+                // NOTE:
+                // Untuk stream direct mp4/m3u8: paling bener pakai <video> di Client Component.
+                // Di sini kita kasih placeholder + tombol open stream dulu biar gak blank.
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-white font-black p-6 text-center">
+                  <div className="text-lg">STREAM LINK TERSEDIA ✅</div>
+                  <div className="mt-2 text-xs opacity-80">
+                    Tipe: {streamType?.toUpperCase()}
+                  </div>
+
+                  <div className="mt-4 flex gap-2">
                     <a
                       href={streamSrc}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-block px-4 py-2 bg-[#CBEF43] text-black border-[3px] border-[#0F172A] rounded-xl shadow-[4px_4px_0px_#0F172A] font-black uppercase text-xs"
+                      className="inline-block px-4 py-2 bg-[#CBEF43] text-black border-[3px] border-[#0F172A] rounded-xl shadow-[4px_4px_0px_#0F172A] font-black uppercase text-xs hover:translate-y-1 hover:shadow-none transition-all"
                     >
                       Open Stream
                     </a>
+                    <a
+                      href={sourceLink}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-block px-4 py-2 bg-white text-black border-[3px] border-[#0F172A] rounded-xl shadow-[4px_4px_0px_#0F172A] font-black uppercase text-xs hover:translate-y-1 hover:shadow-none transition-all"
+                    >
+                      Source
+                    </a>
+                  </div>
+
+                  <div className="mt-4 text-[11px] font-bold opacity-70 max-w-lg">
+                    Next step: bikin MovieboxPlayer client component buat play HLS/MP4 langsung
+                    (biar gak tergantung iframe provider).
                   </div>
                 </div>
               ) : showIframe ? (
@@ -97,22 +124,27 @@ export default async function MoviePlayerPage({
                     referrerPolicy="origin"
                   />
 
-                  />
-                  <div className="absolute bottom-3 left-3">
+                  <div className="absolute bottom-3 left-3 flex gap-2">
                     <a
                       href={iframeSrc}
                       target="_blank"
                       rel="noreferrer"
-                      className="px-3 py-2 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-lg font-black text-xs shadow-[3px_3px_0px_#0F172A]"
+                      className="px-3 py-2 bg-[#CBEF43] border-[3px] border-[#0F172A] rounded-lg font-black text-xs shadow-[3px_3px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
                     >
                       OPEN PLAYER
                     </a>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-3 py-2 bg-white border-[3px] border-[#0F172A] rounded-lg font-black text-xs shadow-[3px_3px_0px_#0F172A] hover:translate-y-1 hover:shadow-none transition-all"
+                    >
+                      RELOAD
+                    </button>
                   </div>
                 </>
               ) : (
                 <div className="absolute inset-0 grid place-items-center text-white font-black p-6 text-center">
                   Tidak ada link playback di DB.<br />
-                  Isi `stream_link` (mp4/m3u8) atau `iframe_link`.
+                  Isi <code>stream_link</code> (mp4/m3u8) atau <code>iframe_link</code>.
                 </div>
               )}
             </div>
@@ -130,7 +162,13 @@ export default async function MoviePlayerPage({
           {/* SIDEBAR */}
           <div className="space-y-6">
             <div className="aspect-[2/3] relative border-[4px] border-[#0F172A] rounded-[20px] overflow-hidden bg-[#0F172A]">
-              <Image src={poster} alt={title} fill className="object-cover" unoptimized />
+              <Image
+                src={poster}
+                alt={title}
+                fill
+                className="object-cover"
+                unoptimized
+              />
             </div>
 
             <a
@@ -143,8 +181,8 @@ export default async function MoviePlayerPage({
             </a>
 
             {!streamSrc && iframeSrc ? (
-              <div className="text-xs font-bold opacity-70 border-[3px] border-[#0F172A] rounded-xl p-4 bg-white shadow-[4px_4px_0px_#0F172A]">
-                ⚠️ Provider embed bisa error (kayak “Server error undefined”).<br />
+              <div className="text-xs font-bold opacity-80 border-[3px] border-[#0F172A] rounded-xl p-4 bg-white shadow-[4px_4px_0px_#0F172A]">
+                ⚠️ Provider embed bisa error (contoh “Server error undefined”).<br />
                 Solusi paling stabil: isi <code>stream_link</code> (mp4/m3u8) dari sumber yang lu kontrol/diizinkan.
               </div>
             ) : null}
