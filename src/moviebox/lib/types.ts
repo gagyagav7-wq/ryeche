@@ -1,6 +1,6 @@
 export type SearchParams = {
   q?: string;
-  genre?: string;
+  genres: string[];
   year?: string;
   country?: string;
   type?: string;
@@ -18,7 +18,7 @@ export type MovieItem = {
   type: string;
   quality: string;
   rating?: string;
-  genres?: string[];
+  genres: string[];
 };
 
 export type FilterOption = { label: string; value: string };
